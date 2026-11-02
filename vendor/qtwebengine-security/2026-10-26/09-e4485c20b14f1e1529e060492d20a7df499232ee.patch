@@ -1,0 +1,85 @@
+From e4485c20b14f1e1529e060492d20a7df499232ee Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Wed, 7 Oct 2026 18:00:46 -0700
+Subject: [Backport] CVE-2026-113280: Memory corruption in Paint
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8523219:
+Remove redundant IsHidden() check in FrameCaret::PaintCaret()
+
+FrameCaret::PaintCaret() called FrameSelection::IsHidden(), which calls
+FrameSelection::SelectionHasFocus() and synchronously invokes
+Document::UpdateStyleAndLayout(). When FrameCaret::PaintCaret() is
+reached during PrePaintTreeWalk (for example, via an SVG <feImage>
+filter painting a subtree with a caret), re-entering style and layout
+can rebuild physical fragments while PrePaintTreeWalk is iterating over
+them.
+
+Checking FrameSelection::IsHidden() in FrameCaret::PaintCaret() is
+unnecessary:
+- For a caret (non-range selection), FrameSelection::IsHidden() is
+  equivalent to !FrameSelection::SelectionHasFocus().
+- At the end of layout, FrameCaret::UpdateStyleAndLayoutIfNeeded() calls
+  FrameCaret::UpdateAppearance(), which checks
+  FrameCaret::ShouldShowCaret() (including
+  FrameSelection::SelectionHasFocus()).
+- If ShouldShowCaret() returns false, UpdateAppearance() returns a null
+  position and CaretDisplayItemClient::UpdateStyleAndLayoutIfNeeded()
+  clears `layout_block_`.
+- FrameCaret::PaintCaret() is only called when `layout_block_` is
+  non-null, so SelectionHasFocus() is already guaranteed to be true, and
+  CaretDisplayItemClient::PaintCaret() right above RecordSelection()
+  already paints the caret unconditionally.
+
+Remove the redundant IsHidden() check and call
+CaretDisplayItemClient::RecordSelection() unconditionally in
+FrameCaret::PaintCaret().
+
+Bug: 570740320
+Change-Id: Id7e18c4fc26d8dcd35ba558046d164c0ad47b3b1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523219
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714054}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782969
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/third_party/blink/renderer/core/editing/frame_caret.cc      | 3 ++-
+ .../blink/renderer/platform/runtime_enabled_features.json5           | 5 +++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/editing/frame_caret.cc b/chromium/third_party/blink/renderer/core/editing/frame_caret.cc
+index 09ba539f466..d9a52173339 100644
+--- a/chromium/third_party/blink/renderer/core/editing/frame_caret.cc
++++ b/chromium/third_party/blink/renderer/core/editing/frame_caret.cc
+@@ -288,7 +288,8 @@ void FrameCaret::PaintCaret(GraphicsContext& context,
+ 
+   display_item_client_->PaintCaret(context, paint_offset, DisplayItem::kCaret);
+ 
+-  if (!frame_->Selection().IsHidden()) {
++  if (RuntimeEnabledFeatures::FrameCaretSkipHiddenCheckEnabled() ||
++      !frame_->Selection().IsHidden()) {
+     auto type = frame_->Selection().IsHandleVisible()
+                     ? gfx::SelectionBound::Type::CENTER
+                     : gfx::SelectionBound::Type::HIDDEN;
+diff --git a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index b43ba0e3ba4..09c884fd45c 100644
+--- a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -3526,6 +3526,11 @@
+       origin_trial_feature_name: "FrobulateThirdParty",
+       origin_trial_allows_third_party: true,
+     },
++    {
++      // crbug.com/570740320
++      name: "FrameCaretSkipHiddenCheck",
++      status: "stable",
++    },
+     {
+       name: "OverscrollCustomization",
+       status: "experimental",
+-- 
+cgit v1.2.3
+

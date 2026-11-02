@@ -1,0 +1,697 @@
+From 06b6a67618618edc192a8fe4de566f61fce58103 Mon Sep 17 00:00:00 2001
+From: Yoav Weiss <yoavweiss@chromium.org>
+Date: Mon, 11 May 2026 05:02:38 -0700
+Subject: [PATCH] [Backport] Dependency for CVE-2026-118353 (2/4)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/7685815:
+Speculative load measurement - preload early hints
+
+https://chromium-review.googlesource.com/c/chromium/src/+/7715319 added
+performance.speculations.preloads, based on
+https://github.com/WICG/speculative_load_measurement.
+
+This CL expands support for Early Hints, to make sure their reported
+values match their attributes.
+
+Co-Authored-By: AI (Claude Opus 4.6)
+Bug: 493637574
+Change-Id: Ib82ba3c1b0275e8396cb6055971f12210af710cb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7685815
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Commit-Queue: Yoav Weiss (@Shopify) <yoavweiss@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1628493}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784936
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../loader/navigation_early_hints_manager.cc  |  7 +--
+ .../loader/navigation_early_hints_manager.h   |  5 +-
+ .../navigation_controller_impl.cc             |  3 +-
+ .../renderer_host/navigation_entry_impl.cc    |  3 +-
+ .../renderer_host/navigation_request.cc       |  7 +--
+ .../content/renderer/render_frame_impl.cc     | 12 ++++-
+ .../mojom/navigation/navigation_params.mojom  |  5 +-
+ .../blink/public/web/web_navigation_params.h  | 18 +++++--
+ .../renderer/core/loader/document_loader.cc   | 16 ++++--
+ .../renderer/core/loader/preload_helper.cc    | 28 ----------
+ .../renderer/core/loader/preload_helper.h     |  5 --
+ .../renderer/core/timing/preload_data.cc      | 14 ++---
+ .../blink/renderer/core/timing/preload_data.h | 12 +++--
+ .../core/timing/window_performance.cc         |  7 +--
+ .../loader/fetch/early_hints_preload_entry.h  | 13 ++++-
+ .../platform/loader/fetch/fetch_parameters.h  |  8 ++-
+ .../platform/loader/fetch/resource.cc         | 27 ++++++++++
+ .../renderer/platform/loader/fetch/resource.h |  4 ++
+ .../platform/loader/fetch/resource_fetcher.cc | 54 ++++++++++++++++++-
+ .../platform/loader/fetch/resource_fetcher.h  |  8 ++-
+ 20 files changed, 170 insertions(+), 86 deletions(-)
+
+diff --git a/chromium/content/browser/loader/navigation_early_hints_manager.cc b/chromium/content/browser/loader/navigation_early_hints_manager.cc
+index 07ea9571f8c5..b2174a6f4c88 100644
+--- a/chromium/content/browser/loader/navigation_early_hints_manager.cc
++++ b/chromium/content/browser/loader/navigation_early_hints_manager.cc
+@@ -424,8 +424,9 @@ bool NavigationEarlyHintsManager::WasResourceHintsReceived() const {
+   return was_resource_hints_received_;
+ }
+ 
+-std::vector<GURL> NavigationEarlyHintsManager::TakePreloadedResourceURLs() {
+-  return std::move(preloaded_urls_);
++std::vector<network::mojom::LinkHeaderPtr>
++NavigationEarlyHintsManager::TakePreloadedResources() {
++  return std::move(preloaded_infos_);
+ }
+ 
+ bool NavigationEarlyHintsManager::HasInflightPreloads() const {
+@@ -562,7 +563,7 @@ void NavigationEarlyHintsManager::MaybePreloadHintedResource(
+   inflight_preloads_[request.url] = std::make_unique<InflightPreload>(
+       std::move(loader), std::move(loader_client));
+ 
+-  preloaded_urls_.push_back(request.url);
++  preloaded_infos_.push_back(link->Clone());
+ }
+ 
+ bool NavigationEarlyHintsManager::ShouldHandleResourceHints(
+diff --git a/chromium/content/browser/loader/navigation_early_hints_manager.h b/chromium/content/browser/loader/navigation_early_hints_manager.h
+index 4069f0362999..391568686259 100644
+--- a/chromium/content/browser/loader/navigation_early_hints_manager.h
++++ b/chromium/content/browser/loader/navigation_early_hints_manager.h
+@@ -21,6 +21,7 @@
+ #include "net/url_request/referrer_policy.h"
+ #include "services/network/public/cpp/url_loader_completion_status.h"
+ #include "services/network/public/mojom/early_hints.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom.h"
+ #include "url/gurl.h"
+ 
+@@ -114,7 +115,7 @@ class CONTENT_EXPORT NavigationEarlyHintsManager {
+   // Early Hints responses for main frame navigation.
+   bool WasResourceHintsReceived() const;
+ 
+-  std::vector<GURL> TakePreloadedResourceURLs();
++  std::vector<network::mojom::LinkHeaderPtr> TakePreloadedResources();
+ 
+   // True when there are at least one inflight preloads.
+   bool HasInflightPreloads() const;
+@@ -189,7 +190,7 @@ class CONTENT_EXPORT NavigationEarlyHintsManager {
+ 
+   PreloadedResources preloaded_resources_;
+ 
+-  std::vector<GURL> preloaded_urls_;
++  std::vector<network::mojom::LinkHeaderPtr> preloaded_infos_;
+ 
+   // Set to true when HandleEarlyHints() is called for the first time. Used to
+   // ignore following responses.
+diff --git a/chromium/content/browser/renderer_host/navigation_controller_impl.cc b/chromium/content/browser/renderer_host/navigation_controller_impl.cc
+index 5dd9644aa3a8..34306bb3a95a 100644
+--- a/chromium/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/chromium/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -109,6 +109,7 @@
+ #include "services/metrics/public/cpp/ukm_recorder.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom-shared.h"
+ #include "skia/ext/platform_canvas.h"
+ #include "third_party/blink/public/common/blob/blob_utils.h"
+@@ -4283,7 +4284,7 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
+           /*old_page_info=*/nullptr,
+           /*http_response_code=*/-1,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+diff --git a/chromium/content/browser/renderer_host/navigation_entry_impl.cc b/chromium/content/browser/renderer_host/navigation_entry_impl.cc
+index 58813af218ab..3aca6ecd04d9 100644
+--- a/chromium/content/browser/renderer_host/navigation_entry_impl.cc
++++ b/chromium/content/browser/renderer_host/navigation_entry_impl.cc
+@@ -36,6 +36,7 @@
+ #include "net/storage_access_api/status.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "third_party/blink/public/common/navigation/navigation_params.h"
+ #include "third_party/blink/public/common/page_state/page_state_serialization.h"
+ #include "third_party/blink/public/mojom/frame/frame.mojom.h"
+@@ -1022,7 +1023,7 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
+           false /* should_have_sticky_user_activation */,
+           nullptr /* old_page_info */, -1 /* http_response_code */,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          std::vector<GURL>() /* early_hints_preloaded_resources */,
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           base::TimeTicks() /* commit_sent */, std::string() /* srcdoc_value */,
+           false /* should_load_data_url */, ancestor_or_self_has_cspee,
+diff --git a/chromium/content/browser/renderer_host/navigation_request.cc b/chromium/content/browser/renderer_host/navigation_request.cc
+index 951cf62d39ab..2ea442706d6b 100644
+--- a/chromium/content/browser/renderer_host/navigation_request.cc
++++ b/chromium/content/browser/renderer_host/navigation_request.cc
+@@ -180,6 +180,7 @@
+ #include "services/network/public/mojom/connection_change_observer_client.mojom.h"
+ #include "services/network/public/mojom/device_bound_sessions.mojom.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-shared.h"
+ #include "services/network/public/mojom/supports_loading_mode.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom-forward.h"
+@@ -1479,7 +1480,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+           /*should_have_sticky_user_activation=*/false,
+           /*old_page_info=*/nullptr, /*http_response_code=*/-1,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+@@ -1642,7 +1643,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+           /*should_have_sticky_user_activation=*/false,
+           /*old_page_info=*/nullptr, http_response_code,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+@@ -6814,7 +6815,7 @@ void NavigationRequest::CommitNavigation() {
+ 
+   if (early_hints_manager_) {
+     commit_params_->early_hints_preloaded_resources =
+-        early_hints_manager_->TakePreloadedResourceURLs();
++        early_hints_manager_->TakePreloadedResources();
+   }
+ 
+   if (response_head_) {
+diff --git a/chromium/content/renderer/render_frame_impl.cc b/chromium/content/renderer/render_frame_impl.cc
+index 25832df01fb1..83c6e14f1741 100644
+--- a/chromium/content/renderer/render_frame_impl.cc
++++ b/chromium/content/renderer/render_frame_impl.cc
+@@ -566,8 +566,16 @@ void FillNavigationParamsRequest(
+   navigation_params->force_enabled_origin_trials = base::ToVector(
+       commit_params.force_enabled_origin_trials, &WebString::FromASCII);
+ 
+-  navigation_params->early_hints_preloaded_resources = base::ToVector(
+-      commit_params.early_hints_preloaded_resources, blink::ToWebURL);
++  navigation_params->early_hints_preloaded_resources.reserve(
++      commit_params.early_hints_preloaded_resources.size());
++  for (const auto& link : commit_params.early_hints_preloaded_resources) {
++    blink::WebEarlyHintsPreloadInfo web_info;
++    web_info.url = blink::ToWebURL(link->href);
++    web_info.as = link->as;
++    web_info.cross_origin = link->cross_origin;
++    navigation_params->early_hints_preloaded_resources.push_back(
++        std::move(web_info));
++  }
+ 
+   // Pass on the `initiator_base_url` sent via the common_params for srcdoc and
+   // about:blank documents. This will be picked up in DocumentLoader.
+diff --git a/chromium/third_party/blink/public/mojom/navigation/navigation_params.mojom b/chromium/third_party/blink/public/mojom/navigation/navigation_params.mojom
+index f40c84646e05..6578b589cd54 100644
+--- a/chromium/third_party/blink/public/mojom/navigation/navigation_params.mojom
++++ b/chromium/third_party/blink/public/mojom/navigation/navigation_params.mojom
+@@ -10,6 +10,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
+ import "mojo/public/mojom/base/values.mojom";
+ import "services/network/public/mojom/content_security_policy.mojom";
+ import "services/network/public/mojom/fetch_api.mojom";
++import "services/network/public/mojom/link_header.mojom";
+ import "services/network/public/mojom/source_location.mojom";
+ import "services/network/public/mojom/storage_access_api.mojom";
+ import "services/network/public/mojom/trust_tokens.mojom";
+@@ -547,7 +548,9 @@ struct CommitNavigationParams {
+   // window.navigation API.
+   NavigationApiHistoryEntryArrays navigation_api_history_entry_arrays;
+ 
+-  array<url.mojom.Url> early_hints_preloaded_resources;
++  // Resources preloaded by Early Hints responses, represented as LinkHeader
++  // structs containing the parsed href, as, and crossorigin attributes.
++  array<network.mojom.LinkHeader> early_hints_preloaded_resources;
+ 
+   // The time the commit was sent from the browser.
+   mojo_base.mojom.TimeTicks commit_sent;
+diff --git a/chromium/third_party/blink/public/web/web_navigation_params.h b/chromium/third_party/blink/public/web/web_navigation_params.h
+index 291d175f2812..2ec381ba6c6a 100644
+--- a/chromium/third_party/blink/public/web/web_navigation_params.h
++++ b/chromium/third_party/blink/public/web/web_navigation_params.h
+@@ -65,6 +65,15 @@ class TickClock;
+ 
+ namespace blink {
+ 
++// Information about a resource preloaded by an Early Hints response.
++struct BLINK_EXPORT WebEarlyHintsPreloadInfo {
++  WebURL url;
++  network::mojom::LinkAsAttribute as =
++      network::mojom::LinkAsAttribute::kUnspecified;
++  network::mojom::CrossOriginAttribute cross_origin =
++      network::mojom::CrossOriginAttribute::kUnspecified;
++};
++
+ class WebDocumentLoader;
+ class WebServiceWorkerNetworkProvider;
+ 
+@@ -495,11 +504,10 @@ struct BLINK_EXPORT WebNavigationParams {
+   std::vector<WebHistoryItem> navigation_api_forward_entries;
+   WebHistoryItem navigation_api_previous_entry;
+ 
+-  // List of URLs which are preloaded by HTTP Early Hints.
+-  // TODO(https://crbug.com/1317936): Pass information more than URL such as
+-  // request destination so that ResourceFetcher can provide more useful
+-  // console messages when Early Hints preloaded resources are not used.
+-  std::vector<WebURL> early_hints_preloaded_resources;
++  // List of resources preloaded by HTTP Early Hints, including URL and
++  // request attributes (destination from "as", credentials mode from
++  // "crossorigin").
++  std::vector<WebEarlyHintsPreloadInfo> early_hints_preloaded_resources;
+ 
+   // If this is a navigation to fenced frame from an interest group auction,
+   // contains URNs mapped to the ad components returned by the winning bid.
+diff --git a/chromium/third_party/blink/renderer/core/loader/document_loader.cc b/chromium/third_party/blink/renderer/core/loader/document_loader.cc
+index cf8d354ff76d..3cc96f43ba62 100644
+--- a/chromium/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/chromium/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -670,8 +670,11 @@ DocumentLoader::DocumentLoader(
+   if (was_blocked_by_document_policy_)
+     ReplaceWithEmptyDocument();
+ 
+-  for (const auto& resource : params_->early_hints_preloaded_resources)
+-    early_hints_preloaded_resources_.insert(resource, EarlyHintsPreloadEntry());
++  for (const auto& resource : params_->early_hints_preloaded_resources) {
++    early_hints_preloaded_resources_.insert(
++        KURL(resource.url),
++        EarlyHintsPreloadEntry(resource.as, resource.cross_origin));
++  }
+ 
+   CHECK_EQ(IsBackForwardOrRestore(params_->frame_load_type), !!history_item_);
+ 
+@@ -763,8 +766,13 @@ DocumentLoader::CreateWebNavigationParamsToCloneDocument() {
+       CopyInitiatorOriginTrials(initiator_origin_trial_features_);
+   params->force_enabled_origin_trials =
+       CopyForceEnabledOriginTrials(force_enabled_origin_trials_);
+-  for (const auto& pair : early_hints_preloaded_resources_)
+-    params->early_hints_preloaded_resources.push_back(pair.key);
++  for (const auto& pair : early_hints_preloaded_resources_) {
++    WebEarlyHintsPreloadInfo info;
++    info.url = pair.key;
++    info.as = pair.value.as;
++    info.cross_origin = pair.value.cross_origin;
++    params->early_hints_preloaded_resources.push_back(std::move(info));
++  }
+   if (ad_auction_components_) {
+     params->ad_auction_components.emplace();
+     for (const KURL& url : *ad_auction_components_) {
+diff --git a/chromium/third_party/blink/renderer/core/loader/preload_helper.cc b/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
+index afc6aa4d7e51..3edd3a3fcfb2 100644
+--- a/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
++++ b/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
+@@ -390,34 +390,6 @@ std::optional<ResourceType> PreloadHelper::GetResourceTypeFromAsAttribute(
+   return std::nullopt;
+ }
+ 
+-// https://html.spec.whatwg.org/C/#preload-destination
+-String PreloadHelper::GetAsAttributeFromResourceType(ResourceType type) {
+-  switch (type) {
+-    case ResourceType::kImage:
+-      return "image";
+-    case ResourceType::kScript:
+-      return "script";
+-    case ResourceType::kCSSStyleSheet:
+-      return "style";
+-    case ResourceType::kTextTrack:
+-      return "track";
+-    case ResourceType::kFont:
+-      return "font";
+-    case ResourceType::kRaw:
+-      return "fetch";
+-    case ResourceType::kAudio:
+-    case ResourceType::kVideo:
+-    case ResourceType::kManifest:
+-    case ResourceType::kSpeculationRules:
+-    case ResourceType::kDictionary:
+-    case ResourceType::kSVGDocument:
+-    case ResourceType::kXSLStyleSheet:
+-    case ResourceType::kLinkPrefetch:
+-    case ResourceType::kMock:
+-      NOTREACHED();
+-  }
+-}
+-
+ // |base_url| is used in Link HTTP Header based preloads to resolve relative
+ // URLs in srcset, which should be based on the resource's URL, not the
+ // document's base URL. If |base_url| is a null URL, relative URLs are resolved
+diff --git a/chromium/third_party/blink/renderer/core/loader/preload_helper.h b/chromium/third_party/blink/renderer/core/loader/preload_helper.h
+index 8439c590a0f0..dcee210993c0 100644
+--- a/chromium/third_party/blink/renderer/core/loader/preload_helper.h
++++ b/chromium/third_party/blink/renderer/core/loader/preload_helper.h
+@@ -104,11 +104,6 @@ class PreloadHelper final {
+   static std::optional<ResourceType> GetResourceTypeFromAsAttribute(
+       const String& as);
+ 
+-  // Returns the "as" attribute value string for a given ResourceType.
+-  // Only supports types returned by GetResourceTypeFromAsAttribute();
+-  // crashes with NOTREACHED() for unsupported types.
+-  // https://html.spec.whatwg.org/C/#preload-destination
+-  static String GetAsAttributeFromResourceType(ResourceType type);
+ };
+ 
+ }  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/timing/preload_data.cc b/chromium/third_party/blink/renderer/core/timing/preload_data.cc
+index 548300f37534..e89f75c442ff 100644
+--- a/chromium/third_party/blink/renderer/core/timing/preload_data.cc
++++ b/chromium/third_party/blink/renderer/core/timing/preload_data.cc
+@@ -4,25 +4,19 @@
+ 
+ #include "third_party/blink/renderer/core/timing/preload_data.h"
+ 
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+-#include "third_party/blink/renderer/core/loader/preload_helper.h"
+ #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
++#include "third_party/blink/renderer/core/timing/window_performance.h"
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
+ 
+ namespace blink {
+ 
+ PreloadData::PreloadData(const KURL& url,
+-                         ResourceType resource_type,
++                         const String& as,
+                          CrossOriginAttributeValue crossorigin,
+                          std::optional<base::TimeTicks> used_time)
+-    : url_(url),
+-      resource_type_(resource_type),
+-      crossorigin_(crossorigin),
+-      used_time_(used_time) {}
+-
+-String PreloadData::as() const {
+-  return PreloadHelper::GetAsAttributeFromResourceType(resource_type_);
+-}
++    : url_(url), as_(as), crossorigin_(crossorigin), used_time_(used_time) {}
+ 
+ V8CrossOriginMode PreloadData::crossorigin() const {
+   switch (crossorigin_) {
+diff --git a/chromium/third_party/blink/renderer/core/timing/preload_data.h b/chromium/third_party/blink/renderer/core/timing/preload_data.h
+index 70f957164496..341b6a42db59 100644
+--- a/chromium/third_party/blink/renderer/core/timing/preload_data.h
++++ b/chromium/third_party/blink/renderer/core/timing/preload_data.h
+@@ -12,8 +12,8 @@
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
+-#include "third_party/blink/renderer/platform/loader/fetch/resource.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+ 
+ namespace blink {
+ 
+@@ -25,21 +25,23 @@ class PreloadData final : public ScriptWrappable {
+ 
+  public:
+   PreloadData(const KURL& url,
+-              ResourceType resource_type,
++              const String& as,
+               CrossOriginAttributeValue crossorigin,
+               std::optional<base::TimeTicks> used_time);
+ 
+   String url() const { return url_.GetString(); }
+-  String as() const;
++  const String& as() const { return as_; }
+   V8CrossOriginMode crossorigin() const;
+-  std::optional<double> used(ScriptState*) const;
++  std::optional<double> used(ScriptState* script_state) const;
+ 
+   void Trace(Visitor*) const override;
+ 
+  private:
+   const KURL url_;
+-  const ResourceType resource_type_;
++  const String as_;
+   const CrossOriginAttributeValue crossorigin_;
++  // Monotonic time when the preload was used, or nullopt if unused.
++  // Converted to a coarsened DOMHighResTimeStamp on access.
+   const std::optional<base::TimeTicks> used_time_;
+ };
+ 
+diff --git a/chromium/third_party/blink/renderer/core/timing/window_performance.cc b/chromium/third_party/blink/renderer/core/timing/window_performance.cc
+index a0b07e83d4a2..d25900db2371 100644
+--- a/chromium/third_party/blink/renderer/core/timing/window_performance.cc
++++ b/chromium/third_party/blink/renderer/core/timing/window_performance.cc
+@@ -95,11 +95,14 @@
+ #include "third_party/blink/renderer/core/timing/soft_navigation_entry.h"
+ #include "third_party/blink/renderer/core/timing/speculation_data.h"
+ #include "third_party/blink/renderer/core/timing/visibility_state_entry.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_deque.h"
+ #include "third_party/blink/renderer/platform/heap/forward.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
++#include "third_party/blink/renderer/platform/loader/fetch/resource.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/thread_scheduler.h"
+@@ -1512,9 +1515,7 @@ SpeculationData* WindowPerformance::getSpeculations() {
+       window->document()->Fetcher()->GetPreloadRecords();
+   for (const auto& [url, info] : preload_records) {
+     preloads.push_back(MakeGarbageCollected<PreloadData>(
+-        url, info.resource_type,
+-        info.crossorigin.value_or(kCrossOriginAttributeNotSet),
+-        info.used_time));
++        url, info.as, info.crossorigin, info.used_time));
+   }
+ 
+   return MakeGarbageCollected<SpeculationData>(std::move(preloads));
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h b/chromium/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
+index 35300c7342e0..b0317802a816 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
+@@ -5,13 +5,13 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_LOADER_FETCH_EARLY_HINTS_PRELOAD_ENTRY_H_
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_LOADER_FETCH_EARLY_HINTS_PRELOAD_ENTRY_H_
+ 
++#include "services/network/public/mojom/link_header.mojom-blink-forward.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ 
+ namespace blink {
+ 
+-// Represents a resource preloaded by an Early Hints ressponse.
+-// TODO(https://crbug.com/1317936): Add more fields such as request destination.
++// Represents a resource preloaded by an Early Hints response.
+ struct PLATFORM_EXPORT EarlyHintsPreloadEntry {
+   enum class State {
+     // The resource is not used by the document yet.
+@@ -24,8 +24,17 @@ struct PLATFORM_EXPORT EarlyHintsPreloadEntry {
+   DISALLOW_NEW();
+ 
+   EarlyHintsPreloadEntry() = default;
++  EarlyHintsPreloadEntry(network::mojom::LinkAsAttribute as,
++                         network::mojom::CrossOriginAttribute cross_origin)
++      : as(as), cross_origin(cross_origin) {}
+ 
+   State state = State::kUnused;
++  // The "as" attribute value.
++  network::mojom::LinkAsAttribute as =
++      network::mojom::LinkAsAttribute::kUnspecified;
++  // The "crossorigin" attribute value.
++  network::mojom::CrossOriginAttribute cross_origin =
++      network::mojom::CrossOriginAttribute::kUnspecified;
+ };
+ 
+ }  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+index c9ca1f02f05e..8199865594a8 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+@@ -136,8 +136,7 @@ class PLATFORM_EXPORT FetchParameters {
+     options_.initiator_info.is_link_preload = is_link_preload;
+   }
+ 
+-  std::optional<CrossOriginAttributeValue> GetCrossOriginAttributeValue()
+-      const {
++  CrossOriginAttributeValue GetCrossOriginAttributeValue() const {
+     return cross_origin_attribute_value_;
+   }
+ 
+@@ -243,9 +242,8 @@ class PLATFORM_EXPORT FetchParameters {
+   ImageRequestBehavior image_request_behavior_ = ImageRequestBehavior::kNone;
+   mojom::blink::ScriptType script_type_ = mojom::blink::ScriptType::kClassic;
+   bool is_stale_revalidation_ = false;
+-  // Stored for the SpeculationMeasurement API, which reports the crossorigin
+-  // attribute value of <link rel=preload> elements.
+-  std::optional<CrossOriginAttributeValue> cross_origin_attribute_value_;
++  CrossOriginAttributeValue cross_origin_attribute_value_ =
++      kCrossOriginAttributeNotSet;
+   bool is_from_origin_dirty_style_sheet_ = false;
+   RenderBlockingBehavior render_blocking_behavior_ =
+       RenderBlockingBehavior::kUnset;
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource.cc b/chromium/third_party/blink/renderer/platform/loader/fetch/resource.cc
+index 5dd0bf6e292d..e76f34989828 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource.cc
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource.cc
+@@ -71,6 +71,33 @@
+ 
+ namespace blink {
+ 
++String GetAsAttributeFromResourceType(ResourceType type) {
++  switch (type) {
++    case ResourceType::kImage:
++      return "image";
++    case ResourceType::kScript:
++      return "script";
++    case ResourceType::kCSSStyleSheet:
++      return "style";
++    case ResourceType::kTextTrack:
++      return "track";
++    case ResourceType::kFont:
++      return "font";
++    case ResourceType::kRaw:
++    case ResourceType::kMock:
++      return "fetch";
++    case ResourceType::kAudio:
++    case ResourceType::kVideo:
++    case ResourceType::kManifest:
++    case ResourceType::kSpeculationRules:
++    case ResourceType::kDictionary:
++    case ResourceType::kSVGDocument:
++    case ResourceType::kXSLStyleSheet:
++    case ResourceType::kLinkPrefetch:
++      NOTREACHED();
++  }
++}
++
+ namespace {
+ 
+ void NotifyFinishObservers(
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource.h b/chromium/third_party/blink/renderer/platform/loader/fetch/resource.h
+index aff5dc8a11a2..6e42bcb51d56 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource.h
+@@ -102,6 +102,10 @@ enum class ResourceType : uint8_t {
+   kMaxValue = kDictionary
+ };
+ 
++// Returns the "as" attribute value string for a given ResourceType.
++// https://html.spec.whatwg.org/C/#preload-destination
++PLATFORM_EXPORT String GetAsAttributeFromResourceType(ResourceType);
++
+ // A resource that is held in the cache. Classes who want to use this object
+ // should derive from ResourceClient, to get the function calls in case the
+ // requested data has arrived. This class also does the actual communication
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+index e7db861b1a45..8fb11eeb24a6 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+@@ -47,6 +47,7 @@
+ #include "base/unguessable_token.h"
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/cpp/request_mode.h"
++#include "services/network/public/mojom/link_header.mojom-blink.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom-blink.h"
+ #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -115,6 +116,34 @@ constexpr uint32_t ResourceFetcher::kKeepaliveInflightBytesQuota;
+ 
+ namespace {
+ 
++String LinkAsAttributeToString(network::mojom::LinkAsAttribute as) {
++  switch (as) {
++    case network::mojom::LinkAsAttribute::kImage:
++      return "image";
++    case network::mojom::LinkAsAttribute::kScript:
++      return "script";
++    case network::mojom::LinkAsAttribute::kStyleSheet:
++      return "style";
++    case network::mojom::LinkAsAttribute::kFont:
++      return "font";
++    case network::mojom::LinkAsAttribute::kFetch:
++    case network::mojom::LinkAsAttribute::kUnspecified:
++      return "fetch";
++  }
++}
++
++CrossOriginAttributeValue CrossOriginAttributeToBlink(
++    network::mojom::CrossOriginAttribute attr) {
++  switch (attr) {
++    case network::mojom::CrossOriginAttribute::kAnonymous:
++      return kCrossOriginAttributeAnonymous;
++    case network::mojom::CrossOriginAttribute::kUseCredentials:
++      return kCrossOriginAttributeUseCredentials;
++    case network::mojom::CrossOriginAttribute::kUnspecified:
++      return kCrossOriginAttributeNotSet;
++  }
++}
++
+ constexpr base::TimeDelta kKeepaliveLoadersTimeout = base::Seconds(30);
+ 
+ // Timeout for link preloads to be used after window.onload
+@@ -1908,7 +1937,7 @@ void ResourceFetcher::InsertAsPreloadIfNecessary(Resource* resource,
+     const KURL& url = resource->Url();
+     if (!preload_records_.Contains(url)) {
+       PreloadInfo info;
+-      info.resource_type = resource->GetType();
++      info.as = GetAsAttributeFromResourceType(resource->GetType());
+       info.crossorigin = params.GetCrossOriginAttributeValue();
+       preload_records_.insert(url, std::move(info));
+     }
+@@ -2310,6 +2339,22 @@ void ResourceFetcher::ClearPreloads(ClearPreloadsPolicy policy) {
+   matched_preloads_.clear();
+ }
+ 
++void ResourceFetcher::SetEarlyHintsPreloadedResources(
++    HashMap<KURL, EarlyHintsPreloadEntry> resources) {
++  // Also record early hints preloads for the SpeculationMeasurement API.
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++    for (const auto& [url, entry] : resources) {
++      if (!preload_records_.Contains(url)) {
++        PreloadInfo info;
++        info.as = LinkAsAttributeToString(entry.as);
++        info.crossorigin = CrossOriginAttributeToBlink(entry.cross_origin);
++        preload_records_.insert(url, std::move(info));
++      }
++    }
++  }
++  unused_early_hints_preloaded_resources_ = std::move(resources);
++}
++
+ void ResourceFetcher::ScheduleWarnUnusedPreloads(
+     base::OnceCallback<void(Vector<KURL> unused_preloads)> callback) {
+   // If preloads_ is not empty here, it's full of link
+@@ -3212,6 +3257,13 @@ void ResourceFetcher::MarkEarlyHintConsumedIfNeeded(
+   auto iter = unused_early_hints_preloaded_resources_.find(initial_url);
+   if (iter != unused_early_hints_preloaded_resources_.end()) {
+     unused_early_hints_preloaded_resources_.erase(iter);
++    // Mark as used in preload_records_ for the SpeculationMeasurement API.
++    if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++      auto record_it = preload_records_.find(initial_url);
++      if (record_it != preload_records_.end()) {
++        record_it->value.used_time = base::TimeTicks::Now();
++      }
++    }
+     // The network service may not reuse the response fetched by the early hints
+     // due to cache control policies.
+     if (!response.NetworkAccessed() &&
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+index 48aecb1e050a..dea9568682b1 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+@@ -261,8 +261,8 @@ class PLATFORM_EXPORT ResourceFetcher
+ 
+   // Information about a <link rel=preload> for the SpeculationMeasurement API.
+   struct PreloadInfo {
+-    ResourceType resource_type;
+-    std::optional<CrossOriginAttributeValue> crossorigin;
++    String as;
++    CrossOriginAttributeValue crossorigin = kCrossOriginAttributeNotSet;
+     // Timestamp when the preload was matched/used, or nullopt if unused.
+     std::optional<base::TimeTicks> used_time;
+   };
+@@ -380,9 +380,7 @@ class PLATFORM_EXPORT ResourceFetcher
+   }
+ 
+   void SetEarlyHintsPreloadedResources(
+-      HashMap<KURL, EarlyHintsPreloadEntry> resources) {
+-    unused_early_hints_preloaded_resources_ = std::move(resources);
+-  }
++      HashMap<KURL, EarlyHintsPreloadEntry> resources);
+ 
+   // Access the UKMRecorder.
+   ukm::MojoUkmRecorder* UkmRecorder();

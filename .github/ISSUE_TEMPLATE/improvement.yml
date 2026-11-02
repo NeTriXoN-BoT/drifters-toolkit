@@ -1,0 +1,30 @@
+name: Suggest an improvement
+description: Make a toolkit workflow clearer or more useful.
+title: "[Idea] "
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: What are you trying to do?
+      description: Describe the actual modding or toolkit task.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What gets in the way today?
+      description: Include the current workflow and toolkit version where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What would a useful result look like?
+      description: Explain the behavior you want. A small example or sketch is welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or extra context
+      description: Optional. Mention any workaround you already tried.

@@ -1,0 +1,106 @@
+From d3675b5458def082d558c61201157dd972dc01c9 Mon Sep 17 00:00:00 2001
+From: alexis cruz-ayala <alexisdavidc@google.com>
+Date: Mon, 19 Oct 2026 18:31:46 -0400
+Subject: [PATCH] [Backport] CVE-2026-118340: Memory corruption in Skia
+
+Cherry-pick of patch originally reviewed on
+https://skia-review.googlesource.com/c/skia/+/1398516:
+Update SkImageFilter_Base uniqueID to 64-bit
+
+SkImageFilter_Base previously assigned each filter a 32-bit uniqueID
+from an atomic counter that could wrap after 2^32 constructions and
+cause cache collisions in SkImageFilterCache.
+
+Update SkImageFilter_Base::fUniqueID and SkImageFilterCacheKey::fUniqueID to uint64_t, with an explicit zero-initialized padding field in SkImageFilterCacheKey to maintain tight packing for hashing.
+
+Bug: b/568936530
+Change-Id: If1b172c41e582bccb3c2323e54bbce43e0fd2671
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1398516
+Reviewed-by: Julia Lavrova <jlavrova@google.com>
+Commit-Queue: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Auto-Submit: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784477
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ chromium/third_party/skia/src/core/SkImageFilter.cpp   |  6 +++---
+ .../third_party/skia/src/core/SkImageFilterCache.h     | 10 ++++++----
+ .../third_party/skia/src/core/SkImageFilter_Base.h     |  4 ++--
+ 3 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/chromium/third_party/skia/src/core/SkImageFilter.cpp b/chromium/third_party/skia/src/core/SkImageFilter.cpp
+index b110a7e665ea..3536a6d4db99 100644
+--- a/chromium/third_party/skia/src/core/SkImageFilter.cpp
++++ b/chromium/third_party/skia/src/core/SkImageFilter.cpp
+@@ -135,10 +135,10 @@ sk_sp<SkImageFilter> SkImageFilter::makeWithLocalMatrix(const SkMatrix& matrix)
+ // SkImageFilter_Base
+ ///////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+-static int32_t next_image_filter_unique_id() {
+-    static std::atomic<int32_t> nextID{1};
++static uint64_t next_image_filter_unique_id() {
++    static std::atomic<uint64_t> nextID{1};
+ 
+-    int32_t id;
++    uint64_t id;
+     do {
+         id = nextID.fetch_add(1, std::memory_order_relaxed);
+     } while (id == 0);
+diff --git a/chromium/third_party/skia/src/core/SkImageFilterCache.h b/chromium/third_party/skia/src/core/SkImageFilterCache.h
+index a3897f8e759e..bf85386c41f9 100644
+--- a/chromium/third_party/skia/src/core/SkImageFilterCache.h
++++ b/chromium/third_party/skia/src/core/SkImageFilterCache.h
+@@ -21,7 +21,7 @@ class SkImageFilter;
+ namespace skif { class FilterResult; }
+ 
+ struct SkImageFilterCacheKey {
+-    SkImageFilterCacheKey(const uint32_t uniqueID, const SkMatrix& matrix,
++    SkImageFilterCacheKey(const uint64_t uniqueID, const SkMatrix& matrix,
+         const SkIRect& clipBounds, uint32_t srcGenID, const SkIRect& srcSubset)
+         : fUniqueID(uniqueID)
+         , fMatrix(matrix)
+@@ -29,18 +29,20 @@ struct SkImageFilterCacheKey {
+         , fSrcGenID(srcGenID)
+         , fSrcSubset(srcSubset) {
+         // Assert that Key is tightly-packed, since it is hashed.
+-        static_assert(sizeof(SkImageFilterCacheKey) == sizeof(uint32_t) + sizeof(SkMatrix) +
+-                                     sizeof(SkIRect) + sizeof(uint32_t) + 4 * sizeof(int32_t),
++        static_assert(sizeof(SkImageFilterCacheKey) == sizeof(uint64_t) + sizeof(SkMatrix) +
++                                     sizeof(SkIRect) + sizeof(uint32_t) + 4 * sizeof(int32_t) +
++                                     sizeof(uint32_t),
+                                      "image_filter_key_tight_packing");
+         fMatrix.getType();  // force initialization of type, so hashes match
+         SkASSERT(fMatrix.isFinite());   // otherwise we can't rely on == self when comparing keys
+     }
+ 
+-    uint32_t fUniqueID;
++    uint64_t fUniqueID;
+     SkMatrix fMatrix;
+     SkIRect fClipBounds;
+     uint32_t fSrcGenID;
+     SkIRect fSrcSubset;
++    uint32_t fPad = 0;
+ 
+     bool operator==(const SkImageFilterCacheKey& other) const {
+         return fUniqueID == other.fUniqueID &&
+diff --git a/chromium/third_party/skia/src/core/SkImageFilter_Base.h b/chromium/third_party/skia/src/core/SkImageFilter_Base.h
+index 64becbbb8be4..5fe7409a17d5 100644
+--- a/chromium/third_party/skia/src/core/SkImageFilter_Base.h
++++ b/chromium/third_party/skia/src/core/SkImageFilter_Base.h
+@@ -127,7 +127,7 @@ class SkImageFilter_Base : public SkImageFilter {
+     using MatrixCapability = skif::MatrixCapability;
+     MatrixCapability getCTMCapability() const;
+ 
+-    uint32_t uniqueID() const { return fUniqueID; }
++    uint64_t uniqueID() const { return fUniqueID; }
+ 
+     static SkFlattenable::Type GetFlattenableType() {
+         return kSkImageFilter_Type;
+@@ -302,7 +302,7 @@ class SkImageFilter_Base : public SkImageFilter {
+     skia_private::AutoSTArray<2, sk_sp<SkImageFilter>> fInputs;
+ 
+     bool fUsesSrcInput;
+-    uint32_t fUniqueID; // Globally unique
++    uint64_t fUniqueID; // Globally unique
+ 
+     using INHERITED = SkImageFilter;
+ };

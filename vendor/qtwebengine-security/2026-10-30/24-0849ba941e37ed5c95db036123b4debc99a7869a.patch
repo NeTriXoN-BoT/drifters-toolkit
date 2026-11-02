@@ -1,0 +1,326 @@
+From 0849ba941e37ed5c95db036123b4debc99a7869a Mon Sep 17 00:00:00 2001
+From: Aeryn Moss <aerynm@google.com>
+Date: Fri, 25 Sep 2026 10:46:21 -0700
+Subject: [PATCH] [Backport] CVE-2026-113317: Memory corruption in
+ Accessibility
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8433909:
+Validate renderer-provided AXNodeIDs at browser entry points
+
+Previously, crrev.com/c/7727677 added AXNodeID validation in shared
+StructTraits<AXNodeData>::Read and StructTraits<AXTreeUpdate>::Read.
+However, because AXTreeUpdate and AXNodeData are used bidirectionally
+(such as Browser -> ChromeOS Extension Renderer in automation and
+reading mode), those StructTraits checks caused valid browser-generated
+negative internal node IDs to be rejected when sent to ChromeOS
+extensions, and were reverted in crrev.com/c/8250159 and
+crrev.com/c/8288690.
+
+This CL reintroduces browser-side validation of renderer-provided
+AXNodeIDs specifically at untrusted browser-side entry points, avoiding
+the bidirectional StructTraits deserialization path: 1.
+RenderAccessibilityHost::HandleAXEvents and HandleAXLocationChanges
+(covers all web renderers and PDF renderers via
+blink.mojom.RenderAccessibilityHost), with defense-in-depth checks also
+in RenderFrameHostImpl. 2. AXMediaAppUntrustedService::OnPageOcred
+(ScreenAI OCR utility output). ReadAnythingUntrustedPageHandler was
+already validated in crrev.com/c/7795304.
+
+To support this cleanly, validation helper functions are added to
+ui/accessibility:
+- IsValidAXNodeDataFromRenderer
+- IsValidAXTreeUpdateFromRenderer
+- IsValidAXLocationAndScrollUpdatesFromRenderer
+- IsValidAXUpdatesAndEventsFromRenderer
+
+Unit and browser tests are added to verify that invalid IDs trigger a
+Mojo bad message or are rejected.
+
+Bug: 498205735, 555337558
+Change-Id: Icb84364ebf251293a8519d8988e73b929c3f35ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8433909
+Commit-Queue: Aeryn Moss <aerynm@google.com>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1704923}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783837
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../media_app/ax_media_app_untrusted_service.cc |  8 +++++++-
+ .../accessibility/render_accessibility_host.cc  | 12 ++++++++++++
+ .../renderer_host/render_frame_host_impl.cc     | 17 +++++++++++++++++
+ .../ax_location_and_scroll_updates.cc           | 15 +++++++++++++++
+ .../ax_location_and_scroll_updates.h            |  3 +++
+ chromium/ui/accessibility/ax_node_data.cc       | 12 ++++++++++++
+ chromium/ui/accessibility/ax_node_data.h        |  3 +++
+ chromium/ui/accessibility/ax_tree_update.cc     | 16 ++++++++++++++++
+ chromium/ui/accessibility/ax_tree_update.h      |  3 +++
+ .../ui/accessibility/ax_updates_and_events.cc   | 15 +++++++++++++++
+ .../ui/accessibility/ax_updates_and_events.h    |  3 +++
+ 11 files changed, 106 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc b/chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
+index 75c75fcd8967..73f862b5267c 100644
+--- a/chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
++++ b/chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
+@@ -1302,7 +1302,13 @@ void AXMediaAppUntrustedService::OnPageOcred(
+           // TODO(b/319536234): Validate tree ID.
+           // !tree_update.has_tree_data ||
+           // ui::AXTreeIDUnknown() == tree_update.tree_data.tree_id ||
+-          ui::kInvalidAXNodeID == tree_update.root_id)) {
++          ui::kInvalidAXNodeID == tree_update.root_id) &&
++      mojo::IsInMessageDispatch()) {
++    mojo::ReportBadMessage("OnPageOcred() bad tree update from Screen AI.");
++    return;
++  }
++  if (!tree_update.HasValidAXNodeIDsFromRenderer() &&
++      mojo::IsInMessageDispatch()) {
+     mojo::ReportBadMessage("OnPageOcred() bad tree update from Screen AI.");
+     return;
+   }
+diff --git a/chromium/content/browser/accessibility/render_accessibility_host.cc b/chromium/content/browser/accessibility/render_accessibility_host.cc
+index 8b88ab151138..84305ec9ceaa 100644
+--- a/chromium/content/browser/accessibility/render_accessibility_host.cc
++++ b/chromium/content/browser/accessibility/render_accessibility_host.cc
+@@ -13,6 +13,8 @@
+ #include "content/browser/renderer_host/render_frame_host_impl.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "mojo/public/cpp/bindings/message.h"
++#include "ui/accessibility/ax_location_and_scroll_updates.h"
++#include "ui/accessibility/ax_updates_and_events.h"
+ 
+ namespace content {
+ namespace {
+@@ -70,6 +72,12 @@ void RenderAccessibilityHost::HandleAXEvents(
+     }
+     return;
+   }
++  if (!updates_and_events.HasValidAXNodeIDsFromRenderer() ||
++      !location_and_scroll_updates.HasValidAXNodeIDsFromRenderer()) {
++    mojo::ReportBadMessage("Invalid AXNodeID from renderer.");
++    std::move(callback).Run();
++    return;
++  }
+   // Post the HandleAXEvents task onto the UI thread, and then when that
+   // finishes, post back the response callback onto this runner (to satisfy
+   // the mojo contract).
+@@ -97,6 +105,10 @@ void RenderAccessibilityHost::HandleAXLocationChanges(
+           std::memory_order_relaxed)) {
+     return;
+   }
++  if (!changes.HasValidAXNodeIDsFromRenderer()) {
++    mojo::ReportBadMessage("Invalid AXNodeID from renderer.");
++    return;
++  }
+   GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+       base::BindOnce(&RenderFrameHostImpl::HandleAXLocationChanges,
+diff --git a/chromium/content/browser/renderer_host/render_frame_host_impl.cc b/chromium/content/browser/renderer_host/render_frame_host_impl.cc
+index b0ca64c83c69..be61fbc13f2a 100644
+--- a/chromium/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/chromium/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -11477,6 +11477,15 @@ void RenderFrameHostImpl::HandleAXEvents(
+     return;
+   }
+ 
++  if (!updates_and_events.HasValidAXNodeIDsFromRenderer() ||
++      !location_and_scroll_updates.HasValidAXNodeIDsFromRenderer()) {
++    if (report_bad_message_callback) {
++      std::move(report_bad_message_callback)
++          .Run("Invalid AXNodeID from renderer.");
++    }
++    return;
++  }
++
+   // Don't process this IPC if either we're waiting on a reset and this IPC
+   // doesn't have the matching token ID.
+   // The token prevents obsolete data from being processed.
+@@ -11599,6 +11608,14 @@ void RenderFrameHostImpl::HandleAXLocationChanges(
+     return;
+   }
+ 
++  if (!changes.HasValidAXNodeIDsFromRenderer()) {
++    if (report_bad_message_callback) {
++      std::move(report_bad_message_callback)
++          .Run("Invalid AXNodeID from renderer.");
++    }
++    return;
++  }
++
+   if (*accessibility_reset_token_ != reset_token &&
+       reset_token != kAccessibilityResetTokenForTesting) {
+     DVLOG(1) << "Ignoring obsolete accessibility data.";
+diff --git a/chromium/ui/accessibility/ax_location_and_scroll_updates.cc b/chromium/ui/accessibility/ax_location_and_scroll_updates.cc
+index 207ec0213b2a..9a23d4bee240 100644
+--- a/chromium/ui/accessibility/ax_location_and_scroll_updates.cc
++++ b/chromium/ui/accessibility/ax_location_and_scroll_updates.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "ui/accessibility/ax_location_and_scroll_updates.h"
+ 
++#include "ui/accessibility/ax_node_id_forward.h"
+ #include "ui/accessibility/ax_relative_bounds.h"
+ 
+ namespace ui {
+@@ -28,4 +29,18 @@ AXLocationAndScrollUpdates& AXLocationAndScrollUpdates::operator=(
+     AXLocationAndScrollUpdates&& other) = default;
+ AXLocationAndScrollUpdates::~AXLocationAndScrollUpdates() = default;
+ 
++bool AXLocationAndScrollUpdates::HasValidAXNodeIDsFromRenderer() const {
++  for (const AXLocationChange& change : location_changes) {
++    if (!IsValidAXNodeIDFromRenderer(change.id)) {
++      return false;
++    }
++  }
++  for (const AXScrollChange& change : scroll_changes) {
++    if (!IsValidAXNodeIDFromRenderer(change.id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/chromium/ui/accessibility/ax_location_and_scroll_updates.h b/chromium/ui/accessibility/ax_location_and_scroll_updates.h
+index 0603f8bac381..ddbe135f88ef 100644
+--- a/chromium/ui/accessibility/ax_location_and_scroll_updates.h
++++ b/chromium/ui/accessibility/ax_location_and_scroll_updates.h
+@@ -58,6 +58,9 @@ struct AX_BASE_EXPORT AXLocationAndScrollUpdates {
+ 
+   ~AXLocationAndScrollUpdates();
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   std::vector<AXLocationChange> location_changes;
+   std::vector<AXScrollChange> scroll_changes;
+ };
+diff --git a/chromium/ui/accessibility/ax_node_data.cc b/chromium/ui/accessibility/ax_node_data.cc
+index a58126b8c7eb..4ffcd4f67ed5 100644
+--- a/chromium/ui/accessibility/ax_node_data.cc
++++ b/chromium/ui/accessibility/ax_node_data.cc
+@@ -1072,6 +1072,18 @@ bool AXNodeData::SupportsExpandCollapse() const {
+   return ui::SupportsExpandCollapse(role);
+ }
+ 
++bool AXNodeData::HasValidAXNodeIDsFromRenderer() const {
++  if (!IsValidAXNodeIDFromRenderer(id)) {
++    return false;
++  }
++  for (AXNodeID child_id : child_ids) {
++    if (!IsValidAXNodeIDFromRenderer(child_id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ // TODO(accessibility) Consider reusing code from AXTreeFormatterBlink, where
+ // the |verbose| parameter alters the property filter. Would remove ~800 lines.
+ std::string AXNodeData::ToString(bool verbose) const {
+diff --git a/chromium/ui/accessibility/ax_node_data.h b/chromium/ui/accessibility/ax_node_data.h
+index 6f795bc80f7b..afe4d732dc20 100644
+--- a/chromium/ui/accessibility/ax_node_data.h
++++ b/chromium/ui/accessibility/ax_node_data.h
+@@ -503,6 +503,9 @@ struct AX_BASE_EXPORT AXNodeData final {
+   bool HasChildTreeID() const;
+   std::optional<AXTreeID> GetChildTreeID() const;
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // Return a string representation of this data, for debugging.
+   std::string ToString(bool verbose = true) const;
+ 
+diff --git a/chromium/ui/accessibility/ax_tree_update.cc b/chromium/ui/accessibility/ax_tree_update.cc
+index fc4063157713..892d3ac4e944 100644
+--- a/chromium/ui/accessibility/ax_tree_update.cc
++++ b/chromium/ui/accessibility/ax_tree_update.cc
+@@ -7,6 +7,7 @@
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "ui/accessibility/ax_enum_util.h"
++#include "ui/accessibility/ax_node_id_forward.h"
+ #include "ui/accessibility/ax_tree_checks.h"
+ #include "ui/accessibility/ax_tree_data.h"
+ 
+@@ -94,4 +95,19 @@ void AXTreeUpdate::AccumulateSize(
+   }
+ }
+ 
++bool AXTreeUpdate::HasValidAXNodeIDsFromRenderer() const {
++  if (!IsValidAXNodeIDFromRenderer(node_id_to_clear)) {
++    return false;
++  }
++  if (!IsValidAXNodeIDFromRenderer(root_id)) {
++    return false;
++  }
++  for (const AXNodeData& node : nodes) {
++    if (!node.HasValidAXNodeIDsFromRenderer()) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/chromium/ui/accessibility/ax_tree_update.h b/chromium/ui/accessibility/ax_tree_update.h
+index 9dad597e785f..7696badd875d 100644
+--- a/chromium/ui/accessibility/ax_tree_update.h
++++ b/chromium/ui/accessibility/ax_tree_update.h
+@@ -62,6 +62,9 @@ struct AX_BASE_EXPORT AXTreeUpdate {
+ 
+   void AccumulateSize(AXNodeData::AXNodeDataSize& node_data_size) const;
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // If |has_tree_data| is true, the value of |tree_data| should be used
+   // to update the tree data, otherwise it should be ignored.
+   bool has_tree_data = false;
+diff --git a/chromium/ui/accessibility/ax_updates_and_events.cc b/chromium/ui/accessibility/ax_updates_and_events.cc
+index 95c876b4d823..2cd64f21aa82 100644
+--- a/chromium/ui/accessibility/ax_updates_and_events.cc
++++ b/chromium/ui/accessibility/ax_updates_and_events.cc
+@@ -5,6 +5,7 @@
+ #include "ui/accessibility/ax_updates_and_events.h"
+ 
+ #include "ui/accessibility/ax_event.h"
++#include "ui/accessibility/ax_node_id_forward.h"
+ 
+ namespace ui {
+ 
+@@ -16,4 +17,18 @@ AXUpdatesAndEvents& AXUpdatesAndEvents::operator=(AXUpdatesAndEvents&& other) =
+ 
+ AXUpdatesAndEvents::~AXUpdatesAndEvents() = default;
+ 
++bool AXUpdatesAndEvents::HasValidAXNodeIDsFromRenderer() const {
++  for (const AXTreeUpdate& update : updates) {
++    if (!update.HasValidAXNodeIDsFromRenderer()) {
++      return false;
++    }
++  }
++  for (const AXEvent& event : events) {
++    if (!IsValidAXNodeIDFromRenderer(event.id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/chromium/ui/accessibility/ax_updates_and_events.h b/chromium/ui/accessibility/ax_updates_and_events.h
+index fe6c028874cb..4afdbe2beafe 100644
+--- a/chromium/ui/accessibility/ax_updates_and_events.h
++++ b/chromium/ui/accessibility/ax_updates_and_events.h
+@@ -29,6 +29,9 @@ struct AX_BASE_EXPORT AXUpdatesAndEvents {
+ 
+   ~AXUpdatesAndEvents();
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // The unique ID of the accessibility tree this event bundle applies to.
+   AXTreeID ax_tree_id;
+ 

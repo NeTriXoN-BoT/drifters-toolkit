@@ -1,0 +1,71 @@
+From 4d2234527e53d8d4f560d7aacc293f5109ae7bb2 Mon Sep 17 00:00:00 2001
+From: Sky Debreuil <skydebreuil@google.com>
+Date: Tue, 13 Oct 2026 18:10:24 -0700
+Subject: [Backport] CVE-2026-113271: Use after free in Accessibility
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8551193:
+Copy title attribute value in AXNodeObject
+
+Store the title attribute in a local AtomicString rather than a
+reference in AXNodeObject::Description(), and take it by value in
+AXNodeObject::TextAlternativeFromTitleAttribute(), matching how other
+attribute reads in Blink avoid holding references into element
+attribute storage across calls that may update it.
+
+Change-Id: Ie67fb6fd2bcddf55d5bfe506a4d33d8e5f1f5efd
+Bug: 571618833
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8551193
+Reviewed-by: Lucas Radaelli <lucasradaelli@google.com>
+Auto-Submit: Sky Debreuil <skydebreuil@google.com>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Sky Debreuil <skydebreuil@google.com>
+Cr-Commit-Position: refs/heads/main@{#1718179}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782967
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../blink/renderer/modules/accessibility/ax_node_object.cc           | 5 +++--
+ .../blink/renderer/modules/accessibility/ax_node_object.h            | 3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index 0e52e4b7d93..fc703b6c72e 100644
+--- a/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -6819,7 +6819,7 @@ String AXNodeObject::TextAlternativeFromTooltip(
+ }
+ 
+ String AXNodeObject::TextAlternativeFromTitleAttribute(
+-    const AtomicString& title,
++    AtomicString title,
+     ax::mojom::blink::NameFrom& name_from,
+     NameSources* name_sources,
+     bool* found_text_alternative) const {
+@@ -7719,7 +7719,8 @@ String AXNodeObject::Description(
+           DescriptionSource(found_description, kTitleAttr));
+       description_sources->back().type = description_from;
+     }
+-    const AtomicString& title = element->FastGetAttribute(kTitleAttr);
++    // Copy title as computing inner text can modify the attribute storage.
++    const AtomicString title = element->FastGetAttribute(kTitleAttr);
+     if (!title.empty() &&
+         String(title).StripWhiteSpace() !=
+             element->GetInnerTextWithoutUpdate().StripWhiteSpace()) {
+diff --git a/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h b/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h
+index f9a6ad64d89..d9cdb4dfdac 100644
+--- a/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h
++++ b/chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h
+@@ -388,8 +388,9 @@ class MODULES_EXPORT AXNodeObject : public AXObject {
+       String* text_alternative,
+       AXRelatedObjectVector* related_objects) const;
+ 
++  // Takes title by value as computing inner text can modify attribute storage.
+   String TextAlternativeFromTitleAttribute(
+-      const AtomicString& title,
++      AtomicString title,
+       ax::mojom::blink::NameFrom& name_from,
+       NameSources* name_sources,
+       bool* found_text_alternative) const;
+-- 
+cgit v1.2.3
+

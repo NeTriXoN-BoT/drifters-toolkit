@@ -1,0 +1,50 @@
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+index e2f5e2b5..e17476b3 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+@@ -615,7 +615,7 @@
+                                    ? LayoutUnit::Max()
+                                    : shelf_copy->line_right;
+ 
+-        shelves_.insert(i + 1, new_shelf);
++        shelves_.insert(i + 1, std::move(new_shelf));
+       }
+ 
+       // It's safe to early exit out of this loop now. This exclusion won't
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+index 2260e12..f61f28058 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+@@ -322,7 +322,8 @@
+                                : nullptr),
+           has_shape_exclusions(false) {}
+ 
+-    // The copy constructor explicitly copies the shape_exclusions member.
++    // The copy constructor and copy assignment operator explicitly copy the
++    // shape_exclusions member.
+     Shelf(const Shelf& other)
+         : block_offset(other.block_offset),
+           line_left(other.line_left),
+@@ -334,6 +335,22 @@
+                                      *other.shape_exclusions)
+                                : nullptr),
+           has_shape_exclusions(other.has_shape_exclusions) {}
++    Shelf(Shelf&&) noexcept = default;
++
++    Shelf& operator=(const Shelf& other) {
++      block_offset = other.block_offset;
++      line_left = other.line_left;
++      line_right = other.line_right;
++      line_left_edges = other.line_left_edges;
++      line_right_edges = other.line_right_edges;
++      shape_exclusions =
++          other.shape_exclusions
++              ? MakeGarbageCollected<ShapeExclusions>(*other.shape_exclusions)
++              : nullptr;
++      has_shape_exclusions = other.has_shape_exclusions;
++      return *this;
++    }
++    Shelf& operator=(Shelf&&) noexcept = default;
+ 
+     void Trace(Visitor* visitor) const { visitor->Trace(shape_exclusions); }
+ 

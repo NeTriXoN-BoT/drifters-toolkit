@@ -1,0 +1,132 @@
+From 65c51bddebea4b29a631941f08b11c39852ffcec Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Tue, 6 Oct 2026 05:26:19 +0000
+Subject: [PATCH] [Backport] CVE-2026-113192: Memory corruption in V8
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8523457:
+Restore parse restriction when reparsing Function constructor top-level
+
+Move the Script::CompilationKind::kFunctionConstructor check into
+UnoptimizedCompileFlags::SetFlagsForFunctionFromScript (guarded by
+is_toplevel()) so that top-level
+UnoptimizedCompileFlags::ForFunctionCompile also sets
+ONLY_SINGLE_FUNCTION_LITERAL.
+
+Also use parsing_dynamic_function_declaration_ for the eager compile
+hint in Parser::ParseFunctionLiteral, and check that syntax_kind and
+kind match when matching an existing SharedFunctionInfo to a
+FunctionLiteral.
+
+R=verwaest@chromium.org
+
+Fixed: 568831099
+Change-Id: Ie918dad4ee60ccbeb3d403e293d4802ba8123f2a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8523457
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110345}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783581
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/v8/src/codegen/compiler.cc            | 2 ++
+ chromium/v8/src/objects/script.cc              | 2 ++
+ chromium/v8/src/objects/shared-function-info.h | 4 ++--
+ chromium/v8/src/parsing/parse-info.cc          | 9 +++++----
+ chromium/v8/src/parsing/parser.cc              | 4 +---
+ 5 files changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/chromium/v8/src/codegen/compiler.cc b/chromium/v8/src/codegen/compiler.cc
+index 8a56ad4994e..30eaf16723f 100644
+--- a/chromium/v8/src/codegen/compiler.cc
++++ b/chromium/v8/src/codegen/compiler.cc
+@@ -753,6 +753,8 @@ void EnsureInfosArrayOnScript(DirectHandle<Script> script,
+ void UpdateSharedFunctionFlagsAfterCompilation(FunctionLiteral* literal) {
+   Tagged<SharedFunctionInfo> shared_info = *literal->shared_function_info();
+   DCHECK_EQ(shared_info->language_mode(), literal->language_mode());
++  DCHECK_EQ(shared_info->syntax_kind(), literal->syntax_kind());
++  DCHECK_EQ(shared_info->kind(), literal->kind());
+ 
+   // These fields are all initialised in ParseInfo from the SharedFunctionInfo,
+   // and then set back on the literal after parse. Hence, they should already
+diff --git a/chromium/v8/src/objects/script.cc b/chromium/v8/src/objects/script.cc
+index 2a77f970cba..822066f747d 100644
+--- a/chromium/v8/src/objects/script.cc
++++ b/chromium/v8/src/objects/script.cc
+@@ -54,6 +54,8 @@ MaybeHandle<SharedFunctionInfo> Script::FindSharedFunctionInfo(
+   CHECK_EQ(result->EndPosition(), function_literal->end_position());
+   CHECK_EQ(result->function_literal_id(kRelaxedLoad),
+            function_literal->function_literal_id());
++  CHECK_EQ(result->syntax_kind(), function_literal->syntax_kind());
++  CHECK_EQ(result->kind(), function_literal->kind());
+   function_literal->set_shared_function_info(result);
+   return result;
+ }
+diff --git a/chromium/v8/src/objects/shared-function-info.h b/chromium/v8/src/objects/shared-function-info.h
+index 1bd77c0a542..b5eb1463e26 100644
+--- a/chromium/v8/src/objects/shared-function-info.h
++++ b/chromium/v8/src/objects/shared-function-info.h
+@@ -777,12 +777,12 @@ class SharedFunctionInfo
+   void SetFunctionTokenPosition(int function_token_position,
+                                 int start_position);
+ 
+-  static void EnsureBytecodeArrayAvailable(
++  V8_EXPORT_PRIVATE static void EnsureBytecodeArrayAvailable(
+       Isolate* isolate, Handle<SharedFunctionInfo> shared_info,
+       IsCompiledScope* is_compiled_scope,
+       CreateSourcePositions flag = CreateSourcePositions::kNo);
+ 
+-  inline bool CanCollectSourcePosition(Isolate* isolate);
++  V8_EXPORT_PRIVATE inline bool CanCollectSourcePosition(Isolate* isolate);
+   static void EnsureSourcePositionsAvailable(
+       Isolate* isolate, DirectHandle<SharedFunctionInfo> shared_info);
+ 
+diff --git a/chromium/v8/src/parsing/parse-info.cc b/chromium/v8/src/parsing/parse-info.cc
+index edea1d867f6..99baf487f0e 100644
+--- a/chromium/v8/src/parsing/parse-info.cc
++++ b/chromium/v8/src/parsing/parse-info.cc
+@@ -76,10 +76,7 @@ UnoptimizedCompileFlags UnoptimizedCompileFlags::ForScriptCompile(
+                                           : ScriptType::kClassic,
+       v8_flags.lazy);
+   flags.set_outer_language_mode(script->outer_language_mode());
+-  if (script->compilation_kind() ==
+-      Script::CompilationKind::kFunctionConstructor) {
+-    flags.set_parse_restriction(ONLY_SINGLE_FUNCTION_LITERAL);
+-  }
++
+   if (script->is_wrapped()) {
+     flags.set_function_syntax_kind(FunctionSyntaxKind::kWrapped);
+     flags.set_is_eval(true);
+@@ -158,6 +155,10 @@ void UnoptimizedCompileFlags::SetFlagsForFunctionFromScript(
+ 
+   set_block_coverage_enabled(block_coverage_enabled() &&
+                              script->IsUserJavaScript());
++  if (is_toplevel() && script->compilation_kind() ==
++                           Script::CompilationKind::kFunctionConstructor) {
++    set_parse_restriction(ONLY_SINGLE_FUNCTION_LITERAL);
++  }
+ }
+ 
+ ReusableUnoptimizedCompileState::ReusableUnoptimizedCompileState(
+diff --git a/chromium/v8/src/parsing/parser.cc b/chromium/v8/src/parsing/parser.cc
+index 4ba446823b5..72ff8f52319 100644
+--- a/chromium/v8/src/parsing/parser.cc
++++ b/chromium/v8/src/parsing/parser.cc
+@@ -2773,13 +2773,11 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
+     function_name = ast_value_factory()->empty_string();
+   }
+ 
+-  // This is true if we get here through CreateDynamicFunction.
+-  bool params_need_validation = parameters_end_pos_ != kNoSourcePosition;
+   int compile_hint_position = peek_position();
+ 
+   FunctionLiteral::EagerCompileHint eager_compile_hint =
+       function_state_->next_function_is_likely_called() || is_wrapped ||
+-              params_need_validation ||
++              ParsingDynamicFunctionDeclaration() ||
+               (info()->flags().compile_hints_magic_enabled() &&
+                scanner()->SawMagicCommentCompileHintsAll()) ||
+               (info()->flags().compile_hints_per_function_magic_enabled() &&

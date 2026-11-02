@@ -1,0 +1,58 @@
+From aaa2e4b8010c6ee951e012713c4ff323da79d7ae Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 15 Oct 2026 18:43:59 -0700
+Subject: [PATCH] [Backport] CVE-2026-118352: Memory corruption in Cache
+
+Manual cherry-pick of patch originally reviwed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8578804:
+HttpCache: prevent lock timeout overtaking explicit restart
+
+...by cancelling it when queuing the restart. This can happen if our
+thread is super-overloaded (which is worrisome)
+
+Bug: 569674221
+Change-Id: Iaa3f12540534ca58c2446102d6b79e3566a557c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8578804
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720263}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784484
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ chromium/net/http/http_cache.cc            | 7 +++++++
+ chromium/net/http/http_cache_transaction.h | 4 ++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/chromium/net/http/http_cache.cc b/chromium/net/http/http_cache.cc
+index d081d302b6c3..0d535cdb3c6c 100644
+--- a/chromium/net/http/http_cache.cc
++++ b/chromium/net/http/http_cache.cc
+@@ -1248,6 +1248,13 @@ void HttpCache::DoomEntryValidationNoMatch(scoped_refptr<ActiveEntry> entry) {
+   // for the transaction to not be found in this entry.
+   for (HttpCache::Transaction* transaction : entry->add_to_entry_queue()) {
+     transaction->ResetCachePendingState();
++
++    // Cancel the timeout timer. Under extreme load that can end up firing
++    // before the task we post below, and our tasks expects us to be removed
++    // from the entry queue, which we might no longer be the case with the
++    // reversal.
++    transaction->CancelEntryLockTimeout();
++
+     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+         FROM_HERE,
+         base::BindOnce(transaction->cache_io_callback(), ERR_CACHE_RACE));
+diff --git a/chromium/net/http/http_cache_transaction.h b/chromium/net/http/http_cache_transaction.h
+index d8d4ae403585..3b83f2a6f919 100644
+--- a/chromium/net/http/http_cache_transaction.h
++++ b/chromium/net/http/http_cache_transaction.h
+@@ -181,6 +181,10 @@ class NET_EXPORT_PRIVATE HttpCache::Transaction : public HttpTransaction {
+   // added to an entry and the entry.
+   void ResetCachePendingState() { cache_pending_ = false; }
+ 
++  void CancelEntryLockTimeout() {
++    entry_lock_waiting_since_ = base::TimeTicks();
++  }
++
+   RequestPriority priority() const { return priority_; }
+   PartialData* partial() { return partial_.get(); }
+   bool is_truncated() { return truncated_; }

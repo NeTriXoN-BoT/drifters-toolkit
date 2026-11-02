@@ -1,0 +1,172 @@
+From 6b464bab759d0d2c7810422b373999fa37d30840 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Tue, 20 Oct 2026 04:30:58 -0700
+Subject: [PATCH] [Backport] CVE-2026-118347 and CVE-2026-118357: Use after
+ free in FileSystem
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8602672:
+Prevent synchronous lock promotion UAF during manager teardown
+
+During ~FileSystemAccessManagerImpl(), destroying
+`access_handle_host_receivers_` and `writer_receivers_` before
+`file_receivers_` and `directory_receivers_` releases held `LockHandle`s
+while file and directory handles are still alive. When a lock held by an
+evicting BFCache handle is destroyed, `Lock::LockHandleDestroyed()`
+synchronously promotes pending lock requests and runs callbacks on live
+`FileSystemAccessFileHandleImpl` instances. In Incognito mode,
+`DidTakeAccessHandleLock()` -> `DoOpenIncognitoFile()` completes
+synchronously and calls `CreateAccessHandleHost()`, inserting into
+`access_handle_host_receivers_` while it is mid-destruction or after its
+backing buffer has already been freed.
+
+Fix this by:
+1. Declaring `file_receivers_` and `directory_receivers_` after
+   `writer_receivers_` and `access_handle_host_receivers_` and explicitly
+   clearing them first in `~FileSystemAccessManagerImpl()`, after
+   invalidating `weak_factory_`.
+2. Guarding `TakeLock()` callbacks with `weak_factory_.GetWeakPtr()` so
+   any lock promotion during manager teardown passes `nullptr`.
+3. Moving elements out of `writer_receivers_` and
+   `access_handle_host_receivers_` before erasing them during teardown
+   and in `RemoveFileWriter()`.
+
+TAG=agy
+CONV=1c519f9c-078d-4200-8484-614956cd3f7d
+
+Bug: 574911589, 562191732
+Change-Id: I3c65bbd8e8f56ebec3995f81b9b6c0fa9b82e7e4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602672
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722787}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784482
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../file_system_access_manager_impl.cc        | 51 +++++++++++++++++--
+ .../file_system_access_manager_impl.h         | 21 +++++---
+ 2 files changed, 62 insertions(+), 10 deletions(-)
+
+diff --git a/chromium/content/browser/file_system_access/file_system_access_manager_impl.cc b/chromium/content/browser/file_system_access/file_system_access_manager_impl.cc
+index 8a1de5454340..79b196bde4ba 100644
+--- a/chromium/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/chromium/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -452,6 +452,28 @@ FileSystemAccessManagerImpl::FileSystemAccessManagerImpl(
+ 
+ FileSystemAccessManagerImpl::~FileSystemAccessManagerImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  // Invalidate weak pointers and destroy file and directory handle receivers
++  // first so that pending lock callbacks are cancelled before releasing locks
++  // held by writers or access handle hosts.
++  weak_factory_.InvalidateWeakPtrs();
++  file_receivers_.Clear();
++  directory_receivers_.Clear();
++
++  // Move each writer and access handle host out of its `flat_set` and erase the
++  // entry before running its destructor, so releasing locks cannot re-entrantly
++  // mutate a set while it is being destroyed.
++  while (!writer_receivers_.empty()) {
++    auto iter = writer_receivers_.begin();
++    auto writer_receiver = std::move(*iter);
++    writer_receivers_.erase(iter);
++  }
++
++  while (!access_handle_host_receivers_.empty()) {
++    auto iter = access_handle_host_receivers_.begin();
++    auto access_handle_host_receiver = std::move(*iter);
++    access_handle_host_receivers_.erase(iter);
++  }
+ }
+ 
+ void FileSystemAccessManagerImpl::BindReceiver(
+@@ -1378,8 +1400,19 @@ void FileSystemAccessManagerImpl::TakeLock(
+     FileSystemAccessLockManager::LockType lock_type,
+     FileSystemAccessLockManager::TakeLockCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  lock_manager_->TakeLock(binding_context.frame_id, url, lock_type,
+-                          std::move(callback));
++  lock_manager_->TakeLock(
++      binding_context.frame_id, url, lock_type,
++      base::BindOnce(
++          [](base::WeakPtr<FileSystemAccessManagerImpl> manager,
++             FileSystemAccessLockManager::TakeLockCallback callback,
++             scoped_refptr<FileSystemAccessLockManager::LockHandle> lock) {
++            if (!manager) {
++              std::move(callback).Run(nullptr);
++              return;
++            }
++            std::move(callback).Run(std::move(lock));
++          },
++          weak_factory_.GetWeakPtr(), std::move(callback)));
+ }
+ bool FileSystemAccessManagerImpl::IsContentious(
+     const storage::FileSystemURL& url,
+@@ -1916,9 +1949,19 @@ void FileSystemAccessManagerImpl::CreateTransferTokenImpl(
+ void FileSystemAccessManagerImpl::RemoveFileWriter(
+     FileSystemAccessFileWriterImpl* writer) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  CHECK(writer, base::NotFatalUntil::M159);
+ 
+-  size_t count_removed = writer_receivers_.erase(writer);
+-  DCHECK_EQ(1u, count_removed);
++  // Move `writer` out of `writer_receivers_` and erase the entry before
++  // destroying it, since destroying a `FileSystemAccessFileWriterImpl`
++  // releases its locks and can synchronously trigger lock promotion callbacks.
++  auto iter = writer_receivers_.find(writer);
++  if (iter == writer_receivers_.end()) {
++    NOTREACHED(base::NotFatalUntil::M159);
++    return;
++  }
++
++  auto writer_receiver = std::move(*iter);
++  writer_receivers_.erase(iter);
+ }
+ 
+ void FileSystemAccessManagerImpl::RemoveAccessHandleHost(
+diff --git a/chromium/content/browser/file_system_access/file_system_access_manager_impl.h b/chromium/content/browser/file_system_access/file_system_access_manager_impl.h
+index d5dcc3f76f27..96e8bff97b4a 100644
+--- a/chromium/content/browser/file_system_access/file_system_access_manager_impl.h
++++ b/chromium/content/browser/file_system_access/file_system_access_manager_impl.h
+@@ -654,18 +654,20 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+   // and `access_handle_host_receivers_`. The locks held by file writers and
+   // access handles dereference the lock manager on destruction, so it should
+   // outlive them.
++  //
++  // `writer_receivers_` and `access_handle_host_receivers_` should be
++  // destroyed after `file_receivers_` and `directory_receivers_`. Destroying
++  // file writers and access handle hosts releases their locks, which can
++  // synchronously promote pending lock requests and invoke callbacks on live
++  // file or directory handles. Destroying `file_receivers_` and
++  // `directory_receivers_` first invalidates those callbacks before any locks
++  // are released.
+   scoped_refptr<FileSystemAccessLockManager> lock_manager_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+   FileSystemAccessWatcherManager watcher_manager_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+-  // All the receivers for file and directory handles that have references to
+-  // them.
+-  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessFileHandle>
+-      file_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+-  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessDirectoryHandle>
+-      directory_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+   base::flat_set<std::unique_ptr<FileSystemAccessFileWriterImpl>,
+                  base::UniquePtrComparator>
+       writer_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+@@ -673,6 +675,13 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+                  base::UniquePtrComparator>
+       access_handle_host_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+ 
++  // All the receivers for file and directory handles that have references to
++  // them.
++  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessFileHandle>
++      file_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
++  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessDirectoryHandle>
++      directory_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
++
+   const bool off_the_record_;
+ 
+   // FileSystemAccessTransferTokenImpl owns a Transfer token receiver set and is

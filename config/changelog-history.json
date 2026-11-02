@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "version": "1.0.8",
+      "items": [
+        "The Save editor is now enabled for supported saves. Change unspent skill points, review the values and apply with a mandatory full safety backup. Use a save with Skills unlocked, then load that exact slot through Load Game. Other slots and protected progress stay unchanged.",
+        "The Save editor now groups values and includes local search, with Editable, Read-only and All values filters. Inspect save shows identified numbers, flags and summaries without making them editable. Read-only inspection also works while the game runs; editing requires a separate session with Days Gone closed.",
+        "Advanced save fields are off by default. Supported UseEffectLevels entries and controller flags can be changed after opting in and reviewing the warning. Their stored format is checked, but their in-game effects have not been verified. Experience, linked progression and unknown native data remain protected.",
+        "Current-save and backup pictures load automatically as their cards come into view. The gallery keeps the selected picture while browsing and limits how many previews are loaded at once.",
+        "Saves without an embedded picture show “No picture stored”, and profile data is labelled separately. Failed previews show the reason and can be retried with Refresh.",
+        "Unavailable save controls now show the reason, including a missing game folder, a running game or pending recovery. The message updates when the setup changes.",
+        "Timed messages continue counting down when the loader is in the background or minimised. Hovering or focusing a visible message still pauses it. Errors and messages requiring a decision stay open.",
+        "Repeatedly opening the changelog or changing versions no longer lets older replies replace the selected notes. Selecting the version already shown does not reload its contents.",
+        "Repeated update checks share the check already running. Results for an old installation cannot replace the current offer or reopen a closed update dialog.",
+        "Closing a confirmation or changing game installations prevents its older actions from running later. Unsaved save edits are preserved, and a failed review cannot apply an earlier draft. Cancelled, replaced or repeated import confirmations cannot start an import.",
+        "Windows: fixed a temporary-folder ownership check that could block imports and managing hand-installed mods when running as administrator. Failed folder checks now include the Windows error number.",
+        "The Field guide now covers ASI loaders, when they are needed, where their files belong and what Linux users need to check in Proton. ASI and DLL plugins remain outside PAK profiles and conflict checks; the toolkit does not install them.",
+        "Bike Wheelie, Headshot Only Freakers, Ragdoll Deaths and Bleed Out are now in the catalogue. The first three include manageable PAKs. Bleed Out uses manual ASI setup. Headshot’s optional horde plugin is separate from its PAK and stays active when that PAK is switched off.",
+        "Workshop can now start an empty package, add or replace files, remove or restore draft entries and export individual files. Rename an asset family with its companion files, or reset it to the opened bytes. Renaming does not rewrite references inside cooked assets. Original packages and installed mods are preserved.",
+        "Compare multiple supported versions of an asset against the same matching original. Independent property changes can be combined; conflicting values need your choice. Unknown layouts and opaque companion data still require choosing a complete source or asset family.",
+        "Saved Workshop projects now keep added, replaced, removed and renamed files, typed edits and unfinished merge choices. Reopening a project restores those changes. Older supported project formats remain readable.",
+        "Linux includes further reviewed Qt vendor and Chromium security repairs in its rebuilt renderer. Packaging verifies the repaired runtime files. Matching library sources and build changes are supplied separately.",
+        "Completed updates now report success when the installed release passes every file check, even if a late file error interrupted the final step. Incomplete or changed files still require recovery.",
+        "⬇ To update: download the new ZIP for your system and leave it in your Downloads folder. The toolkit offers “Install and restart”. ⬇"
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "items": [
+        "Way fewer pop-ups: everything a scan finds now shows up in one pop-up, and only when something new turns up. Problems you've already seen don't pop up again on every launch; the notice button at the top still lists them.",
+        "Clearer conflicts: mods that change the same game files are grouped into one card, with a Disable button for each mod, instead of a long list of pairs.",
+        "New option in Settings under Library preferences: \"Manage hand-installed PAKs automatically\". New PAK files are taken over without clicking Manage all. Off by default.",
+        "Linux: all licence texts are now in one LICENSES.txt instead of thousands of files, so the download folder is tidy. Updating from 1.0.0 removes the old licences folder automatically."
+      ]
+    },
+    {
+      "version": "1.0.2",
+      "items": [
+        "New: drag a downloaded PAK or ZIP onto the window to add it.",
+        "New: the toolkit spots new mod downloads in your Downloads folder and asks if you want to add them.",
+        "New: adding a newer version of a mod you already have offers to replace the old one in one click.",
+        "New: a Getting started checklist on the Overview walks you through the first four steps.",
+        "New: sort your mods by name, recently added, enabled first or category.",
+        "New: Undo right after switching mods on or off.",
+        "New: Back up saves with one click (Settings or Folders). Your saves are only copied, never changed.",
+        "New: Share my mod list copies your mods with their Nexus links, ready to paste.",
+        "New: notes inside a mod's ZIP (readme, install notes) are shown when you add it and in its details.",
+        "The first tab is now \"Available mods\" and lists only mods you don't have yet. \"Get mod\" shows the mod's details and how to download it in one window.",
+        "Importing a mod now offers \"Add and enable\", so it is on right away.",
+        "Switching on a mod that clashes with one you already use now offers to swap them instead of showing an error.",
+        "A clash between two mods you already have no longer stops you from switching on other mods. An unreadable or changed PAK no longer blocks them either.",
+        "Mod ZIPs that also contain a picture or readme now import. ZIPs with several PAK versions say to unpack them and import the one you want.",
+        "If Days Gone cannot load mods yet, the toolkit now says so on the Overview and My mods pages and sets it up with one click.",
+        "Profiles: the game's language files no longer block a profile from launching or from being restored after you play. PAK mods in the game's own Paks folder are set aside for the session too instead of blocking it. If mods cannot load yet, the launch says so and sets it up with one click. The launch window is a short list of mods instead of long file paths. Launching through Steam waits longer for the game to start.",
+        "The Conflicts counter now counts groups of clashing mods, matching the Conflicts page.",
+        "\"Find the bad mod\" no longer stops when one of your mods was deleted or replaced by hand, and it can switch mods back on that clashed before you started.",
+        "Pop-ups are shorter and plainer: what happens comes first, file paths and checksums are folded under details, and the buttons match the problem.",
+        "Plainer words everywhere: Profiles, Folders, Diagnostics and the mod list say what things do instead of how they work inside.",
+        "Diagnostics lists what needs a look first and folds everything that passed. The colours now match: errors red, warnings amber, passed green.",
+        "The Conflicts page lists mods that clash with the ones you use, each with a Switch on button.",
+        "The category menu only shows categories that have mods in the current tab, with counts.",
+        "Look and comfort settings save by themselves. The game folder, starting through Steam and automatic managing show their own Save button right next to them when changed.",
+        "PAKs you put into the mods folder by hand are now managed automatically by default, so they show up in your list and can be switched on and off. You can switch this off in Settings.",
+        "The toolkit also rechecks your mods quietly when you come back to its window, in case a change was missed.",
+        "Crash logs with unreadable parts now open and show their readable text instead of an error.",
+        "Only one copy of the toolkit can be open at a time. Starting it again brings the open window to the front.",
+        "Deleted or replaced mods are handled automatically: if you delete a mod the toolkit manages, it simply shows as disabled and keeps its library copy; if you replace its file, the new file shows up under Installed outside the toolkit. No more warnings that a file no longer matches.",
+        "Windows: all licence texts are now in one LICENSES.txt instead of a licences folder."
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "items": [
+        "The toolkit now says \"conflict\" instead of \"clash\" everywhere: the mod list, the import review, pop-ups, the Overview, Diagnostics and the Field guide.",
+        "Conflicts page: every mod you have on in a conflict now has \"Keep this one\". One click keeps that mod and switches off the mods it conflicts with. Undo puts them back. There is also a plain \"Switch off\" button.",
+        "If the other mod was installed by hand, Keep this one names it so you can manage or delete it.",
+        "Each conflict is marked \"PICK ONE\", and the page says how many conflicts there are to sort out.",
+        "The \"the game uses only one of them\" warning only shows when there actually is a conflict. With no conflicts, the page simply says \"No conflicts\" and offers Check again.",
+        "\"Conflicts with your enabled mods\" lists the mods that are off because they change the same game files as a mod you have on, each with a Switch on button that offers to swap them.",
+        "A PAK the toolkit cannot read is now explained in plain words: conflicts with it cannot be checked, and Diagnostics has the details.",
+        "Profiles are now a compact list: one slim row per profile with its size and the first mods in it. \"Show mods\" opens the full list only when you want it.",
+        "With more than four profiles, a search (by profile name or by a mod inside) and a sort (name, most mods, largest) appear. Profiles that need a look always stay on top.",
+        "A profile that matches the mods you have on right now is marked, and the one you are playing is marked \"In use\".",
+        "Crash summaries now always say what you can try, matched to the kind of crash (memory, graphics card, missing files, damaged PAK, tools hooking into the game and more), and show it right under the headline. The technical details are folded away.",
+        "Diagnostics: the counters and the results now use the same symbols and words (Need attention, Worth a look, Passed, Not checked), and each counter matches the results listed below it.",
+        "Diagnostics results are written in plain words, and a game folder whose mod loading you set up by hand (sfpakss) now counts as working instead of a warning.",
+        "The \"What Diagnostics cannot check\" note is a short line under the results instead of a result of its own.",
+        "What's new can be opened again: click the version number in the sidebar, or use \"What's new in this version\" in Settings under Toolkit updates.",
+        "The built-in mod list now has all 11 newer mods: Lasting Survival Vision (with Brighter Loot Shimmer), More Normal Freakers (every tier, Bigger Hordes and More Specials), every Unforgiving Standalone piece, Silencers For All Weapons, Instant Interaction, No Camp Bike Speed Limit, No Item Glow, Fixed 150 Health and No Injectors, Manual Weapon Holstering, Weapons In Encampments and Brighter Bike Customization.",
+        "The version numbers now match Nexus (Hidden Arsenal 1.3, Unrestricted Mission Movement 1.3, Unrestricted Fast Travel 1.2, Infinite Nitro 1.2, First Person 1.3f).",
+        "A ZIP with several PAKs (tiers, optional extras or standalone pieces) no longer has to be unpacked: the toolkit lists its PAKs and you tick the ones you want. Tiers that replace each other are marked \"pick one\".",
+        "PAKs you added from a file get readable names (\"Bike Crashes Hurt More\" instead of \"BikeCrashesHurtMore_P\"). A file that is exactly one of my releases is shown as that release, with its version and Nexus link.",
+        "Share my mod list groups your mods (From Nexus Mods, Added from files, Installed by hand), links straight to each file and puts the pieces of one download on one line.",
+        "Every mod has an icon that fits it, with new icons for vision, loot, difficulty, injectors, armor, bolts, credits, interaction, speed, holstering, camps and size.",
+        "Clearer colors: the mod list, Folders (\"Found\", \"Mods can load\"), the Conflicts page and the Overview counters show their state at a glance.",
+        "Settings shows a small \"Saved\" note in the corner wherever you change something, and a save that fails is shown right away.",
+        "An open Diagnostics report checks again by itself when your mod files change.",
+        "The Field guide is updated for everything above, and the remaining \"overlap\" wording now says \"conflict\"."
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "items": [
+        "Import mods straight from ZIP, 7z, RAR, TAR and other supported archives. You can still add loose PAK files.",
+        "Add several files or a folder at once. Review the PAKs, duplicates and conflicts together, then choose what to add. Nothing is switched on for you.",
+        "Batch results show what was added, skipped or failed, so one broken file does not hide the rest.",
+        "Back up your mod library, saved profiles, favourites and notes in one private ZIP. Account credentials and game saves are left out.",
+        "Review a library backup before restoring it. Restoring adds to your library without switching on mods or changing your current game setup.",
+        "Enabled and Disabled now stay visible beside update, conflict and integrity warnings.",
+        "Settings has sections and a search box. A bad game path is explained beside its field without stopping appearance changes from saving.",
+        "Mod details open beside the library, with Previous and Next buttons to browse without losing your place.",
+        "Imports and library backups show the current file and progress. Interrupted library restores offer recovery before further changes.",
+        "Conflict checks say Checks incomplete when a PAK cannot be checked, instead of giving an all-clear.",
+        "Linux uses the toolkit's own colours by default, with desktop colours still available in Settings. Seasonal emoji now display correctly on Linux, with clear messages when motion settings pause them.",
+        "Ready to play sits above Launch game and points you to anything that needs attention. Detected game updates trigger a fresh mod-loading check.",
+        "New game crash reports open a notice with advice and a link to the crash summary.",
+        "Optional automatic save backups can run before mod changes and profile launches. Restoring saves makes a safety copy of the current ones first.",
+        "Open shared mod lists as a checklist, add favourites and notes, and look back through changes to your enabled collection.",
+        "Walk through conflicts and keep or switch mods as one recoverable change. Exact duplicate files can be reviewed before removing spare copies.",
+        "Toolkit updates show progress and checked release notes before installation. Signed catalog packs can refresh the mod list without reinstalling the toolkit.",
+        "Appearance changes save even when you leave Settings straight away. Keyboard focus, labels and large-text layouts are clearer.",
+        "Windows and Linux command-line tools can import batches and back up, restore or recover libraries and game saves."
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "items": [
+        "The library now separates Enabled, Disabled and Stored only. Copies kept in your library no longer inflate the number of mods you have switched off.",
+        "Mod rows have clear Enable or Disable buttons beside Details. If a change is blocked, the reason is shown with the action. Details stay beside the list on wide windows and use the compact panel on smaller ones.",
+        "Choose a single PAK during import and the toolkit switches it on once the checks allow it. Imports with several selected PAKs stay in the library until you choose what to enable.",
+        "Detected mod downloads now show Review & import across the loader, so you do not have to stay on the Downloads page to notice them.",
+        "Saves has its own sidebar page, with separate Current saves and Backups tabs. Current saves lists the actual game files without making a backup first, and refreshes while that tab is open.",
+        "Save backups use a gallery with a separate details panel. Add a picture, give a backup a name, keep a private note and protect important copies from automatic cleanup.",
+        "Automatic save backups can now be linked to the profile they were taken before or after. Open that profile’s backups from Profiles, or filter them in Saves. Game saves are still shared between profiles.",
+        "Finishing a profile can take an automatic backup after the previous mod setup has been restored. If that backup fails, the restored setup stays in place and the toolkit shows a warning.",
+        "The save restore review now shows the selected backup, the files involved and what happens next. Your current saves get a safety copy first, and a running game or changed setup blocks confirmation.",
+        "Save folders inside game account subfolders are detected too. Missing or ambiguous save locations get a clear explanation, and a new installation is not blocked just because it has no saves yet.",
+        "The game status now checks for Days Gone opening or closing about once a second while the window is visible, instead of waiting for the slower background refresh.",
+        "Library tools groups mod-list sharing, actual library backups and recent changes separately, with a short explanation of what each one contains.",
+        "The changelog keeps earlier versions inside the loader and works offline. Its version picker now follows the current theme, with clear installed and selected labels.",
+        "Finished messages close themselves after a short countdown, shown by a small draining circle. Hovering or focusing the message pauses it. Errors and anything that needs your attention stay visible.",
+        "The Overview now has fourteen scenes with a slow fade, matching captions and automatic rotation. Pause on a scene and the toolkit remembers it for the next session.",
+        "A small moving tips strip shows useful information along the bottom. It can be paused, stays still with reduced motion and leaves the operation status visible.",
+        "Downloaded toolkit update ZIPs can be picked up while the loader stays open. You can read the current and older release notes before choosing an update.",
+        "The Saves gallery, library actions and restore review adjust to smaller windows and larger text without changing the familiar sidebar and page layout.",
+        "Large mod collections use less memory, and switching game installations no longer leaves old profile or crash-log results on screen."
+      ]
+    },
+    {
+      "version": "1.0.6",
+      "items": [
+        "Creating a profile now keeps the dialog open until it has actually saved. A busy loader or a blocked save shows the reason beside the name, and you can retry without typing everything again.",
+        "Create a profile from your current mods or start with an empty setup. Saved profiles can be renamed without copying their PAKs or losing their links to save backups.",
+        "A damaged older profile no longer stops you creating another one. Large collections get a clear limit before anything is written, and interrupted renames can recover without losing ownership of the profile.",
+        "The clock button opens Recent activity, with the last 50 results from this session. Finished messages are still there after their countdown closes. The list clears when you close the loader.",
+        "Ctrl+F or / takes you to search on the current page. Escape clears the search, and ? opens a short keyboard guide. Typing in a text field keeps its usual controls.",
+        "Switching game installations clears old undo actions and stops delayed folder, diagnostic or background results from replacing the current view. Confirmation dialogs also refuse changes for an installation you have left.",
+        "Profile launch reviews keep less duplicate data in memory. Create and rename dialogs keep their controls and errors visible on small windows and with larger text.",
+        "Linux: rebuilt the bundled Qt WebEngine with the reviewed vendor security fixes. Packaging checks require that patched engine and its matching sources.",
+        "Linux: virtual graphics use software rendering automatically to avoid startup crashes. The ZIP preserves executable permissions for the AppImage and launcher when extracted with a Linux archive tool.",
+        "Windows: updates clean up verified temporary copies left behind when replacing the running loader. Unrelated files stay untouched.",
+        "The update window now shows an installation check before replacing files, including enough free space for recovery copies. The release signature, operating system, version and every file checksum are checked too."
+      ]
+    },
+    {
+      "version": "1.0.7",
+      "items": [
+        "Move the toolkit library, profiles, backups and cache to another drive from Settings. The move is checked before the next start; unchanged originals are removed only after their copies are verified.",
+        "Missing library files no longer block removing an old mod entry. Restore library copy can recover an intact installed PAK, or you can add the verified original download again. Changed and unrelated files are preserved.",
+        "Download notices close when the matching package has been imported. Removing a mod also stops its unchanged original download being offered again. Changed files are checked separately.",
+        "Skill Respec and Art The Clown (Player Model) are now in the catalogue. Open Character appearance from My mods to browse character packages, view supplied static previews and review switching an outfit on.",
+        "Combine local mods in Workshop, including third-party PAKs. There is no fixed small limit on the number of source packages; the draft still checks its total size, assets and memory use before accepting them.",
+        "Import local save files into a separate backup, or replace one selected current save after review. Export an individual current save without making a full backup first. Replacing a save always makes a complete safety backup.",
+        "Delete an individual current save after review, with a mandatory full safety backup even when automatic backups are off. Delete stored backups from the Saves page too, including their pictures, notes and profile links.",
+        "Save management can still work when an unrelated local mod catalogue needs repair. Failed deletion reviews keep the message visible and let you review again.",
+        "Windows and Linux share the new save and Workshop controls, including command-line save import and export. Linux also includes four newly reviewed upstream Chromium and Skia security repairs in its rebuilt renderer. Matching library and save-reader sources are supplied separately.",
+        "Workshop now has its own sidebar entry, with shortcuts from Conflicts and Library tools. Start from local PAKs or a supported exported asset, then follow the source review, overlap choices and export check.",
+        "Compare two supported versions of an asset against an exported original. Independent property changes can be combined; conflicting values need your choice. Unsupported layouts, Blueprint instructions, meshes and companion-file assets are left unchanged.",
+        "Workshop supports more numeric types, existing enum choices, vector and colour components, scalar array items and supported text of the same encoded length. Search fields, review changed values, reset individual edits or use Undo. Export creates a new verified PAK and preserves the originals.",
+        "Save Workshop projects and reopen them later, including unfinished merge choices. Verified source snapshots are shared between projects, so deleting the original download does not lose your work. Save As keeps a separate version; saved projects follow your toolkit data location.",
+        "Stored only now groups every local package that is switched off. Packages no longer move between separate categories simply because they were enabled before.",
+        "Noclip And No Enemy Detection Toggle and Infinite Bike Fuel And No Bike Crash Ejection are available again. An incorrect restriction on these existing published combined packages has been removed; overlap checks still apply.",
+        "A missing library PAK no longer traps Find the bad mod or blocks profile management. Finishing restores the verified originals that are still available and explains anything skipped. You can also stop the test and keep the current files after review.",
+        "Current saves can show their actual in-game pictures when the save format is supported. The separate save reader runs with restricted access; its matching source and licence notices are provided alongside the download.",
+        "The Saves page includes a clearly marked Save editor entry, but editing is disabled in this version while game testing continues. Current-save pictures, backups, import, export and reviewed deletion remain available.",
+        "Combine mods now shows identical shared assets, conflicting families and items still needing a choice. Go straight to the next unresolved item without stepping through every asset. Unsupported combinations still require choosing a complete asset family.",
+        "Clicking outside a dialog follows the same draft-discard and update-progress checks as its close button. Older connection replies can no longer close a newer dialog or replace the current sign-in attempt."
+      ]
+    }
+  ]
+}

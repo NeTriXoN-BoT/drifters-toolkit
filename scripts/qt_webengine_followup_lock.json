@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "followupRevision": 1,
+  "qtVersion": "6.11.3",
+  "reviewDate": "2026-10-28",
+  "baselineSecurityLock": {
+    "sha256": "bd1b42d306ba81e6fa6522a9b95121b8f3913972f354a364ab9b0b46431c18ac",
+    "size": 27767
+  },
+  "baselineFinalInventory": {
+    "sha256": "b30d014b8342ca17e5c18620fd2bb8e0dd67fc56c15065bc5a246edc9ec79f1b",
+    "size": 11452
+  },
+  "patchDirectory": "vendor/qtwebengine-security/2026-10-28",
+  "upstream": [
+    {
+      "commit": "8c4d5b7dfef93032b452806c069d3ce8416b6ac7",
+      "url": "https://chromium.googlesource.com/chromium/src/+/8c4d5b7dfef93032b452806c069d3ce8416b6ac7^!/?format=TEXT",
+      "name": "8c4d5b7dfef93032b452806c069d3ce8416b6ac7.patch",
+      "sha256": "36287dc6210e59ac69052c095a257420d93e353007a0db1e80541a69a59ccb9c",
+      "size": 44221
+    },
+    {
+      "commit": "9340de2d6a5ee57d8a39d1863890123b34d8e325",
+      "url": "https://chromium.googlesource.com/chromium/src/+/9340de2d6a5ee57d8a39d1863890123b34d8e325^!/?format=TEXT",
+      "name": "9340de2d6a5ee57d8a39d1863890123b34d8e325.patch",
+      "sha256": "6107e698132b12903379f1146f76ca0f91f1999b8885e3da8dd5674a2dbf1503",
+      "size": 2279
+    },
+    {
+      "commit": "6438ea41e25396520b79d2713994852140713d78",
+      "url": "https://chromium.googlesource.com/chromium/src/+/6438ea41e25396520b79d2713994852140713d78^!/?format=TEXT",
+      "name": "6438ea41e25396520b79d2713994852140713d78.patch",
+      "sha256": "a1bac14e5a03f59a5e9c605259cdcbfd40c40810a5c63b3a0c7f3226fcc32320",
+      "size": 7838
+    },
+    {
+      "commit": "0ef44edd0ec4498a1599e6987422bca461fdd6ab",
+      "url": "https://skia.googlesource.com/skia/+/0ef44edd0ec4498a1599e6987422bca461fdd6ab^!/?format=TEXT",
+      "name": "0ef44edd0ec4498a1599e6987422bca461fdd6ab.patch",
+      "sha256": "22f1ed343eca32b19efb8e3b2dc9fe0027f65a43b44a31946ada89230e74d75c",
+      "size": 16894
+    }
+  ],
+  "adapter": {
+    "name": "qt140-four-critical-compatibility.patch",
+    "sha256": "b964aa44e68d852526b21f09a58d256791027eb7678011e2482d7825f797e38b",
+    "size": 64683
+  },
+  "files": [
+    {
+      "path": "chromium/storage/browser/blob/blob_data_builder.cc",
+      "before": {
+        "sha256": "633e3381cb8c006d9556654756a44d74a5db4405e80171709a6560666f3def5e",
+        "size": 15072
+      },
+      "after": {
+        "sha256": "e9b6de28bc1df637192ad6bb1cc477c5bb2d87606503d140020d7ad4989de17a",
+        "size": 15111
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_data_builder.h",
+      "before": {
+        "sha256": "3bdf7d703ba429a08b81b4e3f569523a6fd182d7bfd735ab7ba8c45bbefdc164",
+        "size": 10140
+      },
+      "after": {
+        "sha256": "a5fc7becce7fd37d183ab1e16686caebd145703598b59972ef268cd2ce449cb3",
+        "size": 10154
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_data_handle.cc",
+      "before": {
+        "sha256": "eacc0a4a0fada1de734f907a91d60c1f00058c9538847c4d49fd82fc3eabf1e0",
+        "size": 4556
+      },
+      "after": {
+        "sha256": "54333918d9e218a77b7ebec9a96e43344c9c62425726725fdb71d34bbc918576",
+        "size": 4562
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_entry.cc",
+      "before": {
+        "sha256": "18f169fd0802976016d1bf8795eef198c880e19ca3e79e39ded496c33f5024ab",
+        "size": 2970
+      },
+      "after": {
+        "sha256": "153c71e280a9f2e66499dc4a45d0ca7986c451cc133e8361c8293c98fb1b7f4f",
+        "size": 3725
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_entry.h",
+      "before": {
+        "sha256": "2954f2bce9c029dd06917eeb577637781a4d85c70df06bf6bc26daec11737530",
+        "size": 6545
+      },
+      "after": {
+        "sha256": "bc7f78388f1c6cbb084db38dcbe82951713b32f99f494bddd8a8202eb1ca9595",
+        "size": 6666
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_flattener_unittest.cc",
+      "before": {
+        "sha256": "cbc2df58773060e63c42fa7e4f3b7d8c88343d0a090480a099ee0fba0f02237b",
+        "size": 9615
+      },
+      "after": {
+        "sha256": "f279880178575f3f2ca08ced326cc10add65c9ec7a72805af869f1e10ad43b37",
+        "size": 9629
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_slice_unittest.cc",
+      "before": {
+        "sha256": "a08772eeb8fe9fcdd86a37f370640b3c67104b2efa62cfa18786b4d69ea25ad4",
+        "size": 7164
+      },
+      "after": {
+        "sha256": "5807c37c77c54eeb705a5176c77ffac5d2b3a447d6fc34ef37e65fde9681f80d",
+        "size": 7397
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_context.cc",
+      "before": {
+        "sha256": "065177f558d86a69579492045ee4284239097a29b7017e2a17a5b1cde77095ed",
+        "size": 29518
+      },
+      "after": {
+        "sha256": "3d2dc23f1ff4a382117869d9b7f9e00912733754aec7114ac81bca6b38532d4f",
+        "size": 28809
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_context.h",
+      "before": {
+        "sha256": "5f2a8e1097b538ea05dcc7b7e6e0ac391e151f58a66283aa3d4976d5065784e0",
+        "size": 11308
+      },
+      "after": {
+        "sha256": "24e953f415d78bae32ce67dabc8bced7fbcdcb2bffc9fbd5954acbf419f31c50",
+        "size": 11386
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_context_unittest.cc",
+      "before": {
+        "sha256": "b1eb72190b379ef1dddc29ef5efed029e00799721844768450a6a3b051c076d8",
+        "size": 33659
+      },
+      "after": {
+        "sha256": "8b7cb457896ca95accd7e8613371bf1af44eee47bafb7e50125dd84f53c38de2",
+        "size": 40743
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_registry.cc",
+      "before": {
+        "sha256": "e75f71ad7510b6098b213315001e8945038e87a916b764bbf7edb65388bf6e19",
+        "size": 1707
+      },
+      "after": {
+        "sha256": "014601821290b1e19b2a1e22a791c709c3d2cb5a8ebb837d9a8840d33b9b2ca6",
+        "size": 1689
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_registry.h",
+      "before": {
+        "sha256": "a3ce07be9d3a35a92ba60a94627f4f0d1862a3f05ac6a765e2febf2f53fda08b",
+        "size": 1990
+      },
+      "after": {
+        "sha256": "f624a83c039174de13704b93e147ae4efb5049104df5df8ce530c967d535561a",
+        "size": 2205
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/blob_storage_registry_unittest.cc",
+      "before": {
+        "sha256": "3be50cae700e078ef8a4134736c88b313e7c1718e47d76c83040c026056ce96c",
+        "size": 1144
+      },
+      "after": {
+        "sha256": "5945ceb7e40744f7fb8e85604040a4a6db4df8380ed49a8248b0bfa0579aa411",
+        "size": 1209
+      }
+    },
+    {
+      "path": "chromium/storage/browser/blob/view_blob_internals_job.cc",
+      "before": {
+        "sha256": "136ccdabc92c037adcd9ac2f57fc68bde627775a38fbe41ed3221a073550c831",
+        "size": 8617
+      },
+      "after": {
+        "sha256": "a9076f06ad6b92caa61644fcd43dda2adec5907f3ab6aea1d19a2fd636ccbe66",
+        "size": 8621
+      }
+    },
+    {
+      "path": "chromium/storage/browser/file_system/sandbox_directory_database.cc",
+      "before": {
+        "sha256": "1558a86a529029e28f624ac77b4f86deb92cbf7e37da9948e9558c04dd5c6311",
+        "size": 30289
+      },
+      "after": {
+        "sha256": "429e955715677be8922d73ba606a5014e87dfd33f4fbe4f73ea6ee992e451146",
+        "size": 30603
+      }
+    },
+    {
+      "path": "chromium/storage/browser/file_system/sandbox_directory_database_unittest.cc",
+      "before": {
+        "sha256": "9213c4dde9bf04e95514ed173200a31d03ac25d23ad4aee2289be0acb7b18688",
+        "size": 22949
+      },
+      "after": {
+        "sha256": "3f5f0dc3f9df7613c8ec0e96d2230a253ada32e3b7c9813451a418fa7e2a5e60",
+        "size": 24058
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc",
+      "before": {
+        "sha256": "820fa9c7bfe0a4611b52cb54a2ead6155f95e9374bd14ce2324eb510544f312b",
+        "size": 31779
+      },
+      "after": {
+        "sha256": "5247a968630c1d6f83d85e85f290fb06eace289f989cc46a0073c3ae17faf93b",
+        "size": 31790
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h",
+      "before": {
+        "sha256": "dfc858298b9b32f851ec1811e799956fc90adaa9ecf6f194baf394a7bbf05fbc",
+        "size": 30536
+      },
+      "after": {
+        "sha256": "2dd8d5f420f6c184c0910d11bb1060ab15f971d34d5eb8aa107f1a3f60bc6b71",
+        "size": 31157
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp",
+      "before": {
+        "sha256": "5cfbecb248bb747764269c73b4bc9651113fe980b43c347b2d734af5f56ca5fc",
+        "size": 164122
+      },
+      "after": {
+        "sha256": "67cd6cd0e0e6fdde86241bfbd6a0dccd1976981370c4695dff6d7bef9e412629",
+        "size": 165504
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp",
+      "before": {
+        "sha256": "5fa5adb918ee8c44d75f7470a5a8b58244171189753844bad33753e6d7364d8e",
+        "size": 161489
+      },
+      "after": {
+        "sha256": "913c2974c1e8472e13dea49386cd9aec73d9ce7d1fb7ca370cfdf5ce78fad778",
+        "size": 162745
+      }
+    }
+  ],
+  "adaptations": {
+    "blobRegistry": "Retain older base::Contains preimage and braces; preserve upstream reference ownership.",
+    "sandboxDirectory": "Retain older Pickle::WithUnownedBuffer API; preserve scoped iterator lifetime and deferred removals.",
+    "skia": "Use existing include/private/base and src/base header paths; preserve upstream overflow guards."
+  },
+  "excludedAbsentUpstreamTest": "chromium/third_party/skia/tests/RasterPipelineCodeGeneratorTest.cpp",
+  "reason": "Separately pinned upstream critical repairs after the immutable24-patch vendor chain and Aura adapter; no Chromium version-number claim."
+}

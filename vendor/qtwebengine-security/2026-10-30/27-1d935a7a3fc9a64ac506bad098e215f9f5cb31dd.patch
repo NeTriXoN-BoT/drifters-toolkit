@@ -1,0 +1,69 @@
+From 1d935a7a3fc9a64ac506bad098e215f9f5cb31dd Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Wed, 14 Oct 2026 09:29:35 -0700
+Subject: [PATCH] [Backport] CVE-2026-113336: Memory corruption in Compositing
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8567362:
+Fix SoftwareImageDecodeCache UAF
+
+SoftwareImageDecodeCache had a bug where if image decode tasks were
+stopped and restarted there could be a collision on
+ImageDecodeRequestId. If the CompositorFrameSink is lost the
+ImageDecodeCache object is recreated and
+ImageController::SetImageDecodeCache() runs. That calls
+StopWorkerTasks() which cancels pending decode requests but didn't
+cancel posted tasks. GenerateTasksForOrphanedRequests() then schedules
+new tasks reusing the same ImageDecodeRequestId range. If a posted
+ImageDecodeCompleted() from before StopWorkerTasks() runs and the
+ImageDecodeRequestId matches one of the new request there is a
+collision.
+
+The collision can result in a CacheEntry being deleted while there is
+still a pending request for it. Avoid collisions by cancelling all
+posted ImageDecocdeComplete() tasks in StopWorkTasks().
+
+Bug: 569286604
+Change-Id: I2a2214efb8a99f0e88b35ee1f5841c91a4831f7d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8567362
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718683}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783840
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/cc/tiles/image_controller.cc | 4 ++++
+ chromium/cc/tiles/image_controller.h  | 5 ++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/cc/tiles/image_controller.cc b/chromium/cc/tiles/image_controller.cc
+index ecbd14e77009..977eba6beac0 100644
+--- a/chromium/cc/tiles/image_controller.cc
++++ b/chromium/cc/tiles/image_controller.cc
+@@ -91,6 +91,10 @@ void ImageController::StopWorkerTasks() {
+ 
+     // Now, begin cleanup.
+ 
++    // Cancel any posted tasks to avoid request id collisions.
++    weak_ptr_factory_.InvalidateWeakPtrs();
++    worker_state_->weak_ptr = weak_ptr_factory_.GetWeakPtr();
++
+     // Unlock all of the locked images (note that this vector would only be
+     // populated if we actually need to unref the image.
+     for (auto& image_pair : requested_locked_images_) {
+diff --git a/chromium/cc/tiles/image_controller.h b/chromium/cc/tiles/image_controller.h
+index 59f381cfaa0a..c1588b105ca6 100644
+--- a/chromium/cc/tiles/image_controller.h
++++ b/chromium/cc/tiles/image_controller.h
+@@ -142,7 +142,10 @@ class CC_EXPORT ImageController {
+     WorkerTaskState task_state GUARDED_BY(lock) = WorkerTaskState::kNoTask;
+ 
+     const scoped_refptr<base::SequencedTaskRunner> origin_task_runner;
+-    const base::WeakPtr<ImageController> weak_ptr;
++    // `weak_ptr` may be replaced while worker tasks are running so access is
++    // guarded by the lock. WeakPtr is not thread safe and copies of `weak_ptr`
++    // can still only be dereferenced on `origin_task_runner`.
++    base::WeakPtr<ImageController> weak_ptr GUARDED_BY(lock);
+   };
+ 
+   void ForEachDecodeRequest(base::FunctionRef<void(ImageDecodeRequest&)>);

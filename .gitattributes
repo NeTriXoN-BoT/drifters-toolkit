@@ -1,0 +1,9 @@
+# Integrity and vendored-source manifests cover exact bytes on every platform.
+# Do not rewrite source/dependency line endings during checkout or staging.
+* -text
+*.png binary
+*.ico binary
+*.gz binary
+*.xz binary
+*.zip binary
+

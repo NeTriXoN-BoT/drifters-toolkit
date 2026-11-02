@@ -1,0 +1,170 @@
+From 2e8e6f7718e21e345ae11b08c5474046ff5d364b Mon Sep 17 00:00:00 2001
+From: Zonghan Xu <xzonghan@google.com>
+Date: Tue, 13 Oct 2026 03:58:26 -0700
+Subject: [Backport] CVE-2026-113040: Improper input validation in Proxy
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8560657.
+Adds the WeakPtrFactory to ConfiguredProxyResolutionRequest that
+was added as part of another change, but should work here without problems.
+
+Improve lifetime management in CPRRequest
+
+When an in-flight proxy resolution request fails with
+ERR_PAC_SCRIPT_TERMINATED, ConfiguredProxyResolutionService resets its
+config and may synchronously re-initialize other pending requests.
+During this synchronous re-initialization, a sibling request's callback
+can cancel and destroy the completing request while its completion stack
+frames are still active.
+
+This change improves request lifetime management:
+- End the PROXY_RESOLUTION_SERVICE NetLog event before resetting the
+  proxy config in DidFinishResolvingProxy().
+- Clear `service_` and `results_` in ConfiguredProxyResolutionRequest
+  before calling DidFinishResolvingProxy().
+- Guard completion paths with base::WeakPtr to return early if the
+  request is destroyed during re-entrant callbacks.
+
+Bug: 568906040
+Change-Id: I270e5efe43ebaabc29c8ceead1bae85f3462082d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8560657
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Zonghan Xu <xzonghan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717484}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783205
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../configured_proxy_resolution_request.cc         | 39 ++++++++++++++--------
+ .../configured_proxy_resolution_request.h          |  3 ++
+ .../configured_proxy_resolution_service.cc         |  6 +++-
+ 3 files changed, 34 insertions(+), 14 deletions(-)
+
+diff --git a/chromium/net/proxy_resolution/configured_proxy_resolution_request.cc b/chromium/net/proxy_resolution/configured_proxy_resolution_request.cc
+index 4c91cff9bfc..5b9e5583b10 100644
+--- a/chromium/net/proxy_resolution/configured_proxy_resolution_request.cc
++++ b/chromium/net/proxy_resolution/configured_proxy_resolution_request.cc
+@@ -90,24 +90,35 @@ int ConfiguredProxyResolutionRequest::QueryDidComplete(int result_code) {
+   // DidFinishResolvingProxy() runs.
+   resolve_job_.reset();
+ 
+-  // Note that DidFinishResolvingProxy might modify |results_|.
+-  int rv = service_->DidFinishResolvingProxy(url_, network_anonymization_key_,
+-                                             method_, results_, result_code,
+-                                             net_log_);
++  // Detach `service_` and `results_` before `DidFinishResolvingProxy()` in case
++  // a sibling callback synchronously destroys `this` or `results` (avoids
++  // double-removal in our destructor and dangling raw_ptrs).
++  ConfiguredProxyResolutionService* service = std::exchange(service_, nullptr);
++  ProxyInfo* results = std::exchange(results_, nullptr);
++  base::WeakPtr<ConfiguredProxyResolutionRequest> weak_this =
++      weak_factory_.GetWeakPtr();
++
++  // Note that DidFinishResolvingProxy might modify `results`.
++  int rv =
++      service->DidFinishResolvingProxy(url_, network_anonymization_key_,
++                                       method_, results, result_code, net_log_);
++  if (!weak_this) {
++    return ERR_ABORTED;
++  }
+ 
+   // Make a note in the results which configuration was in use at the
+   // time of the resolve.
+-  results_->set_proxy_resolve_start_time(creation_time_);
+-  results_->set_proxy_resolve_end_time(base::TimeTicks::Now());
++  results->set_proxy_resolve_start_time(creation_time_);
++  results->set_proxy_resolve_end_time(base::TimeTicks::Now());
+ 
+   // If annotation is not already set, e.g. through TryToCompleteSynchronously
+   // function, use in-progress-resolve annotation.
+-  if (!results_->traffic_annotation().is_valid())
+-    results_->set_traffic_annotation(traffic_annotation_);
++  if (!results->traffic_annotation().is_valid())
++    results->set_traffic_annotation(traffic_annotation_);
+ 
+   // If proxy is set without error, ensure that an annotation is provided.
+   if (result_code != ERR_ABORTED && !rv)
+-    DCHECK(results_->traffic_annotation().is_valid());
++    DCHECK(results->traffic_annotation().is_valid());
+ 
+   // Reset the state associated with in-progress-resolve.
+   traffic_annotation_.reset();
+@@ -117,9 +128,7 @@ int ConfiguredProxyResolutionRequest::QueryDidComplete(int result_code) {
+ 
+ int ConfiguredProxyResolutionRequest::QueryDidCompleteSynchronously(
+     int result_code) {
+-  int rv = QueryDidComplete(result_code);
+-  service_ = nullptr;
+-  return rv;
++  return QueryDidComplete(result_code);
+ }
+ 
+ LoadState ConfiguredProxyResolutionRequest::GetLoadState() const {
+@@ -140,8 +149,12 @@ void ConfiguredProxyResolutionRequest::QueryComplete(int result_code) {
+   // prevent re-entrant dispatch if the service re-initializes synchronously.
+   service_->RemovePendingRequest(this);
+ 
++  base::WeakPtr<ConfiguredProxyResolutionRequest> weak_this =
++      weak_factory_.GetWeakPtr();
+   result_code = QueryDidComplete(result_code);
+-  service_ = nullptr;
++  if (!weak_this) {
++    return;
++  }
+ 
+   CompletionOnceCallback callback = std::move(user_callback_);
+   user_callback_.Reset();
+diff --git a/chromium/net/proxy_resolution/configured_proxy_resolution_request.h b/chromium/net/proxy_resolution/configured_proxy_resolution_request.h
+index 87ccd3825a2..52c16e7a4ea 100644
+--- a/chromium/net/proxy_resolution/configured_proxy_resolution_request.h
++++ b/chromium/net/proxy_resolution/configured_proxy_resolution_request.h
+@@ -9,6 +9,7 @@
+ #include <string>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/time/time.h"
+ #include "net/base/completion_once_callback.h"
+ #include "net/base/network_anonymization_key.h"
+@@ -93,6 +94,8 @@ class ConfiguredProxyResolutionRequest final : public ProxyResolutionRequest {
+   // Time when the request was created.  Stored here rather than in |results_|
+   // because the time in |results_| will be cleared.
+   base::TimeTicks creation_time_;
++
++  base::WeakPtrFactory<ConfiguredProxyResolutionRequest> weak_factory_{this}; 
+ };
+ 
+ }  // namespace net
+diff --git a/chromium/net/proxy_resolution/configured_proxy_resolution_service.cc b/chromium/net/proxy_resolution/configured_proxy_resolution_service.cc
+index 5eb644b8225..14399be9b8f 100644
+--- a/chromium/net/proxy_resolution/configured_proxy_resolution_service.cc
++++ b/chromium/net/proxy_resolution/configured_proxy_resolution_service.cc
+@@ -1243,6 +1243,7 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+           NetLogEventType::PROXY_RESOLUTION_SERVICE_DEPRIORITIZED_BAD_PROXIES,
+           [&] { return NetLogFinishedResolvingProxyParams(result); });
+     }
++    net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
+   } else {
+     net_log.AddEventWithNetErrorCode(
+         NetLogEventType::PROXY_RESOLUTION_SERVICE_RESOLVED_PROXY_LIST,
+@@ -1268,6 +1269,10 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+     } else {
+       result_code = ERR_MANDATORY_PROXY_CONFIGURATION_FAILED;
+     }
++    // End the NetLog event before resetting the config, as synchronous
++    // re-initialization can destroy the completing request (and `net_log`).
++    net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
++
+     if (reset_config) {
+       ResetProxyConfig(false);
+       // If the ProxyResolver crashed, force it to be re-initialized for the
+@@ -1279,7 +1284,6 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+     }
+   }
+ 
+-  net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
+   return result_code;
+ }
+ 
+-- 
+cgit v1.2.3
+

@@ -1,0 +1,514 @@
+{
+  "schemaVersion": 1,
+  "recipeRevision": 2,
+  "qtVersion": "6.11.3",
+  "reviewDate": "2026-10-26",
+  "baseChromiumVersion": "140.0.7339.264",
+  "declaredSecurityVersion": "155.0.8059.85",
+  "sourceArchive": {
+    "component": "qtwebengine",
+    "name": "6.11.3-0-202610220311qtwebengine-everywhere-src-6.11.3.tar.xz",
+    "version": "6.11.3",
+    "url": "https://download.qt.io/online/qtsdkrepository/all_os/extensions/qtwebengine/6113/src_doc_examples/extensions.qtwebengine.6113.src/6.11.3-0-202610220311qtwebengine-everywhere-src-6.11.3.tar.xz",
+    "algorithm": "sha256",
+    "digest": "5708199112b3f7f23da919d54836e6cf5c69139e53533fa4f995c91c5d024cfe",
+    "size": 584717380
+  },
+  "baseChromiumCommit": "bcc09a68b50a40c60d8dc83f0e6b6dc872614812",
+  "patchedChromiumCommit": "f1e3c1cedd95d17a4474a72c60f791679f3437b0",
+  "patchDirectory": "vendor/qtwebengine-security/2026-10-26",
+  "patches": [
+    {
+      "commit": "dc7004a3c2d2abcf80f109f2243bc148237cd163",
+      "title": "[fixup][3rdparty] Fix building with system ffmpeg",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=dc7004a3c2d2abcf80f109f2243bc148237cd163",
+      "name": "01-dc7004a3c2d2abcf80f109f2243bc148237cd163.patch",
+      "sha256": "c176a2cdba6361d0b7febcd00660b874ab3e281cfcf0f723f347ccd5eec49e1a",
+      "size": 1069,
+      "files": [
+        "chromium/media/filters/ffmpeg_glue.cc"
+      ],
+      "parent": "bcc09a68b50a40c60d8dc83f0e6b6dc872614812"
+    },
+    {
+      "commit": "d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10",
+      "title": "Fix crash in SkiaOutputSurfaceImplOnGpu on missing shared context state",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10",
+      "name": "02-d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10.patch",
+      "sha256": "a7a569c15d5688a98f5fa7a53c8089a98d0af57215f098aaa44791e89eab2413",
+      "size": 2485,
+      "files": [
+        "chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc"
+      ],
+      "parent": "dc7004a3c2d2abcf80f109f2243bc148237cd163"
+    },
+    {
+      "commit": "04fb03512fbc0c6a99f0183e3b36721884dcc236",
+      "title": "[fixup] Fix crash in SkiaOutputSurfaceImplOnGpu on missing shared context state",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=04fb03512fbc0c6a99f0183e3b36721884dcc236",
+      "name": "03-04fb03512fbc0c6a99f0183e3b36721884dcc236.patch",
+      "sha256": "277a2f329f329a39bc422cfe17bbccf7759e48715470f0efdaebb122c9a2d334",
+      "size": 2583,
+      "files": [
+        "chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc"
+      ],
+      "parent": "d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10"
+    },
+    {
+      "commit": "f67e82cbe5faabd731dbcc904b9e6c22e7139cca",
+      "title": "[sbom] Include missing pdfium dependencies",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=f67e82cbe5faabd731dbcc904b9e6c22e7139cca",
+      "name": "04-f67e82cbe5faabd731dbcc904b9e6c22e7139cca.patch",
+      "sha256": "bcdb85c7f8de2244de915430ae223a4a3d5c0f1c37d5e9c1c87097dbdf0c3199",
+      "size": 5525,
+      "files": [
+        "chromium/third_party/pdfium/third_party/BUILD.gn",
+        "chromium/third_party/pdfium/third_party/agg23/BUILD.gn",
+        "chromium/third_party/pdfium/third_party/bigint/BUILD.gn",
+        "chromium/third_party/pdfium/third_party/bigint/README.pdfium",
+        "chromium/third_party/pdfium/third_party/lcms/BUILD.gn",
+        "chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn",
+        "chromium/third_party/pdfium/third_party/libtiff/BUILD.gn"
+      ],
+      "parent": "04fb03512fbc0c6a99f0183e3b36721884dcc236"
+    },
+    {
+      "commit": "a597436ff13cc71e752c1a5150ddfc80c1ee8fd9",
+      "title": "[Backport] CVE-2026-113093: Memory corruption in DisplayLocking",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=a597436ff13cc71e752c1a5150ddfc80c1ee8fd9",
+      "name": "05-a597436ff13cc71e752c1a5150ddfc80c1ee8fd9.patch",
+      "sha256": "c37842af34258cdcc5137386a7b342472ccda2b362bd05a19317cb466731d8d4",
+      "size": 10729,
+      "files": [
+        "chromium/third_party/blink/renderer/core/display_lock/display_lock_context.cc",
+        "chromium/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc",
+        "chromium/third_party/blink/renderer/core/timing/performance.cc",
+        "chromium/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc",
+        "chromium/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html"
+      ],
+      "parent": "f67e82cbe5faabd731dbcc904b9e6c22e7139cca"
+    },
+    {
+      "commit": "08360bd966e4daacf2569882cc8a39b87624c12a",
+      "title": "[Backport] CVE-2026-113072: Memory corruption in CSS",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=08360bd966e4daacf2569882cc8a39b87624c12a",
+      "name": "06-08360bd966e4daacf2569882cc8a39b87624c12a.patch",
+      "sha256": "9f9688ce0c772c64bce521e2b34762bb21541f30df3a1f0d2f69353460802146",
+      "size": 3627,
+      "files": [
+        "chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc",
+        "chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt"
+      ],
+      "parent": "a597436ff13cc71e752c1a5150ddfc80c1ee8fd9"
+    },
+    {
+      "commit": "4d2234527e53d8d4f560d7aacc293f5109ae7bb2",
+      "title": "[Backport] CVE-2026-113271: Use after free in Accessibility",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=4d2234527e53d8d4f560d7aacc293f5109ae7bb2",
+      "name": "07-4d2234527e53d8d4f560d7aacc293f5109ae7bb2.patch",
+      "sha256": "ca76d56a90c6bbba707377f6f24b4558626154578cb8948a99dfc532a5d7a6f6",
+      "size": 3509,
+      "files": [
+        "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc",
+        "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h"
+      ],
+      "parent": "08360bd966e4daacf2569882cc8a39b87624c12a"
+    },
+    {
+      "commit": "0b78258dea4ed6e1b6a60726564d15a7ffbcf508",
+      "title": "[Backport] CVE-2026-113279: Memory corruption in Accessibility",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=0b78258dea4ed6e1b6a60726564d15a7ffbcf508",
+      "name": "08-0b78258dea4ed6e1b6a60726564d15a7ffbcf508.patch",
+      "sha256": "522020d8b97c60545d704722dc426ab1e76223350566b88bdc7ebcd31d04f47d",
+      "size": 2384,
+      "files": [
+        "chromium/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc"
+      ],
+      "parent": "4d2234527e53d8d4f560d7aacc293f5109ae7bb2"
+    },
+    {
+      "commit": "e4485c20b14f1e1529e060492d20a7df499232ee",
+      "title": "[Backport] CVE-2026-113280: Memory corruption in Paint",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=e4485c20b14f1e1529e060492d20a7df499232ee",
+      "name": "09-e4485c20b14f1e1529e060492d20a7df499232ee.patch",
+      "sha256": "ba5cda02715bcaf9dbc4abccf0c182830498a340e5cbb79c3fc9d798ecce69e5",
+      "size": 4004,
+      "files": [
+        "chromium/third_party/blink/renderer/core/editing/frame_caret.cc",
+        "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5"
+      ],
+      "parent": "0b78258dea4ed6e1b6a60726564d15a7ffbcf508"
+    },
+    {
+      "commit": "70c8348a6aadc4112420201f78a74fbfbe160455",
+      "title": "[Backport] CVE-2026-113303: Memory corruption in WebRTC",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=70c8348a6aadc4112420201f78a74fbfbe160455",
+      "name": "10-70c8348a6aadc4112420201f78a74fbfbe160455.patch",
+      "sha256": "e440e7b1a000f2d1dd8f7c455684fd0933ecc8d2053a9df04db442dcaecff3fb",
+      "size": 10172,
+      "files": [
+        "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc",
+        "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h"
+      ],
+      "parent": "e4485c20b14f1e1529e060492d20a7df499232ee"
+    },
+    {
+      "commit": "153a09cdc9631d3783236a0956f0986e14fd0b6a",
+      "title": "[Backport] CVE-2026-113341: Memory corruption in Skia",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=153a09cdc9631d3783236a0956f0986e14fd0b6a",
+      "name": "11-153a09cdc9631d3783236a0956f0986e14fd0b6a.patch",
+      "sha256": "63f5ade6e27007e219e440606f022cb9aa4a0330d3f6011b727ad6589dbdae64",
+      "size": 12482,
+      "files": [
+        "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp",
+        "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h"
+      ],
+      "parent": "70c8348a6aadc4112420201f78a74fbfbe160455"
+    },
+    {
+      "commit": "6949243b644974dc7f9472d5707ab6396f749cf0",
+      "title": "[Backport] CVE-2026-112993: Use after free in Input",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=6949243b644974dc7f9472d5707ab6396f749cf0",
+      "name": "12-6949243b644974dc7f9472d5707ab6396f749cf0.patch",
+      "sha256": "6465b8d4bfbb9dbfae94c79626deb6dcf202c6414546c4b4f36d758a95a86d12",
+      "size": 10849,
+      "files": [
+        "chromium/third_party/blink/renderer/core/editing/selection_controller.cc",
+        "chromium/third_party/blink/renderer/core/editing/selection_template.cc",
+        "chromium/third_party/blink/renderer/core/exported/web_view_test.cc",
+        "chromium/third_party/blink/renderer/core/input/event_handler_test.cc",
+        "chromium/third_party/blink/renderer/core/input/gesture_manager.cc",
+        "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5"
+      ],
+      "parent": "153a09cdc9631d3783236a0956f0986e14fd0b6a"
+    },
+    {
+      "commit": "87c1f4da8d8f921f696075bdc6d40fb7abd66f10",
+      "title": "[Backport] CVE-2026-113012: Improper input validation in GPU",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=87c1f4da8d8f921f696075bdc6d40fb7abd66f10",
+      "name": "13-87c1f4da8d8f921f696075bdc6d40fb7abd66f10.patch",
+      "sha256": "be1de1d3f8c6f9cda919cdd58c77a3b600ed5040bde9edbf3ca20888ecae58a4",
+      "size": 6322,
+      "files": [
+        "chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc",
+        "chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc"
+      ],
+      "parent": "6949243b644974dc7f9472d5707ab6396f749cf0"
+    },
+    {
+      "commit": "2e8e6f7718e21e345ae11b08c5474046ff5d364b",
+      "title": "[Backport] CVE-2026-113040: Improper input validation in Proxy",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=2e8e6f7718e21e345ae11b08c5474046ff5d364b",
+      "name": "14-2e8e6f7718e21e345ae11b08c5474046ff5d364b.patch",
+      "sha256": "ced2caaa60052d78334d118433392bd351ce9ab7f0684169990c848c870fed74",
+      "size": 7856,
+      "files": [
+        "chromium/net/proxy_resolution/configured_proxy_resolution_request.cc",
+        "chromium/net/proxy_resolution/configured_proxy_resolution_request.h",
+        "chromium/net/proxy_resolution/configured_proxy_resolution_service.cc"
+      ],
+      "parent": "87c1f4da8d8f921f696075bdc6d40fb7abd66f10"
+    },
+    {
+      "commit": "9c5427c5581960224dcdf9ad3471ca5a0749a007",
+      "title": "[Backport] CVE-2026-113095: Out of bounds read in Focus",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=9c5427c5581960224dcdf9ad3471ca5a0749a007",
+      "name": "15-9c5427c5581960224dcdf9ad3471ca5a0749a007.patch",
+      "sha256": "c70ebb0296e7220c06367f03fa99f32e64ec14082ea5c51c63b759fe1735d5d2",
+      "size": 7337,
+      "files": [
+        "chromium/third_party/blink/renderer/core/display_lock/display_lock_context.cc",
+        "chromium/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc"
+      ],
+      "parent": "2e8e6f7718e21e345ae11b08c5474046ff5d364b"
+    },
+    {
+      "commit": "e8e60b24abe61e2c608d5580c2e54eedcd2667b2",
+      "title": "[Backport] CVE-2026-113097: Use after free in FileSystem (1/2)",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=e8e60b24abe61e2c608d5580c2e54eedcd2667b2",
+      "name": "16-e8e60b24abe61e2c608d5580c2e54eedcd2667b2.patch",
+      "sha256": "92fac7f980cfc021576894175d4c6e072f4ef7a6880cc2bce49bb413bb02c5a3",
+      "size": 10253,
+      "files": [
+        "chromium/content/browser/file_system_access/file_system_access_directory_handle_impl.cc",
+        "chromium/content/browser/file_system_access/file_system_access_file_handle_impl.cc",
+        "chromium/content/browser/file_system_access/file_system_access_handle_base.cc",
+        "chromium/content/browser/file_system_access/file_system_access_handle_base.h",
+        "chromium/content/browser/file_system_access/file_system_access_handle_base_unittest.cc"
+      ],
+      "parent": "9c5427c5581960224dcdf9ad3471ca5a0749a007"
+    },
+    {
+      "commit": "651a11b793209ba5567b5fd0f1c4141807f25dfa",
+      "title": "[Backport] CVE-2026-113097: Use after free in FileSystem (2/2)",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=651a11b793209ba5567b5fd0f1c4141807f25dfa",
+      "name": "17-651a11b793209ba5567b5fd0f1c4141807f25dfa.patch",
+      "sha256": "3fff1a6b1ee5e1152a4151d6121103992be8432125f107440ceca26fce2e81c3",
+      "size": 19447,
+      "files": [
+        "chromium/content/browser/file_system_access/file_system_access_directory_handle_impl.cc",
+        "chromium/content/browser/file_system_access/file_system_access_handle_base.cc",
+        "chromium/content/browser/file_system_access/file_system_access_handle_base.h",
+        "chromium/content/browser/file_system_access/file_system_access_manager_impl.cc",
+        "chromium/content/browser/file_system_access/file_system_access_observer_host.cc",
+        "chromium/content/browser/file_system_access/file_system_access_transfer_token_impl.cc"
+      ],
+      "parent": "e8e60b24abe61e2c608d5580c2e54eedcd2667b2"
+    },
+    {
+      "commit": "5c8df23d05066e077dc2e41688729e68b2f5f980",
+      "title": "[Backport] Addendum for CVE-2026-76020: Race condition in V8",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=5c8df23d05066e077dc2e41688729e68b2f5f980",
+      "name": "18-5c8df23d05066e077dc2e41688729e68b2f5f980.patch",
+      "sha256": "1e854a747c4c4eea0c1efe894628166fee16fbf9660129aad3347110cccc9e95",
+      "size": 4599,
+      "files": [
+        "chromium/v8/src/codegen/compiler.cc",
+        "chromium/v8/src/objects/shared-function-info-inl.h",
+        "chromium/v8/src/objects/shared-function-info.h"
+      ],
+      "parent": "651a11b793209ba5567b5fd0f1c4141807f25dfa"
+    },
+    {
+      "commit": "00a931090f40179c5f0d211c3964849348618f9c",
+      "title": "[Backport] CVE-2026-113339: Use after free in SVG",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=00a931090f40179c5f0d211c3964849348618f9c",
+      "name": "19-00a931090f40179c5f0d211c3964849348618f9c.patch",
+      "sha256": "7a56ad3c6ce70901bf8284869aeeb63d5a2ba143a597df4248ef87f3fb868712",
+      "size": 2110,
+      "files": [
+        "chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc"
+      ],
+      "parent": "5c8df23d05066e077dc2e41688729e68b2f5f980"
+    },
+    {
+      "commit": "012dba76f5874f65b673967c0003d7a7461037a0",
+      "title": "[Backport] CVE-2025-10201: Inappropriate implementation in Mojo",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=012dba76f5874f65b673967c0003d7a7461037a0",
+      "name": "20-012dba76f5874f65b673967c0003d7a7461037a0.patch",
+      "sha256": "b2acf728e92942b71aeb498049a17a721fc166772b8daa9f81409383dec14cd7",
+      "size": 3779,
+      "files": [
+        "chromium/mojo/core/channel_posix.cc"
+      ],
+      "parent": "00a931090f40179c5f0d211c3964849348618f9c"
+    },
+    {
+      "commit": "58694ee29b35f13d6e29b4825a269e3028b797f4",
+      "title": "[Backport] CVE-2026-19142: Use after free in Views",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=58694ee29b35f13d6e29b4825a269e3028b797f4",
+      "name": "21-58694ee29b35f13d6e29b4825a269e3028b797f4.patch",
+      "sha256": "cd02f65ff3ba3cdecb0d6bea9874963cedac5f334182b5d6a177d63653e86666",
+      "size": 15633,
+      "files": [
+        "chromium/ui/aura/client/default_capture_client.cc",
+        "chromium/ui/aura/client/default_capture_client.h",
+        "chromium/ui/aura/window_event_dispatcher.cc",
+        "chromium/ui/aura/window_event_dispatcher_unittest.cc",
+        "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc",
+        "chromium/ui/views/widget/desktop_aura/desktop_capture_client.h",
+        "chromium/ui/wm/core/capture_controller.cc",
+        "chromium/ui/wm/core/capture_controller.h"
+      ],
+      "parent": "012dba76f5874f65b673967c0003d7a7461037a0"
+    },
+    {
+      "commit": "dde56b0d89b3d7ed5dbf5e4f47eab19a523c0cfe",
+      "title": "[Backport] CVE-2026-113119: Use after free in Network",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=dde56b0d89b3d7ed5dbf5e4f47eab19a523c0cfe",
+      "name": "22-dde56b0d89b3d7ed5dbf5e4f47eab19a523c0cfe.patch",
+      "sha256": "f4e5cd9b0d5da0c0e2b95ef5e749992877c0cee9a522fadd383d26627dbd6176",
+      "size": 16081,
+      "files": [
+        "chromium/net/http/http_auth_controller.cc",
+        "chromium/net/http/http_auth_controller.h",
+        "chromium/net/http/http_network_transaction.cc",
+        "chromium/net/http/http_network_transaction.h",
+        "chromium/net/http/http_proxy_client_socket.cc",
+        "chromium/net/quic/quic_proxy_client_socket.cc",
+        "chromium/net/spdy/spdy_proxy_client_socket.cc"
+      ],
+      "parent": "58694ee29b35f13d6e29b4825a269e3028b797f4"
+    },
+    {
+      "commit": "651d3b79e61f72684b426804754e03e204ae4aca",
+      "title": "[Backport] Dependency for CVE-2026-113044",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=651d3b79e61f72684b426804754e03e204ae4aca",
+      "name": "23-651d3b79e61f72684b426804754e03e204ae4aca.patch",
+      "sha256": "1137ce2ae3c999cfcfc69b7aeaf2ba27847b8a9fc6df4ca2491ad0233ce172d3",
+      "size": 23837,
+      "files": [
+        "chromium/v8/src/heap/factory.cc",
+        "chromium/v8/src/heap/factory.h",
+        "chromium/v8/src/objects/name-inl.h",
+        "chromium/v8/src/objects/name.h",
+        "chromium/v8/src/objects/string-table.cc",
+        "chromium/v8/src/objects/string.cc",
+        "chromium/v8/src/objects/string.h",
+        "chromium/v8/src/strings/string-hasher-inl.h",
+        "chromium/v8/src/strings/string-hasher.h"
+      ],
+      "parent": "dde56b0d89b3d7ed5dbf5e4f47eab19a523c0cfe"
+    },
+    {
+      "commit": "f1e3c1cedd95d17a4474a72c60f791679f3437b0",
+      "title": "[Backport] CVE-2026-113044: Use after free in V8",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=f1e3c1cedd95d17a4474a72c60f791679f3437b0",
+      "name": "24-f1e3c1cedd95d17a4474a72c60f791679f3437b0.patch",
+      "sha256": "5d3422a2dfedd7183fdac90668aca8825efc0434bda1318ec041c2b94922920e",
+      "size": 7628,
+      "files": [
+        "chromium/v8/src/ast/ast-value-factory.cc",
+        "chromium/v8/src/ast/ast-value-factory.h",
+        "chromium/v8/src/objects/string-table.cc",
+        "chromium/v8/src/strings/string-hasher-inl.h"
+      ],
+      "parent": "651d3b79e61f72684b426804754e03e204ae4aca"
+    }
+  ],
+  "criticalAdvisories": [
+    "CVE-2026-113341",
+    "CVE-2026-113279",
+    "CVE-2026-113072",
+    "CVE-2026-113280",
+    "CVE-2026-113271",
+    "CVE-2026-113303"
+  ],
+  "nodeBuildInput": {
+    "version": "v22.23.4",
+    "name": "node-v22.23.4-linux-x64.tar.xz",
+    "sha256": "1805bcd35e6815559bd2eb97db438d3fdb0eb3a5e6a977b7c1badca76337e9ce",
+    "url": "https://nodejs.org/dist/v22.23.4/node-v22.23.4-linux-x64.tar.xz",
+    "usage": "build-only; not shipped"
+  },
+  "coverage": "Complete contiguous official Qt140-based change series after the source archive commit through target commit. Includes vendor backports for the six previously unresolved critical advisories; does not assert all Chrome156 fixes apply or are fixed, or change the vendor-declared security version. Separately identified local compatibility adapter imports the missing Google M144-LTS Aura shared weak-pointer dependency and reconciles its capture declarations; the resulting source is not claimed identical to the raw Qt vendor target.",
+  "compatibilityBackports": [
+    {
+      "id": "aura-shared-weak-window-dependency",
+      "name": "qt140-aura-dependency-compatibility.patch",
+      "sha256": "451f0d6646036e4f33d00f0e24c645cfda8b85edf68e76a167610a225c8cd9d9",
+      "size": 14941,
+      "files": [
+        "chromium/ui/aura/window.cc",
+        "chromium/ui/aura/window.h",
+        "chromium/ui/aura/window_event_dispatcher.cc",
+        "chromium/ui/events/gestures/gesture_provider_aura_unittest.cc",
+        "chromium/ui/events/gestures/gesture_types.cc",
+        "chromium/ui/events/gestures/gesture_types.h",
+        "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc",
+        "chromium/ui/wm/core/capture_controller.cc",
+        "chromium/ui/wm/core/focus_controller.cc"
+      ],
+      "before": {
+        "chromium/ui/aura/window.cc": {
+          "sha256": "a848b71414a23b8711aa9fcf6469f87ccab48db1630e09a22c8650846480d59a",
+          "size": 64716
+        },
+        "chromium/ui/aura/window.h": {
+          "sha256": "a4abf0566d04b99267d4b334d07e0061d0f2ab0cfee9e1d18beac6d0107fd231",
+          "size": 36185
+        },
+        "chromium/ui/aura/window_event_dispatcher.cc": {
+          "sha256": "7d6bd5b4e9ba9fd848724245ece287008a6ea42bea5272daf51045505edf1644",
+          "size": 46377
+        },
+        "chromium/ui/events/gestures/gesture_provider_aura_unittest.cc": {
+          "sha256": "202725a589cee08f6a4014bdb434a901c047274fe7c6db11ca42dbcbb8d1c68a",
+          "size": 12141
+        },
+        "chromium/ui/events/gestures/gesture_types.cc": {
+          "sha256": "fb3184428120e14c4e71cd018fecddf0fa483e8c7690ce9799ab4375cf16774b",
+          "size": 1066
+        },
+        "chromium/ui/events/gestures/gesture_types.h": {
+          "sha256": "bb70a28b0baef3e21021736d2b971385244c58030c67ab5a4c2f97b5ffb4c3b4",
+          "size": 2468
+        },
+        "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc": {
+          "sha256": "4f8578439dc26583e0727b667f2d8897526a7b2d453ce79d055c6ff6affe42a1",
+          "size": 4378
+        },
+        "chromium/ui/wm/core/capture_controller.cc": {
+          "sha256": "7bdaca50678fb61fc6564c6489534164dd960e8d6d59ac092178134e1404e1c0",
+          "size": 5668
+        },
+        "chromium/ui/wm/core/focus_controller.cc": {
+          "sha256": "afce052d823a3ad68d610f1e0b126fbc30d63297406f8380c985a80efbe2342b",
+          "size": 18775
+        }
+      },
+      "after": {
+        "chromium/ui/aura/window.cc": {
+          "sha256": "1b847422fc5e88c969754bc8095e64766b12b36050d07078fa48a1e26e3039ab",
+          "size": 64913
+        },
+        "chromium/ui/aura/window.h": {
+          "sha256": "21b31c5b700f4643862f247816f58b512521d7cec9fbb471837fe506125475de",
+          "size": 36507
+        },
+        "chromium/ui/aura/window_event_dispatcher.cc": {
+          "sha256": "4e3285faa265d3969339de8e604bb243aa8bb20e86106adbd96bd2af4a67e662",
+          "size": 46244
+        },
+        "chromium/ui/events/gestures/gesture_provider_aura_unittest.cc": {
+          "sha256": "5b4e1e100e019070da26f3bbfb546b93266d48105858ea8e308bdbd26377e6a2",
+          "size": 12611
+        },
+        "chromium/ui/events/gestures/gesture_types.cc": {
+          "sha256": "5a43f4002dcccb058353cc2c4cd4115e351494ca5dfc5326256f9eb8caa61ffa",
+          "size": 959
+        },
+        "chromium/ui/events/gestures/gesture_types.h": {
+          "sha256": "bb9fbb3f866513c71697d3adbc5f96ff787b6d056c92040de1d9b9d859cb3dea",
+          "size": 2546
+        },
+        "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc": {
+          "sha256": "99c0c99f64976ac801b771dc60b24a4bfce72bf7383af45b5853956384487e03",
+          "size": 4259
+        },
+        "chromium/ui/wm/core/capture_controller.cc": {
+          "sha256": "2086a5c0f9003b47921f82ed67a10770d3fc1942ad96100216e73d6a008eefc6",
+          "size": 5730
+        },
+        "chromium/ui/wm/core/focus_controller.cc": {
+          "sha256": "00fe8cfd35af018a001476aeba03547bb7fe96cc57d142d5373050bf067d1276",
+          "size": 18643
+        }
+      },
+      "upstream": [
+        {
+          "commit": "c57a349825ed93a8ac373519fb7da5319fb75335",
+          "url": "https://chromium-review.googlesource.com/changes/chromium%2Fsrc~8051545/revisions/c57a349825ed93a8ac373519fb7da5319fb75335/patch",
+          "name": "Google-M144-LTS-c57a349825ed93a8ac373519fb7da5319fb75335.patch",
+          "sha256": "17708c3fbf492797e88c82f9734064540ba33aabb33aef7f87c54169aaabd271",
+          "size": 24550
+        },
+        {
+          "commit": "5c2010f1a7ea14ead6d4a9848cce9f783ddd9fc1",
+          "url": "https://chromium-review.googlesource.com/changes/chromium%2Fsrc~8127178/revisions/5c2010f1a7ea14ead6d4a9848cce9f783ddd9fc1/patch",
+          "name": "Google-security-5c2010f1a7ea14ead6d4a9848cce9f783ddd9fc1.patch",
+          "sha256": "920e2b0baf7dfc7b6d5de68524864c7ce7df0f3820a71a13d9e74a66e9ab18fe",
+          "size": 13843
+        }
+      ],
+      "excludedAbsentAshFiles": [
+        "ash/accessibility/chromevox/touch_exploration_controller.cc",
+        "ash/accessibility/chromevox/touch_exploration_controller.h",
+        "ash/accessibility/magnifier/fullscreen_magnifier_controller.cc",
+        "ash/accessibility/magnifier/fullscreen_magnifier_controller.h",
+        "ash/drag_drop/drag_drop_capture_delegate.cc",
+        "ash/wm/gestures/back_gesture/back_gesture_event_handler.cc",
+        "ash/wm/gestures/back_gesture/back_gesture_event_handler.h",
+        "ash/wm/toplevel_window_event_handler.cc"
+      ],
+      "scope": "All9 Qt-present files from the official17-file Google helper;8ashfiles absent from Qt archive excluded. Complete shared factory lifecycle retained; existing vendor21 capture weak pointers and ScopedDeleteBlockers preserved.",
+      "adaptations": [
+        "Window getter definitions inserted before existing NotifyResizeLoopStarted despite older-context differences.",
+        "Window WeakPtrFactory appended AFTER existing delete_block_count_ as lastmember.",
+        "Existing OnWindowHidden root ScopedDeleteBlocker retained while replacing its WindowTracker with exact upstream weak-pointer semantics.",
+        "Existing vendor21 CaptureController weak assignment retained; upstream helper new/old weak declarations and checks supplied.",
+        "Existing vendor21 DesktopCaptureClient outer new-window weak declaration reused instead of adding a duplicate inner declaration."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+From bcf1f349e39ee0dce3f2e1c9816129983ca51773 Mon Sep 17 00:00:00 2001
+From: Michal Klocek <michal.klocek@qt.io>
+Date: Fri, 30 Oct 2026 12:23:53 +0100
+Subject: [PATCH] [fixup][backport] CVE-2026-113334: Improper input validation
+ in ANGLE
+
+Fix the call which runs only on the old D3D_FEATURE_LEVEL_9_3 path by
+passing throw away local variables for the depth and level offset.
+
+Change-Id: I716a0f952d10fcd01abf4d21773df93a438e452a
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784878
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp  | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index 5f9b9fa27bb..a7f188985fa 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -751,12 +751,15 @@ angle::Result TextureStorage11::copySubresourceLevel(const gl::Context *context,
+     D3D11_BOX *pSrcBox = nullptr;
+     if (mRenderer->getRenderer11DeviceCaps().featureLevel <= D3D_FEATURE_LEVEL_9_3)
+     {
+-        GLsizei width  = region.width;
+-        GLsizei height = region.height;
+-        d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, nullptr);
++        GLsizei width       = region.width;
++        GLsizei height      = region.height;
++        GLsizei depth       = region.depth;
++        int unusedLevelOffset = 0;
++        d3d11::MakeValidSize(false, mFormatInfo.texFormat, index.getType(), width, height, depth,
++                             unusedLevelOffset);
+ 
+         // Keep srcbox as nullptr if we're dealing with tiny mips of compressed textures.
+-        if (width == region.width && height == region.height)
++        if (width == region.width && height == region.height && depth == region.depth)
+         {
+             // However, D3D10Level9 doesn't always perform CopySubresourceRegion correctly unless
+             // the source box is specified. This is okay, since we don't perform

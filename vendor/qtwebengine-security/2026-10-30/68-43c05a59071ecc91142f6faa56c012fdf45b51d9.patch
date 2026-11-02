@@ -1,0 +1,76 @@
+From 43c05a59071ecc91142f6faa56c012fdf45b51d9 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Tue, 13 Oct 2026 15:16:57 -0700
+Subject: [PATCH] [Backport] CVE-2026-118358: Memory corruption in WebAudio
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8561977:
+Stop paused destination and guard automatic pull on close
+
+When an AudioContext is closed while its frame is frozen, the platform
+audio destination is in the kPaused state (`IsPlaying()` is false), so
+`StopPlatformDestination()` previously skipped calling `Stop()`. When
+the frame later thawed, `Resume()` restarted the audio thread on the
+closed context, and `Render()` invoked `ProcessAutomaticPullNodes()`
+even when pulling the audio graph was disabled, causing an object
+lifetime issue with disposed upstream nodes.
+
+Changes:
+- Call `platform_destination_->Stop()` in `StopPlatformDestination()`
+  whenever `platform_destination_` is present so `kPaused` destinations
+  transition to `kStopped`.
+- Move `ProcessAutomaticPullNodes()` inside the active graph-pulling
+  branch of `RealtimeAudioDestinationHandler::Render()`.
+- Add `AudioContextTest.CloseWhileFrozenStopsDestination` to verify
+  closing a frozen context stops the destination and guards automatic
+  pull nodes.
+
+Bug: 572191610
+Test: blink_unittests --gtest_filter=AudioContextTest.CloseWhileFrozen*
+Change-Id: I3126957a0a43ffdce2f541908ad90359e8f0fd6e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8561977
+Commit-Queue: Hongchan Choi <hongchan@google.com>
+Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+Cr-Commit-Position: refs/heads/main@{#1717977}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784488
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../webaudio/realtime_audio_destination_handler.cc | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+index 5c88dcb972ec..e260c728625a 100644
+--- a/chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
++++ b/chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+@@ -254,14 +254,15 @@ void RealtimeAudioDestinationHandler::Render(
+       // given `destination_bus` buffer.
+       destination_bus->CopyFrom(*rendered_bus);
+     }
++
++    // Processes "automatic" nodes that are not connected to anything. This can
++    // be done after copying because it does not affect the rendered result.
++    context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
++        number_of_frames);
+   } else {
+     destination_bus->Zero();
+   }
+ 
+-  // Processes "automatic" nodes that are not connected to anything. This can
+-  // be done after copying because it does not affect the rendered result.
+-  context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(number_of_frames);
+-
+   context->HandlePostRenderTasks();
+ 
+   // Handle audibility before handling the volume multiplier since the volume
+@@ -454,7 +455,10 @@ void RealtimeAudioDestinationHandler::StopPlatformDestination() {
+   // for a while. (It may take a bit of time for the destination to stop.)
+   DisablePullingAudioGraph();
+ 
+-  if (platform_destination_->IsPlaying()) {
++  // `AudioDestination::Stop()` is a no-op when already stopped, and transitions
++  // both `kRunning` and `kPaused` destinations to `kStopped` so a subsequent
++  // lifecycle `Resume()` cannot restart a stopped destination.
++  if (platform_destination_) {
+     platform_destination_->Stop();
+   }
+ }

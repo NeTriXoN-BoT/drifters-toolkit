@@ -1,0 +1,45 @@
+Drifter's Toolkit Save Codec 0.1.0
+Separate stdin/stdout save-container decoder
+
+The wrapper source in src/main.rs is licensed under the GNU General Public
+License, version 3 or (at your option) any later version. Copyright (C) 2026
+Drifter's Toolkit contributors. It is supplied WITHOUT ANY WARRANTY. The full
+licence text is in COPYING. Users may study, modify and redistribute this
+component under that licence; keep its corresponding source available with any
+binary distribution as required by the licence.
+
+This component uses oozextract 0.5.6, upstream commit
+78f0e1d16d416bbe6bbc4773bbd491f9ee5925a2:
+https://github.com/lvlvllvlvllvlvl/oozextract
+The upstream Cargo manifests declare MIT and are retained without alteration.
+The upstream crate does not include a separate MIT licence/copyright file.
+
+The port identifies its decompression implementation as based on Powzix's ooz.
+The original code carries Copyright (C) 2016, Powzix and an explicit
+GPL-3.0-or-later header. The complete relevant original source snapshot at
+05038060aa68f9187ae9923b2388ca8db40e58d1 is retained under origin/ in the matching
+source distribution:
+https://github.com/powzix/ooz/tree/05038060aa68f9187ae9923b2388ca8db40e58d1
+
+Because of that original provenance, this separate decoder and its combined
+corresponding source are provided under GPL-3.0-or-later. This is not an assertion
+that the port is permissive-only or that upstream supplied a relicensing grant.
+The port's MIT package declaration and the other dependencies' own notices and
+licence texts remain preserved in vendor/. No contributor's notice is removed.
+
+The matching source includes the wrapper, Cargo.lock, all locked vendored
+dependencies, their licence files, the offline Cargo configuration and build
+instructions. It contains no game saves, game assets, proprietary Oodle binary,
+FModel component, account credentials or private project notes. The historical
+save-picture experiment is a separate component and is not included.
+
+runtime-notices/ retains the Rust standard-library copyright and licence texts
+and the GCC runtime-library exception distributed with the pinned toolchain.
+The static Linux build also contains musl 1.2.3 from the Rust 1.90.0 target
+runtime. Its complete controlling COPYRIGHT notice and the official Rust build
+input references are retained as runtime-notices/MUSL-1.2.3-COPYRIGHT.txt and
+runtime-notices/MUSL-PROVENANCE.txt.
+
+This notice describes the separate decoder component. It does not determine the
+licensing of another program or replace the terms in COPYING and the retained
+upstream notices.

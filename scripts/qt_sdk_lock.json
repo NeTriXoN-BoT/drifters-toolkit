@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "qtVersion": "6.11.3",
+  "archives": [
+    {
+      "name": "6.11.3-0-202610220312qtbase-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312qtbase-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "ce282da4d8a83dc216ed96b715202872d655177189c16205dc5fab09b41a9f09",
+      "size": 22883961,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtsvg-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312qtsvg-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "7b71eea32674d6ac8e9b5b1d3819f510c6081619ca440b6cac86fd970942cf7a",
+      "size": 298621,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtdeclarative-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312qtdeclarative-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "424a4012edd475e21c108df6e297ab034cb786ec91f5fe451d20e3a5540e486d",
+      "size": 129700930,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qttranslations-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312qttranslations-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "50991f143b82942001c73a263fe50e6fafa256d68c4da67ac8a7a9771dbfbdb9",
+      "size": 2004906,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtwayland-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312qtwayland-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "510a61a415699e83a9d0431c7e3d4621e50776c7f57aefbe0f9a841132e2dd99",
+      "size": 130352,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312icu-linux-Rhel8.6-x86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.linux_gcc_64/6.11.3-0-202610220312icu-linux-Rhel8.6-x86_64.7z",
+      "sha256": "16f1e8f409bd9f0b248e36d10deab498d0c1b33d25e0a515a076b1f6b5a1ab28",
+      "size": 9660662,
+      "extractSubdir": "lib"
+    },
+    {
+      "name": "6.11.3-0-202610220312qtwebchannel-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.addons.qtwebchannel.linux_gcc_64/6.11.3-0-202610220312qtwebchannel-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "db54c84002cc0701e7a761f5dc6dd60db0455962be74a8679542432e97520788",
+      "size": 125088,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtwebsockets-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.addons.qtwebsockets.linux_gcc_64/6.11.3-0-202610220312qtwebsockets-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "a1a49d30276d341a9b29321b56586d88cdb19d2c161762cc5980f7a0a7e15161",
+      "size": 112734,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtimageformats-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.addons.qtimageformats.linux_gcc_64/6.11.3-0-202610220312qtimageformats-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "05d9f331274a6b4247020f592306975b745a9ef2799b4a01dd7a4b881555d197",
+      "size": 427746,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220312qtpositioning-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_6113/qt6_6113/qt.qt6.6113.addons.qtpositioning.linux_gcc_64/6.11.3-0-202610220312qtpositioning-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "b050147b7e47cf7da6b16ab3e01dd78a93920c508c6d4929d5832ef1818671f6",
+      "size": 399434,
+      "extractSubdir": "."
+    },
+    {
+      "name": "6.11.3-0-202610220311qtwebengine-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "url": "https://download.qt.io/online/qtsdkrepository/linux_x64/extensions/qtwebengine/6113/x86_64/extensions.qtwebengine.6113.linux_gcc_64/6.11.3-0-202610220311qtwebengine-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+      "sha256": "ddd874383cb7d5c1a2afc484363f366d0d763d1e566840e2190716906fcd4822",
+      "size": 130577904,
+      "extractSubdir": "."
+    }
+  ],
+  "sdkBuild": "Linux-RHEL_9_6-GCC11.5-x86_64",
+  "provenance": "Official Qt online SDK repository; archive digests verified against its SHA-256 sidecars."
+}

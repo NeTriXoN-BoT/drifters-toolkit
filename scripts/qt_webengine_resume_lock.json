@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "resumeRevision": 2,
+  "configuredRecipe": {
+    "sha256": "fd107be202a676e7af6314bc169f1c1387e4e445efa63b721820a27683834fef",
+    "size": 13071
+  },
+  "sourceInventory": {
+    "sha256": "f9ea6337cee48dea499622bd5933ea7376723ec51759eaa96d049503bc49e0db",
+    "size": 10403
+  },
+  "targetChromiumCommit": "f1e3c1cedd95d17a4474a72c60f791679f3437b0",
+  "minimumHostFreeBytes": 68719476736,
+  "expectedToolVersions": {
+    "clang": "Debian clang version 19.1.7 (3~deb12u1)",
+    "node": "v22.23.4",
+    "cmake": "cmake version 3.25.1",
+    "ninja": "1.11.1"
+  },
+  "reason": "Resume the same validated pre-existing source/build after migration to dedicated D-backed Linux storage; preserve the original configured recipe identity separately from final verification and continuation code. Revision2 additionally distinguishes the unchanged75file vendor inventory from the81file final derived source inventory.",
+  "configuredRecipeFile": "vendor/qtwebengine-security/2026-10-26/configured-bootstrap.py",
+  "finalSourceInventory": {
+    "sha256": "b30d014b8342ca17e5c18620fd2bb8e0dd67fc56c15065bc5a246edc9ec79f1b",
+    "size": 11452
+  }
+}

@@ -1,0 +1,57 @@
+From 92964018c53c02d38937f8f4cc5fe6ff4a95f7e3 Mon Sep 17 00:00:00 2001
+From: Feras Aldahlawi <frs@chromium.org>
+Date: Tue, 13 Oct 2026 15:08:15 -0700
+Subject: [PATCH] [Backport] CVE-2026-113309: Out of bounds read in Media
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8518406:
+media: Safely drain promises in CdmPromiseAdapter::Clear
+
+Rejecting a promise during CdmPromiseAdapter::Clear() may trigger
+client callbacks that call SavePromise(). Move promises_ to a local
+map before iterating to avoid iterator invalidation and use-after-free.
+
+Bug: 568831768
+Change-Id: If8364c9ace5d0f5eb06104b065a2187b6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8518406
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Feras Aldahlawi <frs@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717947}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783834
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/media/base/cdm_promise_adapter.cc | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/chromium/media/base/cdm_promise_adapter.cc b/chromium/media/base/cdm_promise_adapter.cc
+index f013809a62e2..4db8bc3298d8 100644
+--- a/chromium/media/base/cdm_promise_adapter.cc
++++ b/chromium/media/base/cdm_promise_adapter.cc
+@@ -94,14 +94,20 @@ void CdmPromiseAdapter::RejectPromise(uint32_t promise_id,
+ void CdmPromiseAdapter::Clear(ClearReason reason) {
+   // Reject all outstanding promises.
+   DCHECK(thread_checker_.CalledOnValidThread());
+-  for (auto& [promise_id, promise] : promises_) {
+-    TRACE_EVENT_NESTABLE_ASYNC_END1(
+-        "media", "CdmPromise", TRACE_ID_WITH_SCOPE("CdmPromise", promise_id),
+-        "status", "cleared");
+-    promise->reject(CdmPromise::Exception::INVALID_STATE_ERROR,
+-                    ToSystemCode(reason), "Operation aborted.");
++  // Rejecting a promise runs client code, which may re-enter this class, e.g.
++  // SavePromise() to close a session, or ResolvePromise()/RejectPromise() from
++  // a nested run loop. Move the promises out of `promises_` before rejecting
++  // them so that re-entrant calls cannot invalidate the iteration or settle a
++  // promise twice, and repeat until no new promises were saved.
++  while (!promises_.empty()) {
++    PromiseMap promises = std::exchange(promises_, {});
++    for (auto& [promise_id, promise] : promises) {
++      TRACE_EVENT_END("media", perfetto::NamedTrack("CdmPromise", promise_id),
++                      "status", "cleared");
++      promise->reject(CdmPromise::Exception::INVALID_STATE_ERROR,
++                      ToSystemCode(reason), "Operation aborted.");
++    }
+   }
+-  promises_.clear();
+ }
+ 
+ std::unique_ptr<CdmPromise> CdmPromiseAdapter::TakePromise(

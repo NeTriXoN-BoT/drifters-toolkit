@@ -1,0 +1,45 @@
+From 444482fea924a9960cb25ad1b1af8b574811d052 Mon Sep 17 00:00:00 2001
+From: Marco Paniconi <marpan@google.com>
+Date: Thu, 8 Oct 2026 04:09:30 +0000
+Subject: [PATCH] [Backport] CVE-2026-118333: Missing authorization in Video
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/webm/libvpx/+/8535346:
+vp8: clear cached resolution on thread restart failure
+
+In vp8_decode(), vp8_peek_si_internal() updates ctx->si.w and ctx->si.h
+from the keyframe header before restarting decode threads. If
+vp8_decoder_create_threads() or vp8mt_alloc_temp_buffers() fails in the
+restart_threads block, the setjmp handler returned VPX_CODEC_ERROR
+without clearing ctx->si.w and ctx->si.h.
+
+On subsequent decode calls with a keyframe of the same new dimensions,
+resolution_change stayed 0 and frame buffer reallocation was skipped
+while temporary multithread row buffers were allocated for the new
+width, causing a heap-buffer-overflow in vp8mt_decode_mb_rows().
+
+Clear ctx->si.w and ctx->si.h in the restart_threads error handler so a
+full reallocation is triggered on re
+
+Change-Id: I8ed1743f4540dcc3e6a6c36fd06a7f45123df32d
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784360
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c b/chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c
+index 7baf5c9ef2e..df0f987bd12 100644
+--- a/chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c
++++ b/chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c
+@@ -332,6 +332,10 @@ static vpx_codec_err_t vp8_decode(vpx_codec_alg_priv_t *ctx,
+     VP8_COMMON *const pc = &pbi->common;
+     if (setjmp(pbi->common.error.jmp)) {
+       pbi->common.error.setjmp = 0;
++      /* on failure clear the cached resolution to ensure a full
++       * reallocation is attempted on resync. */
++      ctx->si.w = 0;
++      ctx->si.h = 0;
+       vp8_decoder_remove_threads(pbi);
+       vpx_clear_system_state();
+       return VPX_CODEC_ERROR;

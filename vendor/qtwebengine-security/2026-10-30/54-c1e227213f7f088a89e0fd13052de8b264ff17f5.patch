@@ -1,0 +1,80 @@
+From c1e227213f7f088a89e0fd13052de8b264ff17f5 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Wed, 21 Oct 2026 14:00:02 +0000
+Subject: [PATCH] [Backport] CVE-2026-118316: Improper input validation in V8
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8616353:
+Scan outgoing stack parameters from Wasm to builtins
+
+When a Wasm function calls a builtin that passes tagged parameters on
+the stack (e.g. TFS builtins with >= 4 parameters on ia32 such as
+CallIndirectIC), the callee's StubFrame expects the caller frame to
+scan those outgoing stack parameters during GC. Previously,
+WasmFrame::Iterate skipped outgoing parameters for kWasmFunction frames.
+
+Check in WasmFrame::Iterate whether the callee is a builtin whose
+CallInterfaceDescriptor allows stack scanning, and visit its
+GetStackParameterCount() outgoing stack slots starting at sp().
+
+TAG=agy
+CONV=96b1f648-2589-484a-a505-7ed7a444bec1
+
+Fixed: 574223268
+Change-Id: Ie725f7e5bbf009434509e44c0ccfca428099403a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8616353
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111022}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784357
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/v8/src/execution/frames.cc | 33 +++++++++++++++++++++++++----
+ 1 file changed, 29 insertions(+), 4 deletions(-)
+
+diff --git a/chromium/v8/src/execution/frames.cc b/chromium/v8/src/execution/frames.cc
+index 0f80b6cddac..a674cf3e4ec 100644
+--- a/chromium/v8/src/execution/frames.cc
++++ b/chromium/v8/src/execution/frames.cc
+@@ -1806,10 +1806,35 @@ void WasmFrame::Iterate(RootVisitor* v) const {
+   bool has_tagged_outgoing_params =
+       wasm_code->kind() != wasm::WasmCode::kWasmFunction &&
+       wasm_code->kind() != wasm::WasmCode::kWasmToCapiWrapper;
+-  if (!InFastCCall() && has_tagged_outgoing_params) {
+-    FullObjectSlot parameters_base(&Memory<Address>(sp()));
+-    v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
+-                         parameters_limit);
++  if (!InFastCCall()) {
++    if (has_tagged_outgoing_params) {
++      FullObjectSlot parameters_base(&Memory<Address>(sp()));
++      v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                           parameters_limit);
++    } else if (wasm_code->kind() == wasm::WasmCode::kWasmFunction &&
++               callee_pc() != kNullAddress) {
++      // If a Wasm function calls a builtin with tagged stack parameters,
++      // visit those parameters. (Calls to other Wasm functions or to
++      // WasmToJsWrapperCSA have their tagged stack parameters visited by the
++      // callee frame instead.)
++      Builtin builtin =
++          OffHeapInstructionStream::TryLookupCode(isolate(), callee_pc());
++      if (Builtins::IsBuiltinId(builtin)) {
++        CallInterfaceDescriptor descriptor =
++            Builtins::CallInterfaceDescriptorFor(builtin);
++        DCHECK(!descriptor.AllowVarArgs());
++        if (!(descriptor.flags() & CallInterfaceDescriptorData::kNoStackScan)) {
++          int stack_params = descriptor.GetStackParameterCount();
++          DCHECK_IMPLIES(builtin == Builtin::kWasmToJsWrapperCSA,
++                         stack_params == 0);
++          if (stack_params > 0) {
++            FullObjectSlot parameters_base(&Memory<Address>(sp()));
++            v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                                 parameters_base + stack_params);
++          }
++        }
++      }
++    }
+   }
+ 
+   // Visit pointer spill slots and locals.

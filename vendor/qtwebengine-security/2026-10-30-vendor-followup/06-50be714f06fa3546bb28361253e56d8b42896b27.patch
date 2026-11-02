@@ -1,0 +1,428 @@
+From 50be714f06fa3546bb28361253e56d8b42896b27 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Wed, 19 Nov 2025 21:32:17 -0800
+Subject: [PATCH] [Backport] Dependency for CVE-2026-118334
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/7167966:
+Use UnwrappingCrossThreadHandle in ImageCaptureFrameGrabber
+
+While this code appears to work, Persistents are not safe to pass across
+threads. Rewrite this to use UnwrappingCrossThreadHandle instead.
+
+Additional fixes and cleanups:
+- Make ScopedPromiseResolver an inner class. There is already another
+  `blink::ScopedPromiseResolver` that is not templated that would
+  conflict with it if both definitions were ever visible in the same
+  translation unit.
+- Remove unnecessary callbacks to remove indirections and simplify the
+  code. Callback trampolines are not free, and this helper is used in
+  exactly one place.
+- Related: return an image by value rather than by callback, so the
+  compiler can warn if a path forgets to return an image.
+
+Bug: 460743390
+Change-Id: Icba0ebf829e6dfaa094f2f08862b79a838a2f362
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7167966
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1547631}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784863
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../image_capture_frame_grabber.cc            | 155 +++++++++---------
+ .../image_capture_frame_grabber.h             |  77 +--------
+ .../platform/wtf/cross_thread_copier_base.h   |  10 ++
+ 3 files changed, 95 insertions(+), 147 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc b/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+index 9aa85c8fa5bb..c54930d2f636 100644
+--- a/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
++++ b/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+@@ -5,7 +5,6 @@
+ #include "third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h"
+ 
+ #include "base/compiler_specific.h"
+-#include "base/synchronization/lock.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/thread_annotations.h"
+@@ -20,6 +19,7 @@
+ #include "third_party/blink/renderer/core/imagebitmap/image_bitmap.h"
+ #include "third_party/blink/renderer/platform/graphics/unaccelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/graphics/video_frame_image_util.h"
++#include "third_party/blink/renderer/platform/heap/cross_thread_handle.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_component.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_source.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cancellable_task.h"
+@@ -39,29 +39,59 @@ namespace blink {
+ // that have ScopedPromiseResolver parameters across threads.
+ //
+ // [1] third_party/blink/renderer/platform/wtf/cross_thread_copier.h.
+-template <typename T>
+-struct CrossThreadCopier<ScopedPromiseResolver<T>>
+-    : public CrossThreadCopierPassThrough<ScopedPromiseResolver<T>> {
+-  STATIC_ONLY(CrossThreadCopier);
+-  using Type = ScopedPromiseResolver<T>;
+-  static Type Copy(Type value) { return value; }
+-};
+-
+-// Ref-counted class to receive a single VideoFrame on IO thread, convert it and
+-// send it to |task_runner|, where this class is created and destroyed.
+-class ImageCaptureFrameGrabber::SingleShotFrameHandler
+-    : public ThreadSafeRefCounted<SingleShotFrameHandler> {
++template <>
++struct CrossThreadCopier<ImageCaptureFrameGrabber::ScopedPromiseResolver>
++    : public CrossThreadCopierByValuePassThrough<
++          ImageCaptureFrameGrabber::ScopedPromiseResolver> {};
++
++// Helper that ensures `resolver` is always rejected on `task_runner` if it is
++// not consumed.
++class ImageCaptureFrameGrabber::ScopedPromiseResolver {
+  public:
+-  using SkImageDeliverCB = WTF::CrossThreadOnceFunction<void(sk_sp<SkImage>)>;
++  ScopedPromiseResolver(ScriptPromiseResolver<ImageBitmap>* resolver,
++                        scoped_refptr<base::SingleThreadTaskRunner> task_runner)
++      : resolver_(MakeUnwrappingCrossThreadHandle(resolver)),
++        task_runner_(std::move(task_runner)) {}
++
++  ~ScopedPromiseResolver() {
++    if (task_runner_) {
++      using PromiseType = ScriptPromiseResolver<ImageBitmap>;
++      PostCrossThreadTask(
++          *task_runner_, FROM_HERE,
++          CrossThreadBindOnce(
++              static_cast<void (PromiseType::*)()>(&PromiseType::Reject),
++              std::move(resolver_)));
++    }
++  }
+ 
+-  explicit SingleShotFrameHandler(
+-      SkImageDeliverCB deliver_cb,
+-      scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+-      : deliver_cb_(std::move(deliver_cb)),
+-        task_runner_(std::move(task_runner)) {
+-    DCHECK(deliver_cb_);
++  ScopedPromiseResolver(ScopedPromiseResolver&& other) = default;
++  ScopedPromiseResolver(const ScopedPromiseResolver& other) = delete;
++
++  // `resolver_` has a deleted move assignment operator.
++  ScopedPromiseResolver& operator=(ScopedPromiseResolver&& other) = delete;
++  ScopedPromiseResolver& operator=(const ScopedPromiseResolver& other) = delete;
++
++  UnwrappingCrossThreadHandle<ScriptPromiseResolver<ImageBitmap>>
++  TakeResolver() && {
++    task_runner_ = nullptr;
++    return std::move(resolver_);
+   }
+ 
++ private:
++  UnwrappingCrossThreadHandle<ScriptPromiseResolver<ImageBitmap>> resolver_;
++  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++ };
++
++// Helper class that receives a single VideoFrame on the IO thread.
++class ImageCaptureFrameGrabber::SingleShotFrameHandler {
++  public:
++  explicit SingleShotFrameHandler(
++      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++      base::WeakPtr<ImageCaptureFrameGrabber> frame_grabber,
++      ScopedPromiseResolver resolver)
++      : task_runner_(std::move(task_runner)),
++        frame_grabber_(std::move(frame_grabber)),
++        resolver_(std::move(resolver)) {}
+   SingleShotFrameHandler(const SingleShotFrameHandler&) = delete;
+   SingleShotFrameHandler& operator=(const SingleShotFrameHandler&) = delete;
+ 
+@@ -69,51 +99,37 @@ class ImageCaptureFrameGrabber::SingleShotFrameHandler
+ 
+   // Receives a |frame| and converts its pixels into a SkImage via an internal
+   // PaintSurface and SkPixmap. Alpha channel, if any, is copied.
+-  void OnVideoFrameOnIOThread(
+-      scoped_refptr<media::VideoFrame> frame,
+-      base::TimeTicks current_time);
++  void OnVideoFrameOnIOThread(scoped_refptr<media::VideoFrame> frame,
++                              base::TimeTicks current_time);
+ 
+  private:
+-  friend class ThreadSafeRefCounted<SingleShotFrameHandler>;
+-
+-  // Converts the media::VideoFrame into a SkImage on the |task_runner|.
+-  void ConvertAndDeliverFrame(SkImageDeliverCB callback,
+-                              scoped_refptr<media::VideoFrame> frame);
+-
+-  base::Lock lock_;
+-  // Null once the initial frame has been queued for delivery.
+-  SkImageDeliverCB deliver_cb_ GUARDED_BY(lock_);
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++  base::WeakPtr<ImageCaptureFrameGrabber> frame_grabber_;
++  ScopedPromiseResolver resolver_;
+ };
+ 
+ ImageCaptureFrameGrabber::SingleShotFrameHandler::~SingleShotFrameHandler() {
+-  base::AutoLock locker(lock_);
+-  if (deliver_cb_) {
+-    // Reject the promise if no frame was received.
+-    // Post to `task_runner_` to ensure the promise is always rejected on the
+-    // main thread.
+-    PostCrossThreadTask(*task_runner_, FROM_HERE,
+-                        CrossThreadBindOnce(std::move(deliver_cb_), nullptr));
+-  }
++  // ~ScopedPromiseResolver will reject if still needed.
+ }
+ 
+ void ImageCaptureFrameGrabber::SingleShotFrameHandler::OnVideoFrameOnIOThread(
+     scoped_refptr<media::VideoFrame> frame,
+     base::TimeTicks /*current_time*/) {
+-  base::AutoLock locker(lock_);
+-  if (!deliver_cb_)
++  if (!task_runner_) {
+     return;
++  }
+ 
+   PostCrossThreadTask(
+-      *task_runner_, FROM_HERE,
+-      CrossThreadBindOnce(&SingleShotFrameHandler::ConvertAndDeliverFrame,
+-                          base::WrapRefCounted(this), std::move(deliver_cb_),
+-                          std::move(frame)));
++      *std::exchange(task_runner_, nullptr), FROM_HERE,
++      CrossThreadBindOnce(&ImageCaptureFrameGrabber::OnVideoFrame,
++                          std::move(frame_grabber_),
++                          base::RetainedRef(std::move(frame)),
++                          std::move(resolver_).TakeResolver()));
+ }
+ 
+-void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+-    SkImageDeliverCB callback,
+-    scoped_refptr<media::VideoFrame> frame) {
++// TODO(dcheng): Move this to the unnamed namespace. Left here for now to
++// simplify reviewing.
++static sk_sp<SkImage> ConvertFrame(media::VideoFrame* frame) {
+   media::VideoRotation rotation = media::VIDEO_ROTATION_0;
+   if (frame->metadata().transformation) {
+     rotation = frame->metadata().transformation->rotation;
+@@ -146,15 +162,13 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     cc::PaintFlags paint_flags;
+     DrawVideoFrameIntoCanvas(std::move(frame), &canvas, paint_flags,
+                              /*ignore_video_transformation=*/false);
+-    std::move(callback).Run(surface->makeImageSnapshot());
+-    return;
++    return surface->makeImageSnapshot();
+   }
+ 
+   SkPixmap pixmap;
+   if (!skia::GetWritablePixels(surface->getCanvas(), &pixmap)) {
+     DLOG(ERROR) << "Error trying to map SkSurface's pixels";
+-    std::move(callback).Run(sk_sp<SkImage>());
+-    return;
++    return nullptr;
+   }
+ 
+ #if SK_PMCOLOR_BYTE_ORDER(R, G, B, A)
+@@ -177,8 +191,7 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     auto scoped_mapping = frame->MapGMBOrSharedImage();
+     if (!scoped_mapping) {
+       DLOG(ERROR) << "Failed to get the mapped memory.";
+-      std::move(callback).Run(sk_sp<SkImage>());
+-      return;
++      return nullptr;
+     }
+ 
+     // NV12 is the only supported pixel format at the moment.
+@@ -289,7 +302,7 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     }
+   }
+ 
+-  std::move(callback).Run(surface->makeImageSnapshot());
++  return surface->makeImageSnapshot();
+ }
+ 
+ ImageCaptureFrameGrabber::~ImageCaptureFrameGrabber() {
+@@ -313,15 +326,7 @@ void ImageCaptureFrameGrabber::GrabFrame(
+     return;
+   }
+ 
+-  ScopedPromiseResolver<ImageBitmap> scoped_resolver(
+-      resolver,
+-      base::BindPostTask(
+-          task_runner,
+-          WTF::BindOnce(
+-              [](Persistent<ScriptPromiseResolver<ImageBitmap>> resolver) {
+-                resolver->Reject();
+-              })));
+-
++  ScopedPromiseResolver scoped_resolver(resolver, task_runner);
+   // A SingleShotFrameHandler is bound and given to the Track to guarantee that
+   // only one VideoFrame is converted and delivered to OnSkImage(), otherwise
+   // SKImages might be sent to resolved |callbacks| while DisconnectFromTrack()
+@@ -341,29 +346,29 @@ void ImageCaptureFrameGrabber::GrabFrame(
+       WebMediaStreamTrack(component),
+       ConvertToBaseRepeatingCallback(CrossThreadBindRepeating(
+           &SingleShotFrameHandler::OnVideoFrameOnIOThread,
+-          base::MakeRefCounted<SingleShotFrameHandler>(
+-              CrossThreadBindOnce(&ImageCaptureFrameGrabber::OnSkImage,
+-                                  weak_factory_.GetWeakPtr(),
+-                                  std::move(scoped_resolver)),
+-              std::move(task_runner)))),
++          std::make_unique<SingleShotFrameHandler>(
++              std::move(task_runner), weak_factory_.GetWeakPtr(),
++              std::move(scoped_resolver)))),
+       MediaStreamVideoSink::IsSecure::kNo,
+       MediaStreamVideoSink::UsesAlpha::kDefault);
+ }
+ 
+-void ImageCaptureFrameGrabber::OnSkImage(
+-    ScopedPromiseResolver<ImageBitmap> resolver,
+-    sk_sp<SkImage> image) {
++void ImageCaptureFrameGrabber::OnVideoFrame(
++    media::VideoFrame* frame,
++    ScriptPromiseResolver<ImageBitmap>* resolver) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+ 
++  sk_sp<SkImage> image = ConvertFrame(frame);
++
+   timeout_task_handle_.Cancel();
+   MediaStreamVideoSink::DisconnectFromTrack();
+   frame_grab_in_progress_ = false;
+ 
+   if (image) {
+-    resolver.TakeResolver()->Resolve(MakeGarbageCollected<ImageBitmap>(
++    resolver->Resolve(MakeGarbageCollected<ImageBitmap>(
+         UnacceleratedStaticBitmapImage::Create(std::move(image))));
+   } else {
+-    resolver.TakeResolver()->Reject();
++    resolver->Reject();
+   }
+ }
+ 
+diff --git a/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h b/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+index bb1a45af2e13..25be74e7f971 100644
+--- a/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
++++ b/chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+@@ -7,7 +7,6 @@
+ 
+ #include <memory>
+ 
+-#include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/threading/thread_checker.h"
+@@ -24,75 +23,6 @@ namespace blink {
+ class ImageBitmap;
+ class MediaStreamComponent;
+ 
+-// A ScopedPromiseResolver is a move-only wrapper for ScriptPromiseResolver that
+-// assures the promise is always settled. This is particularly useful when
+-// you are passing callbacks binding the resolver through code which may
+-// silently drop them.
+-//
+-// Example usage:
+-//
+-//   void RespondWithSuccess(ScopedPromiseResolver<Foo> resolver) {
+-//     resolver.TakeResolver()->Resolve(Foo("everything is great"));
+-//   }
+-//
+-//   void OnCallbacksDropped(Persistent<PromiseResolver<Foo>> resolver) {
+-//     // Ownership of the promise resolver is passed to this function if
+-//     // ScopedPromiseResolver::TakeResolver isn't called before the
+-//     // ScopedPromiseResolver is destroyed.
+-//     resolver->Reject(FooError("everything is terrible"));
+-//   }
+-//
+-//   // Blink client implementation
+-//   void FooClientImpl::doMagic(PromiseResolver<Foo>* resolver) {
+-//     ScopedPromiseResolver scoped_resolver(resolver,
+-//         WTF::BindOnce(&OnCallbacksDropped));
+-//
+-//     // Call to some lower-level service which may never run the callback we
+-//     // give it.
+-//     foo_service_->DoMagic(WTF::BindOnce(&RespondWithSuccess,
+-//                                          std::move(scoped_resolver)));
+-//   }
+-//
+-// If the bound RespondWithSuccess callback actually runs, TakeResolver() will
+-// relinquish ownership of the resolver.
+-//
+-// If the bound RespondWithSuccess callback is instead destroyed first,
+-// the ScopedPromiseResolver destructor will invoke OnCallbacksDropped,
+-// executing our desired default behavior.
+-template <typename ResolveType>
+-class ScopedPromiseResolver {
+- public:
+-  using DestructionCallback = base::OnceCallback<void(
+-      Persistent<ScriptPromiseResolver<ResolveType>> resolver)>;
+-
+-  ScopedPromiseResolver(ScriptPromiseResolver<ResolveType>* resolver,
+-                        DestructionCallback destruction_callback)
+-      : resolver_(resolver),
+-        destruction_callback_(std::move(destruction_callback)) {}
+-
+-  ~ScopedPromiseResolver() {
+-    if (destruction_callback_ && resolver_) {
+-      std::move(destruction_callback_).Run(resolver_);
+-    }
+-  }
+-
+-  ScopedPromiseResolver(ScopedPromiseResolver&& other) = default;
+-  ScopedPromiseResolver(const ScopedPromiseResolver& other) = delete;
+-
+-  ScopedPromiseResolver& operator=(ScopedPromiseResolver&& other) = default;
+-  ScopedPromiseResolver& operator=(const ScopedPromiseResolver& other) = delete;
+-
+-  ScriptPromiseResolver<ResolveType>* TakeResolver() {
+-    ScriptPromiseResolver<ResolveType>* result = resolver_;
+-    resolver_ = nullptr;
+-    return result;
+-  }
+-
+- private:
+-  Persistent<ScriptPromiseResolver<ResolveType>> resolver_;
+-  DestructionCallback destruction_callback_;
+-};
+-
+ // This class grabs Video Frames from a given Media Stream Video Track, binding
+ // a method of an ephemeral SingleShotFrameHandler every time grabFrame() is
+ // called. This method receives an incoming media::VideoFrame on a background
+@@ -100,6 +30,9 @@ class ScopedPromiseResolver {
+ // OnSkBitmap(). This class is single threaded throughout.
+ class ImageCaptureFrameGrabber final : public MediaStreamVideoSink {
+  public:
++  // Helper class to ensure an ImageBitmap promise is always resolved.
++  class ScopedPromiseResolver;
++
+   ImageCaptureFrameGrabber() = default;
+ 
+   ImageCaptureFrameGrabber(const ImageCaptureFrameGrabber&) = delete;
+@@ -116,8 +49,8 @@ class ImageCaptureFrameGrabber final : public MediaStreamVideoSink {
+   // Internal class to receive, convert and forward one frame.
+   class SingleShotFrameHandler;
+ 
+-  void OnSkImage(ScopedPromiseResolver<ImageBitmap> resolver,
+-                 sk_sp<SkImage> image);
++  void OnVideoFrame(media::VideoFrame* frame,
++                    ScriptPromiseResolver<ImageBitmap>* resolver);
+   void OnTimeout();
+ 
+   // Flag to indicate that there is a frame grabbing in progress.
+diff --git a/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h b/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+index 517f09655fff..cb826b421a79 100644
+--- a/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
++++ b/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+@@ -61,6 +61,16 @@ struct CrossThreadCopier<scoped_refptr<T>> {
+   static scoped_refptr<T> Copy(scoped_refptr<T> pointer) { return pointer; }
+ };
+ 
++template <typename T>
++struct CrossThreadCopier<base::internal::RetainedRefWrapper<T>>
++    : public CrossThreadCopierByValuePassThrough<
++          base::internal::RetainedRefWrapper<T>> {
++  STATIC_ONLY(CrossThreadCopier);
++  static_assert(IsSubclassOfTemplate<T, base::RefCountedThreadSafe>::value,
++                "scoped_refptr<T> can be passed across threads only if T is "
++                "ThreadSafeRefCounted or base::RefCountedThreadSafe.");
++};
++
+ template <typename T>
+ struct CrossThreadCopier<base::FileErrorOr<T>>
+     : public CrossThreadCopierPassThrough<base::FileErrorOr<T>> {

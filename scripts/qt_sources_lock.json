@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "qtVersion": "6.11.3",
+  "provenance": "Official Qt online source repository SHA-256 sidecars and HEAD lengths checked 2026-10-23; ICU upstream SHA-512 pin retained. Full archive hashes are checked before use.",
+  "archives": [
+    {
+      "component": "qtbase",
+      "name": "6.11.3-0-202610220312qtbase-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtbase-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "bd60222ad79b3d88e7e45c6dd1cd738d34db0ceb159b6221316da7f884525f0b",
+      "size": 50542228
+    },
+    {
+      "component": "qtdeclarative",
+      "name": "6.11.3-0-202610220312qtdeclarative-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtdeclarative-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "90e941624ac1e99c376f9c32ef7a580519915d8d42adf4ad160142918f935ae2",
+      "size": 38530748
+    },
+    {
+      "component": "qtsvg",
+      "name": "6.11.3-0-202610220312qtsvg-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtsvg-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "b712a27d4bc6ba510bc5c082f6eaac2ce38588d8a2d2eb771d08307735f9d44c",
+      "size": 2338300
+    },
+    {
+      "component": "qtwayland",
+      "name": "6.11.3-0-202610220312qtwayland-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtwayland-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "9c835e5224eea2f05f2919bf11adb0389ecad7ccc35d426a78ed600ac51e933d",
+      "size": 900632
+    },
+    {
+      "component": "qtwebchannel",
+      "name": "6.11.3-0-202610220312qtwebchannel-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtwebchannel-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "76eb6dbdbabb1c00588fd5e23e0484145bbf9cb527f3e68583ac21e833b75b6a",
+      "size": 191976
+    },
+    {
+      "component": "qtwebsockets",
+      "name": "6.11.3-0-202610220312qtwebsockets-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtwebsockets-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "ecb88af7022b0d198a24b9b44445b101f22c92f9e9194d46112c9e8b8d2f5621",
+      "size": 455404
+    },
+    {
+      "component": "qtimageformats",
+      "name": "6.11.3-0-202610220312qtimageformats-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtimageformats-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "9074e35c9bbdb944ceebdbed03f54d7bba55703b0252491188779e4d1a714c90",
+      "size": 2054556
+    },
+    {
+      "component": "qtpositioning",
+      "name": "6.11.3-0-202610220312qtpositioning-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/qt/qt6_6113_unix_line_endings_src/qt.qt6.6113.src/6.11.3-0-202610220312qtpositioning-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "9fb433c13ee6be137f7a645e155d758df5883f56e56fb0ecb7d0cd60c6983552",
+      "size": 650460
+    },
+    {
+      "component": "qtwebengine",
+      "name": "6.11.3-0-202610220311qtwebengine-everywhere-src-6.11.3.tar.xz",
+      "version": "6.11.3",
+      "url": "https://download.qt.io/online/qtsdkrepository/all_os/extensions/qtwebengine/6113/src_doc_examples/extensions.qtwebengine.6113.src/6.11.3-0-202610220311qtwebengine-everywhere-src-6.11.3.tar.xz",
+      "algorithm": "sha256",
+      "digest": "5708199112b3f7f23da919d54836e6cf5c69139e53533fa4f995c91c5d024cfe",
+      "size": 584717380
+    },
+    {
+      "component": "icu",
+      "name": "icu4c-73_2-src.tgz",
+      "version": "73.2",
+      "url": "https://github.com/unicode-org/icu/releases/download/release-73-2/icu4c-73_2-src.tgz",
+      "algorithm": "sha512",
+      "digest": "76dd782db6205833f289d7eb68b60860dddfa3f614f0ba03fe7ec13117077f82109f0dc1becabcdf4c8a9c628b94478ab0a46134bdb06f4302be55f74027ce62",
+      "size": 26519906
+    }
+  ]
+}

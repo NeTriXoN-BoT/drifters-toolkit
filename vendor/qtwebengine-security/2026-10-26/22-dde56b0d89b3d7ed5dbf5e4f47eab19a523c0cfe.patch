@@ -1,0 +1,334 @@
+From dde56b0d89b3d7ed5dbf5e4f47eab19a523c0cfe Mon Sep 17 00:00:00 2001
+From: Sebastien Lalancette <seblalancette@chromium.org>
+Date: Fri, 25 Sep 2026 12:26:09 -0700
+Subject: [Backport] CVE-2026-113119: Use after free in Network
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8374421:
+Validate server certificate before generating auth token
+
+Connection-based HTTP authentication schemes (such as NTLM and
+Negotiate) derive per-connection state and channel bindings from the
+server certificate presented when the handler is created. Previously,
+HttpAuthController only validated certificate consistency upon receiving
+a challenge in HandleAuthChallenge().
+
+If a connection was replaced after receiving a challenge or between
+handshake rounds, MaybeGenerateAuthToken() could generate and transmit
+an authentication token bound to the previous connection's certificate
+over a new connection presenting a different certificate.
+
+This change passes the target connection's server certificate to
+HttpAuthController::MaybeGenerateAuthToken() and invalidates the active
+handler if the certificate does not match before generating an auth
+token. All transaction and proxy socket callers are updated to pass the
+target certificate.
+
+Bug: 557075191
+Change-Id: Ie219efcb29fa840ffeb9b181563b12663458d962
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8374421
+Reviewed-by: mmenke <mmenke@chromium.org>
+Commit-Queue: Sebastien Lalancette <seblalancette@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705049}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783399
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/net/http/http_auth_controller.cc     | 39 +++++++++++++++++------
+ chromium/net/http/http_auth_controller.h      | 17 ++++++++--
+ chromium/net/http/http_network_transaction.cc | 46 +++++++++++++++++++++++----
+ chromium/net/http/http_network_transaction.h  | 18 +++++++++++
+ chromium/net/http/http_proxy_client_socket.cc |  3 +-
+ chromium/net/quic/quic_proxy_client_socket.cc |  2 +-
+ chromium/net/spdy/spdy_proxy_client_socket.cc |  2 +-
+ 7 files changed, 107 insertions(+), 20 deletions(-)
+
+diff --git a/chromium/net/http/http_auth_controller.cc b/chromium/net/http/http_auth_controller.cc
+index 34369ce8b01..d12973639c7 100644
+--- a/chromium/net/http/http_auth_controller.cc
++++ b/chromium/net/http/http_auth_controller.cc
+@@ -196,18 +196,31 @@ void HttpAuthController::BindToCallingNetLog(
+ 
+ int HttpAuthController::MaybeGenerateAuthToken(
+     const HttpRequestInfo* request,
++    const SSLInfo& ssl_info,
+     CompletionOnceCallback callback,
+     const NetLogWithSource& caller_net_log) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   DCHECK(!auth_info_);
++
++  // A connection-based handler derives per-connection state (such as channel
++  // bindings) from the server certificate at creation time. If the
++  // underlying connection has been replaced with one that presents a
++  // different certificate since the last challenge, that state is no longer
++  // valid for the current connection, so drop the handler instead of
++  // generating a token from it. The next challenge starts the authentication
++  // protocol over on the current connection.
++  InvalidateIfServerCertChanged(ssl_info.cert.get());
++
+   bool needs_auth = HaveAuth() || SelectPreemptiveAuth(caller_net_log);
+-  if (!needs_auth)
++  if (!needs_auth) {
+     return OK;
++  }
+   net_log_.BeginEventReferencingSource(NetLogEventType::AUTH_GENERATE_TOKEN,
+                                        caller_net_log.source());
+   const AuthCredentials* credentials = nullptr;
+-  if (identity_.source != HttpAuth::IDENT_SRC_DEFAULT_CREDENTIALS)
++  if (identity_.source != HttpAuth::IDENT_SRC_DEFAULT_CREDENTIALS) {
+     credentials = &identity_.credentials;
++  }
+   DCHECK(auth_token_.empty());
+   DCHECK(callback_.is_null());
+   int rv = handler_->GenerateAuthToken(
+@@ -232,8 +245,9 @@ bool HttpAuthController::SelectPreemptiveAuth(
+ 
+   // Don't do preemptive authorization if the URL contains a username:password,
+   // since we must first be challenged in order to use the URL's identity.
+-  if (auth_url_.has_username())
++  if (auth_url_.has_username()) {
+     return false;
++  }
+ 
+   // SelectPreemptiveAuth() is on the critical path for each request, so it
+   // is expected to be fast. LookupByPath() is fast in the common case, since
+@@ -241,8 +255,9 @@ bool HttpAuthController::SelectPreemptiveAuth(
+   // (For most users in fact, it will be 0.)
+   HttpAuthCache::Entry* entry = http_auth_cache_->LookupByPath(
+       auth_scheme_host_port_, target_, network_anonymization_key_, auth_path_);
+-  if (!entry)
++  if (!entry) {
+     return false;
++  }
+ 
+   BindToCallingNetLog(caller_net_log);
+ 
+@@ -297,11 +312,8 @@ int HttpAuthController::HandleAuthChallenge(
+   // certificate at creation time. If the underlying connection has been
+   // replaced with one that presents a different certificate, that state is
+   // no longer valid for the current connection, so drop the handler and
+-  // start the scheme over.
+-  if (handler_ && handler_->is_connection_based() &&
+-      !ServerCertMatches(handler_server_cert_.get(), ssl_info.cert.get())) {
+-    InvalidateCurrentHandler(INVALIDATE_HANDLER);
+-  }
++  // start the authentication protocol over.
++  InvalidateIfServerCertChanged(ssl_info.cert.get());
+ 
+   // Give the existing auth handler first try at the authentication headers.
+   // This will also evict the entry in the HttpAuthCache if the previous
+@@ -689,4 +701,13 @@ void HttpAuthController::OnConnectionClosed() {
+   InvalidateCurrentHandler(INVALIDATE_HANDLER);
+ }
+ 
++void HttpAuthController::InvalidateIfServerCertChanged(
++    const X509Certificate* cert) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  if (handler_ && handler_->is_connection_based() &&
++      !ServerCertMatches(handler_server_cert_.get(), cert)) {
++    InvalidateCurrentHandler(INVALIDATE_HANDLER);
++  }
++}
++
+ }  // namespace net
+diff --git a/chromium/net/http/http_auth_controller.h b/chromium/net/http/http_auth_controller.h
+index 2e960cc09cb..1d8f9beb5d1 100644
+--- a/chromium/net/http/http_auth_controller.h
++++ b/chromium/net/http/http_auth_controller.h
+@@ -93,11 +93,20 @@ class NET_EXPORT_PRIVATE HttpAuthController
+                      HttpAuthHandlerFactory* http_auth_handler_factory,
+                      HostResolver* host_resolver);
+ 
+-  // Generate an authentication token for |target| if necessary. The return
+-  // value is a net error code. |OK| will be returned both in the case that
++  // Generate an authentication token for `target` if necessary. The return
++  // value is a net error code. `OK` will be returned both in the case that
+   // a token is correctly generated synchronously, as well as when no tokens
+   // were necessary.
++  //
++  // `ssl_info` is the certificate information for the connection the token
++  // will be sent over, and must match what HandleAuthChallenge() is given for
++  // responses on that connection. It is empty when no certificate applies to
++  // this controller's target, for example for "http" origins and for proxy
++  // auth. If a connection-based handler was created on a connection with a
++  // different server certificate, it is dropped instead of generating a token,
++  // so that authentication restarts on the current connection.
+   int MaybeGenerateAuthToken(const HttpRequestInfo* request,
++                             const SSLInfo& ssl_info,
+                              CompletionOnceCallback callback,
+                              const NetLogWithSource& net_log);
+ 
+@@ -198,6 +207,10 @@ class NET_EXPORT_PRIVATE HttpAuthController
+ 
+   void OnGenerateAuthTokenDone(int result);
+ 
++  // If the current handler is connection-based and was created for a connection
++  // with a different server certificate, invalidates the handler.
++  void InvalidateIfServerCertChanged(const X509Certificate* cert);
++
+   // Indicates if this handler is for Proxy auth or Server auth.
+   HttpAuth::Target target_;
+ 
+diff --git a/chromium/net/http/http_network_transaction.cc b/chromium/net/http/http_network_transaction.cc
+index ee2d9fef629..55338492d89 100644
+--- a/chromium/net/http/http_network_transaction.cc
++++ b/chromium/net/http/http_network_transaction.cc
+@@ -962,6 +962,15 @@ bool HttpNetworkTransaction::UsingHttpProxyWithoutTunnel() const {
+          request_->url.SchemeIs("http");
+ }
+ 
++SSLInfo HttpNetworkTransaction::GetStreamSSLInfo() {
++  CHECK(stream_);
++  SSLInfo ssl_info;
++  if (IsSecureRequest()) {
++    stream_->GetSSLInfo(&ssl_info);
++  }
++  return ssl_info;
++}
++
+ void HttpNetworkTransaction::DoCallback(int rv) {
+   DCHECK_NE(rv, ERR_IO_PENDING);
+   DCHECK(!callback_.is_null());
+@@ -1296,8 +1305,9 @@ int HttpNetworkTransaction::DoInitStreamComplete(int result) {
+ 
+ int HttpNetworkTransaction::DoGenerateProxyAuthToken() {
+   next_state_ = STATE_GENERATE_PROXY_AUTH_TOKEN_COMPLETE;
+-  if (!ShouldApplyProxyAuth())
++  if (!ShouldApplyProxyAuth()) {
+     return OK;
++  }
+   HttpAuth::Target target = HttpAuth::AUTH_PROXY;
+   GURL auth_url = AuthURL(target);
+   // The proxy may have changed (for example due to fallback to another proxy
+@@ -1316,8 +1326,20 @@ int HttpNetworkTransaction::DoGenerateProxyAuthToken() {
+         target, auth_url, request_->network_anonymization_key,
+         session_->http_auth_cache(), session_->http_auth_handler_factory(),
+         session_->host_resolver());
++
++  // This is only reached for GET proxies (see ShouldApplyProxyAuth()); CONNECT
++  // proxy auth is handled by the proxy client sockets instead. GET proxy auth
++  // controllers are never given a certificate, so pass an empty SSLInfo.
++  //
++  // GetStreamSSLInfo() would also return an empty SSLInfo here, because a GET
++  // proxy is only used for "http" requests, so IsSecureRequest() is false. It
++  // is not used, to avoid implying that the proxy's certificate could show up
++  // here: GetStreamSSLInfo() only describes the destination server.
++  //
++  // As a result, GET proxy auth handlers derive no channel bindings and are not
++  // pinned to the proxy's certificate. This is legacy behavior.
+   int rv = auth_controllers_[target]->MaybeGenerateAuthToken(
+-      request_, io_callback_, net_log_);
++      request_, SSLInfo(), io_callback_, net_log_);
+   // TODO(crbug.com/359404121): Remove this histogram after the investigation
+   // completes.
+   const bool blocked = rv == ERR_IO_PENDING;
+@@ -1358,13 +1380,15 @@ int HttpNetworkTransaction::DoGenerateServerAuthToken() {
+         target, AuthURL(target), request_->network_anonymization_key,
+         session_->http_auth_cache(), session_->http_auth_handler_factory(),
+         session_->host_resolver());
+-    if (request_->load_flags & LOAD_DO_NOT_USE_EMBEDDED_IDENTITY)
++    if (request_->load_flags & LOAD_DO_NOT_USE_EMBEDDED_IDENTITY) {
+       auth_controllers_[target]->DisableEmbeddedIdentity();
++    }
+   }
+-  if (!ShouldApplyServerAuth())
++  if (!ShouldApplyServerAuth()) {
+     return OK;
++  }
+   int rv = auth_controllers_[target]->MaybeGenerateAuthToken(
+-      request_, io_callback_, net_log_);
++      request_, GetStreamSSLInfo(), io_callback_, net_log_);
+   // TODO(crbug.com/359404121): Remove this histogram after the investigation
+   // completes.
+   const bool blocked = rv == ERR_IO_PENDING;
+@@ -2349,8 +2373,18 @@ int HttpNetworkTransaction::HandleAuthChallenge() {
+   if (!auth_controllers_[target].get())
+     return ERR_UNEXPECTED_PROXY_AUTH;
+ 
++  // CONNECT proxy auth challenges do not go through this path; they are
++  // handled by the proxy client sockets. Only challenges from GET proxies, or
++  // directly from servers, reach here. A proxy auth challenge sent by a server
++  // when there is no GET proxy results in ERR_UNEXPECTED_PROXY_AUTH above.
++  //
++  // GetStreamSSLInfo() describes the connection to the destination server, so
++  // only pass it to the server auth controller. The GET proxy auth controller
++  // gets an empty SSLInfo, matching DoGenerateProxyAuthToken().
++  const SSLInfo ssl_info =
++      target == HttpAuth::AUTH_SERVER ? GetStreamSSLInfo() : SSLInfo();
+   int rv = auth_controllers_[target]->HandleAuthChallenge(
+-      headers, response_.ssl_info, !ShouldApplyServerAuth(), false, net_log_);
++      headers, ssl_info, !ShouldApplyServerAuth(), false, net_log_);
+   if (auth_controllers_[target]->HaveAuthHandler())
+     pending_auth_target_ = target;
+ 
+diff --git a/chromium/net/http/http_network_transaction.h b/chromium/net/http/http_network_transaction.h
+index c40a6838c36..077275e5441 100644
+--- a/chromium/net/http/http_network_transaction.h
++++ b/chromium/net/http/http_network_transaction.h
+@@ -180,6 +180,24 @@ class NET_EXPORT_PRIVATE HttpNetworkTransaction
+   // tunneled via the CONNECT method.
+   bool UsingHttpProxyWithoutTunnel() const;
+ 
++  // Returns the SSLInfo of the destination server's connection. This is the
++  // sole source of certificate information for *server* authentication, used
++  // by both HandleAuthChallenge() and MaybeGenerateAuthToken(), so the two are
++  // guaranteed to observe the same value for a given `stream_`. Proxy
++  // authentication never uses this; it is always passed an empty SSLInfo.
++  //
++  // Returns an empty SSLInfo for non-secure requests, even if the connection
++  // uses TLS: an "http" request through an HTTPS proxy runs over TLS to that
++  // proxy, but that certificate belongs to the proxy rather than to the
++  // destination server, so server auth must not observe it.
++  //
++  // Consequently this never returns a proxy's certificate. When
++  // `IsSecureRequest()` is true the connection is either direct or tunneled
++  // through CONNECT -- a GET-to-proxy connection is impossible, because
++  // `UsingHttpProxyWithoutTunnel()` requires an "http" scheme -- so in both
++  // cases the top of the socket stack terminates at the destination server.
++  SSLInfo GetStreamSSLInfo();
++
+   void DoCallback(int result);
+   void OnIOComplete(int result);
+ 
+diff --git a/chromium/net/http/http_proxy_client_socket.cc b/chromium/net/http/http_proxy_client_socket.cc
+index 9dc598bbace..5d6ed73c2b4 100644
+--- a/chromium/net/http/http_proxy_client_socket.cc
++++ b/chromium/net/http/http_proxy_client_socket.cc
+@@ -315,7 +315,8 @@ int HttpProxyClientSocket::DoLoop(int last_io_result) {
+ 
+ int HttpProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+-  return auth_->MaybeGenerateAuthToken(&request_, io_callback_, net_log_);
++  return auth_->MaybeGenerateAuthToken(&request_, response_.ssl_info,
++                                       io_callback_, net_log_);
+ }
+ 
+ int HttpProxyClientSocket::DoGenerateAuthTokenComplete(int result) {
+diff --git a/chromium/net/quic/quic_proxy_client_socket.cc b/chromium/net/quic/quic_proxy_client_socket.cc
+index e06e7787d08..5042e474c6e 100644
+--- a/chromium/net/quic/quic_proxy_client_socket.cc
++++ b/chromium/net/quic/quic_proxy_client_socket.cc
+@@ -316,7 +316,7 @@ int QuicProxyClientSocket::DoLoop(int last_io_result) {
+ int QuicProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+   return auth_->MaybeGenerateAuthToken(
+-      &request_,
++      &request_, response_.ssl_info,
+       base::BindOnce(&QuicProxyClientSocket::OnIOComplete,
+                      weak_factory_.GetWeakPtr()),
+       net_log_);
+diff --git a/chromium/net/spdy/spdy_proxy_client_socket.cc b/chromium/net/spdy/spdy_proxy_client_socket.cc
+index 1eef9b24ac2..6602ca57139 100644
+--- a/chromium/net/spdy/spdy_proxy_client_socket.cc
++++ b/chromium/net/spdy/spdy_proxy_client_socket.cc
+@@ -359,7 +359,7 @@ int SpdyProxyClientSocket::DoLoop(int last_io_result) {
+ int SpdyProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+   return auth_->MaybeGenerateAuthToken(
+-      &request_,
++      &request_, response_.ssl_info,
+       base::BindOnce(&SpdyProxyClientSocket::OnIOComplete,
+                      weak_factory_.GetWeakPtr()),
+       net_log_);
+-- 
+cgit v1.2.3
+

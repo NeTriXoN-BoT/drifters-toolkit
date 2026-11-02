@@ -1,0 +1,49 @@
+From 2757ce07332540af4bb2e365b9b13e8cd70cdd94 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Thu, 17 Sep 2026 12:51:43 -0400
+Subject: [PATCH] [Backport] Dependency for CVE-2026-113285
+
+Manual partial backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8423401:
+D3D11: Do not sync incomplete texture images from storage
+
+Only sync image staging memory from render target storage when the
+image index is valid and complete, avoiding uninitialized memory
+imports. Also remove unused hasDirtyImages().
+
+Test:
+angle_end2end_tests --gtest_filter="IncompleteLevelDoesNotSyncFromStorage"
+Bug: b/561613775
+Change-Id: I3fd62c57271dd80af91a06861b0c7dd43b77f87d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8423401
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Change-Id: If473aac2818254400afca7fe5ce4c196eb0dd0ba
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783832
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../angle/src/libANGLE/renderer/d3d/TextureD3D.cpp           | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp b/chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index b414ac26a28..6ead62ac359 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -111,12 +111,13 @@ angle::Result TextureD3D::getImageAndSyncFromStorage(const gl::Context *context,
+                                                      ImageD3D **outImage)
+ {
+     ImageD3D *image = getImage(index);
+-    if (mTexStorage && mTexStorage->isRenderTarget())
++    if (mTexStorage && mTexStorage->isRenderTarget() && isValidIndex(index) &&
++        isImageComplete(index))
+     {
+         ANGLE_TRY(image->copyFromTexStorage(context, index, mTexStorage));
+         mDirtyImages = true;
++        image->markClean();
+     }
+-    image->markClean();
+     *outImage = image;
+     return angle::Result::Continue;
+ }

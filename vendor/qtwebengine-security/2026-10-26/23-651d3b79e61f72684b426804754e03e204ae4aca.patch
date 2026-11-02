@@ -1,0 +1,467 @@
+From 651d3b79e61f72684b426804754e03e204ae4aca Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Fri, 8 May 2026 10:27:48 +0200
+Subject: [Backport] Dependency for CVE-2026-113044
+
+Manual backort of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/7817342:
+Internalize 2-byte strings with one-byte content as one-byte
+
+Internalization picked the encoding from the source string's map, so a
+SLICED_TWO_BYTE or CONS_TWO_BYTE with all-ASCII content was internalized
+as INTERNALIZED_TWO_BYTE. This poisons JS3 json-stringify-inspector when
+postcss-wtb runs first: postcss makes 2-byte slices of a CSS source that
+contains non-ASCII bytes, autoprefixer interns the result, and around 39
+CSS property names end up as 2-byte interned entries. JSON.parse later
+reuses those entries, FastJsonStringifier flips into the 2-byte template
+the first time it sees one, and the rest of the run is ~35% slower.
+
+Make internalization content-aware by reusing the hasher's existing
+IsOnly8Bit pass: StringTable::LookupString threads its result through
+InternalizedStringKey to NewInternalizedStringImpl and
+ComputeInternalizationStrategyForString, which then allocate a
+SeqOneByteString instead of locking in the wider representation. The
+same answer gates the external-2-byte branch in PrepareForInsertion, so
+external 2-byte ASCII (Blink's fetch().text() output) canonicalizes too.
+If the hash was computed before internalization we don't rescan; the
+threaded value stays false and we fall back to the existing map-keyed
+path.
+
+JS3 (d8, 3 runs, x64.release):
+  json-stringify-inspector  +53.2% / +96.2% First
+  json-parse-inspector      +16.1%
+  source-map-wtb             +8.4%
+  delta-blue Worst          +12.2%
+  richards                   +7.2%
+
+Change-Id: Ic5173da1c394ec5c76f083cda7b6ff40065bcd0b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7817342
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#107172}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783450
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/v8/src/heap/factory.cc             | 18 ++++++++++--
+ chromium/v8/src/heap/factory.h              | 18 +++++++++---
+ chromium/v8/src/objects/name-inl.h          |  6 ++--
+ chromium/v8/src/objects/name.h              |  5 ++++
+ chromium/v8/src/objects/string-table.cc     | 44 +++++++++++++++++++++++------
+ chromium/v8/src/objects/string.cc           | 23 +++++++++++----
+ chromium/v8/src/objects/string.h            |  9 +++++-
+ chromium/v8/src/strings/string-hasher-inl.h | 30 ++++++++++++++------
+ chromium/v8/src/strings/string-hasher.h     | 12 ++++++--
+ 9 files changed, 129 insertions(+), 36 deletions(-)
+
+diff --git a/chromium/v8/src/heap/factory.cc b/chromium/v8/src/heap/factory.cc
+index 67d461cd0f9..c01303ca936 100644
+--- a/chromium/v8/src/heap/factory.cc
++++ b/chromium/v8/src/heap/factory.cc
+@@ -936,8 +936,11 @@ MaybeDirectHandle<String> Factory::NewStringFromTwoByteLittleEndian(
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+ DirectHandle<String> Factory::NewInternalizedStringImpl(
+-    DirectHandle<String> string, int len, uint32_t hash_field) {
+-  if (string->IsOneByteRepresentation()) {
++    DirectHandle<String> string, int len, uint32_t hash_field,
++    bool known_one_byte_content) {
++  const bool one_byte =
++      string->IsOneByteRepresentation() || known_one_byte_content;
++  if (one_byte) {
+     DirectHandle<SeqOneByteString> result =
+         AllocateRawOneByteInternalizedString(len, hash_field);
+     DisallowGarbageCollection no_gc;
+@@ -953,7 +956,8 @@ DirectHandle<String> Factory::NewInternalizedStringImpl(
+ }
+ 
+ StringTransitionStrategy Factory::ComputeInternalizationStrategyForString(
+-    DirectHandle<String> string, MaybeDirectHandle<Map>* internalized_map) {
++    DirectHandle<String> string, MaybeDirectHandle<Map>* internalized_map,
++    bool known_one_byte_content) {
+   // The serializer requires internalized strings to be in ReadOnlySpace s.t.
+   // other objects referencing the string can be allocated in RO space
+   // themselves.
+@@ -979,6 +983,14 @@ StringTransitionStrategy Factory::ComputeInternalizationStrategyForString(
+   Tagged<Map> map = string->map();
+   *internalized_map = GetInPlaceInternalizedStringMap(map);
+   if (!internalized_map->is_null()) {
++    // The map says 2-byte but the caller verified the content fits in one
++    // byte; fall back to kCopy so NewInternalizedStringImpl can allocate a
++    // one-byte internalized string. Otherwise the in-place map swap would
++    // lock the wider representation in for the lifetime of the intern entry.
++    if (known_one_byte_content && !InstanceTypeChecker::IsOneByteString(map)) {
++      *internalized_map = MaybeDirectHandle<Map>();
++      return StringTransitionStrategy::kCopy;
++    }
+     return StringTransitionStrategy::kInPlace;
+   }
+   if (InstanceTypeChecker::IsInternalizedString(map)) {
+diff --git a/chromium/v8/src/heap/factory.h b/chromium/v8/src/heap/factory.h
+index 1c790d19316..3c9abaf05f3 100644
+--- a/chromium/v8/src/heap/factory.h
++++ b/chromium/v8/src/heap/factory.h
+@@ -335,8 +335,14 @@ class V8_EXPORT_PRIVATE Factory : public FactoryBase<Factory> {
+ 
+   DirectHandle<JSStringIterator> NewJSStringIterator(Handle<String> string);
+ 
+-  DirectHandle<String> NewInternalizedStringImpl(DirectHandle<String> string,
+-                                                 int len, uint32_t hash_field);
++  // `known_one_byte_content` indicates that the caller (typically the
++  // string-table lookup path that just hashed `string`) knows the content
++  // fits in one byte; the impl then allocates a SeqOneByteString even when
++  // `string`'s representation is two-byte. False is always safe.
++  DirectHandle<String> NewInternalizedStringImpl(
++      DirectHandle<String> string, int len, uint32_t hash_field,
++      bool known_one_byte_content = false);
++
+ 
+   // Compute the internalization strategy for the input string.
+   //
+@@ -347,10 +353,14 @@ class V8_EXPORT_PRIVATE Factory : public FactoryBase<Factory> {
+   // Internalized strings return kAlreadyTransitioned.
+   //
+   // All other strings are internalized by flattening and copying and return
+-  // kCopy.
++  // kCopy. `known_one_byte_content` forces kCopy for two-byte rep strings
++  // whose content fits in one byte, so NewInternalizedStringImpl can
++  // allocate a one-byte internalized copy instead of locking in the wider
++  // representation via an in-place map swap.
+   V8_WARN_UNUSED_RESULT StringTransitionStrategy
+   ComputeInternalizationStrategyForString(
+-      DirectHandle<String> string, MaybeDirectHandle<Map>* internalized_map);
++      DirectHandle<String> string, MaybeDirectHandle<Map>* internalized_map,
++      bool known_one_byte_content = false);
+ 
+   // Creates an internalized copy of an external string. |string| must be
+   // of type StringClass.
+diff --git a/chromium/v8/src/objects/name-inl.h b/chromium/v8/src/objects/name-inl.h
+index dd06e2617c4..05c20be5f38 100644
+--- a/chromium/v8/src/objects/name-inl.h
++++ b/chromium/v8/src/objects/name-inl.h
+@@ -172,7 +172,9 @@ uint32_t Name::GetRawHashFromForwardingTable(uint32_t raw_hash) const {
+   return isolate->string_forwarding_table()->GetRawHash(isolate, index);
+ }
+ 
+-uint32_t Name::EnsureRawHash() {
++uint32_t Name::EnsureRawHash() { return EnsureRawHash(nullptr); }
++
++uint32_t Name::EnsureRawHash(bool* out_one_byte_content) {
+   // Fast case: has hash code already been computed?
+   uint32_t field = raw_hash_field(kAcquireLoad);
+   if (IsHashFieldComputed(field)) return field;
+@@ -181,7 +183,7 @@ uint32_t Name::EnsureRawHash() {
+     return GetRawHashFromForwardingTable(field);
+   }
+   // Slow case: compute hash code and set it. Has to be a string.
+-  return Cast<String>(this)->ComputeAndSetRawHash();
++  return Cast<String>(this)->ComputeAndSetRawHash(out_one_byte_content);
+ }
+ 
+ uint32_t Name::EnsureRawHash(
+diff --git a/chromium/v8/src/objects/name.h b/chromium/v8/src/objects/name.h
+index 5a66e83636e..8fdcb258e93 100644
+--- a/chromium/v8/src/objects/name.h
++++ b/chromium/v8/src/objects/name.h
+@@ -210,6 +210,11 @@ V8_OBJECT class Name : public PrimitiveHeapObject {
+   // The value returned is always a computed hash, even if the value stored is
+   // a forwarding index.
+   inline uint32_t EnsureRawHash();
++  // If `out_one_byte_content` is non-null and the hasher actually scans the
++  // content here, it is set to true iff the content fits in one byte. Stays
++  // untouched on the early-return paths (hash already computed, hashed via
++  // the forwarding table, length > kMaxHashCalcLength).
++  inline uint32_t EnsureRawHash(bool* out_one_byte_content);
+   inline uint32_t EnsureRawHash(const SharedStringAccessGuardIfNeeded&);
+   inline uint32_t RawHash();
+ 
+diff --git a/chromium/v8/src/objects/string-table.cc b/chromium/v8/src/objects/string-table.cc
+index f341677c76a..04fa25725ea 100644
+--- a/chromium/v8/src/objects/string-table.cc
++++ b/chromium/v8/src/objects/string-table.cc
+@@ -180,8 +180,17 @@ int StringTable::NumberOfElements() const {
+ // InternalizedStringKey carries a string/internalized-string object as key.
+ class InternalizedStringKey final : public StringTableKey {
+  public:
+-  explicit InternalizedStringKey(DirectHandle<String> string, uint32_t hash)
+-      : StringTableKey(hash, string->length()), string_(string) {
++  // `known_one_byte_content` is set by callers that just hashed `string` and
++  // observed via the hasher's IsOnly8Bit pass that the content fits in one
++  // byte. Used to canonicalize a 2-byte representation source string to a
++  // 1-byte internalized copy without a second content scan; false is always
++  // safe.
++  InternalizedStringKey(DirectHandle<String> string, uint32_t hash,
++                        bool known_one_byte_content = false)
++      : StringTableKey(hash, string->length()),
++        string_(string),
++        known_one_byte_content_(known_one_byte_content) {
++     DCHECK_NE(0, length());
+     // When sharing the string table, it's possible that another thread already
+     // internalized the key, in which case StringTable::LookupKey will perform a
+     // redundant lookup and return the already internalized copy.
+@@ -199,7 +208,7 @@ class InternalizedStringKey final : public StringTableKey {
+   void PrepareForInsertion(Isolate* isolate) {
+     StringTransitionStrategy strategy =
+         isolate->factory()->ComputeInternalizationStrategyForString(
+-            string_, &maybe_internalized_map_);
++            string_, &maybe_internalized_map_, known_one_byte_content_);
+     switch (strategy) {
+       case StringTransitionStrategy::kCopy:
+         break;
+@@ -236,12 +245,17 @@ class InternalizedStringKey final : public StringTableKey {
+       internalized_string_ =
+           isolate->factory()->InternalizeExternalString<ExternalOneByteString>(
+               string_);
+-    } else if (can_move_resource && shape.IsExternalTwoByte()) {
++    } else if (can_move_resource && shape.IsExternalTwoByte() &&
++               !known_one_byte_content_) {
+       // Shared external strings are always in-place internalizable.
+       // If this assumption is invalidated in the future, make sure that we
+       // fully initialize (copy contents) for shared external strings, as the
+       // original string is not transitioned to a ThinString (setting the
+       // resource) immediately.
++      // External two-byte strings whose content fits in one byte fall through
++      // to NewInternalizedStringImpl below, which allocates a SeqOneByteString.
++      // The original external resource stays alive on the source string until
++      // it is migrated by MakeThin.
+       DCHECK(!shape.IsShared());
+       internalized_string_ =
+           isolate->factory()->InternalizeExternalString<ExternalTwoByteString>(
+@@ -249,7 +263,7 @@ class InternalizedStringKey final : public StringTableKey {
+     } else {
+       // Otherwise allocate a new internalized string.
+       internalized_string_ = isolate->factory()->NewInternalizedStringImpl(
+-          string_, length(), raw_hash_field());
++          string_, length(), raw_hash_field(), known_one_byte_content_);
+     }
+   }
+ 
+@@ -285,6 +299,7 @@ class InternalizedStringKey final : public StringTableKey {
+   // equality checks in case of hash collisions.
+   MaybeDirectHandle<String> internalized_string_;
+   MaybeDirectHandle<Map> maybe_internalized_map_;
++  bool known_one_byte_content_;
+ };
+ 
+ namespace {
+@@ -375,10 +390,17 @@ DirectHandle<String> StringTable::LookupString(Isolate* isolate,
+           isolate->string_forwarding_table()->GetForwardString(isolate, index),
+           isolate);
+     } else {
++      // Capture whether the hasher's IsOnly8Bit pass observed all-one-byte
++      // content, so the table key can ask for a canonicalized one-byte
++      // internalized copy without a second scan. Only meaningful if we run
++      // the hasher here; for already-hashed strings or strings hashed via a
++      // forwarding-table lookup the value stays false and we fall back to
++      // map-keyed encoding.
++      bool one_byte_content = false;
+       if (!Name::IsHashFieldComputed(raw_hash_field)) {
+-        raw_hash_field = result->EnsureRawHash();
++        raw_hash_field = result->EnsureRawHash(&one_byte_content);
+       }
+-      InternalizedStringKey key(result, raw_hash_field);
++      InternalizedStringKey key(result, raw_hash_field, one_byte_content);
+       result = LookupKey(isolate, &key);
+     }
+   }
+@@ -591,7 +613,13 @@ Address StringTable::Data::TryStringToIndexOrLookupExisting(
+     raw_hash_field =
+         StringHasher::HashSequentialString<Char>(chars, length, seed);
+   }
+-  // TODO(verwaest): Internalize to one-byte when possible.
++  // Note: this is a lookup-only function. When `Char` is uint16_t but the
++  // content is all-ASCII, lookups still hit existing one-byte entries via
++  // cross-encoding equality in SequentialStringKey::IsMatch. On a miss we
++  // return kNotFound; the caller falls back to StringTable::LookupString,
++  // which threads the hasher's IsOnly8Bit answer down to
++  // NewInternalizedStringImpl so the new entry is allocated as a one-byte
++  // internalized string when the content fits.
+   SequentialStringKey<Char> key(raw_hash_field,
+                                 base::Vector<const Char>(chars, length));
+ 
+diff --git a/chromium/v8/src/objects/string.cc b/chromium/v8/src/objects/string.cc
+index 55e5642becd..2a1f312ee2f 100644
+--- a/chromium/v8/src/objects/string.cc
++++ b/chromium/v8/src/objects/string.cc
+@@ -1794,7 +1794,8 @@ namespace {
+ template <typename Char>
+ uint32_t HashString(Tagged<String> string, size_t start, uint32_t length,
+                     const HashSeed seed,
+-                    const SharedStringAccessGuardIfNeeded& access_guard) {
++                    const SharedStringAccessGuardIfNeeded& access_guard,
++                    bool* out_one_byte_content) {
+   DisallowGarbageCollection no_gc;
+ 
+   if (length > String::kMaxHashCalcLength) {
+@@ -1814,18 +1815,25 @@ uint32_t HashString(Tagged<String> string, size_t start, uint32_t length,
+     chars = string->GetDirectStringChars<Char>(no_gc, access_guard) + start;
+   }
+ 
+-  return StringHasher::HashSequentialString<Char>(chars, length, seed);
++  return StringHasher::HashSequentialString<Char>(chars, length, seed,
++                                                  out_one_byte_content);
+ }
+ 
+ }  // namespace
+ 
+ uint32_t String::ComputeAndSetRawHash() {
++  return ComputeAndSetRawHash(/*out_one_byte_content=*/nullptr);
++}
++
++uint32_t String::ComputeAndSetRawHash(bool* out_one_byte_content) {
+   DCHECK(!SharedStringAccessGuardIfNeeded::IsNeeded(this));
+-  return ComputeAndSetRawHash(SharedStringAccessGuardIfNeeded::NotNeeded());
++  return ComputeAndSetRawHash(SharedStringAccessGuardIfNeeded::NotNeeded(),
++                              out_one_byte_content);
+ }
+ 
+ uint32_t String::ComputeAndSetRawHash(
+-    const SharedStringAccessGuardIfNeeded& access_guard) {
++    const SharedStringAccessGuardIfNeeded& access_guard,
++    bool* out_one_byte_content) {
+   DisallowGarbageCollection no_gc;
+   // Should only be called if hash code has not yet been computed.
+   //
+@@ -1854,6 +1862,7 @@ uint32_t String::ComputeAndSetRawHash(
+     string = Cast<ThinString>(string)->actual();
+     shape = StringShape(string);
+     if (length() == string->length()) {
++      // We are not running the hasher; leave out_one_byte_content untouched.
+       uint32_t raw_hash = string->RawHash();
+       DCHECK(IsHashFieldComputed(raw_hash));
+       set_raw_hash_field(raw_hash);
+@@ -1862,8 +1871,10 @@ uint32_t String::ComputeAndSetRawHash(
+   }
+   uint32_t raw_hash_field =
+       shape.IsOneByte()
+-          ? HashString<uint8_t>(string, start, length(), seed, access_guard)
+-          : HashString<uint16_t>(string, start, length(), seed, access_guard);
++          ? HashString<uint8_t>(string, start, length(), seed, access_guard,
++                                out_one_byte_content)
++          : HashString<uint16_t>(string, start, length(), seed, access_guard,
++                                 out_one_byte_content);
+   set_raw_hash_field_if_empty(raw_hash_field);
+   // Check the hash code is there (or a forwarding index if the string was
+   // internalized/externalized in parallel).
+diff --git a/chromium/v8/src/objects/string.h b/chromium/v8/src/objects/string.h
+index 482e5261d90..0aa39e8f5c7 100644
+--- a/chromium/v8/src/objects/string.h
++++ b/chromium/v8/src/objects/string.h
+@@ -763,9 +763,16 @@ V8_OBJECT class String : public Name {
+   // Compute and set the hash code.
+   // The value returned is always a computed hash, even if the value stored is
+   // a forwarding index.
++  // If `out_one_byte_content` is non-null, it is set to true iff the content
++  // is known to fit in one byte. It is set only when the hasher actually
++  // scans the content; not set on length > kMaxHashCalcLength or when the
++  // input forwards through a thin/forwarding-index. Used by internalization
++  // to canonicalize 2-byte-with-1-byte-content without a second scan.
+   V8_EXPORT_PRIVATE uint32_t ComputeAndSetRawHash();
++  V8_EXPORT_PRIVATE uint32_t ComputeAndSetRawHash(bool* out_one_byte_content);
+   V8_EXPORT_PRIVATE uint32_t
+-  ComputeAndSetRawHash(const SharedStringAccessGuardIfNeeded&);
++  ComputeAndSetRawHash(const SharedStringAccessGuardIfNeeded&,
++                       bool* out_one_byte_content = nullptr);
+ 
+  public:
+   uint32_t length_;
+diff --git a/chromium/v8/src/strings/string-hasher-inl.h b/chromium/v8/src/strings/string-hasher-inl.h
+index fe4d466ad9e..bea5b949c26 100644
+--- a/chromium/v8/src/strings/string-hasher-inl.h
++++ b/chromium/v8/src/strings/string-hasher-inl.h
+@@ -54,15 +54,22 @@ V8_INLINE bool IsOnly8Bit(const uint16_t* chars, unsigned len) {
+ }
+ 
+ V8_INLINE uint64_t GetRapidHash(const uint8_t* chars, uint32_t length,
+-                                uint64_t seed, const uint64_t secret[3]) {
++                                uint64_t seed, const uint64_t secret[3],
++                                bool* out_one_byte_content = nullptr) {
++  if (out_one_byte_content) *out_one_byte_content = true;
+   return rapidhash(chars, length, seed, secret);
+ }
+ 
+ V8_INLINE uint64_t GetRapidHash(const uint16_t* chars, uint32_t length,
+-                                uint64_t seed, const uint64_t secret[3]) {
++                                uint64_t seed, const uint64_t secret[3],
++                                bool* out_one_byte_content = nullptr) {
+   // For 2-byte strings we need to preserve the same hash for strings in just
+-  // the latin-1 range.
+-  if (V8_UNLIKELY(IsOnly8Bit(chars, length))) {
++  // the latin-1 range. Reuse the IsOnly8Bit pass to report whether the
++  // content fits in one byte; callers (e.g. internalization) use this to
++  // canonicalize without a second scan.
++  const bool one_byte = IsOnly8Bit(chars, length);
++  if (out_one_byte_content) *out_one_byte_content = one_byte;
++  if (V8_UNLIKELY(one_byte)) {
+     return detail::HashConvertingTo8Bit(chars, length, seed, secret);
+   }
+   return rapidhash(reinterpret_cast<const uint8_t*>(chars), 2 * length, seed,
+@@ -71,8 +78,10 @@ V8_INLINE uint64_t GetRapidHash(const uint16_t* chars, uint32_t length,
+ 
+ template <typename uchar>
+ V8_INLINE uint32_t GetUsableRapidHash(const uchar* chars, uint32_t length,
+-                                      uint64_t seed, const uint64_t secret[3]) {
+-  return ConvertRawHashToUsableHash(GetRapidHash(chars, length, seed, secret));
++                                      uint64_t seed, const uint64_t secret[3],
++                                      bool* out_one_byte_content = nullptr) {
++  return ConvertRawHashToUsableHash(
++      GetRapidHash(chars, length, seed, secret, out_one_byte_content));
+ }
+ 
+ }  // namespace detail
+@@ -225,7 +234,8 @@ static_assert(String::kMaxArrayIndexSize == String::kMaxIntegerIndexSize);
+ template <typename char_t>
+ uint32_t StringHasher::HashSequentialString(const char_t* chars_raw,
+                                             uint32_t length,
+-                                            const HashSeed seed) {
++                                            const HashSeed seed,
++                                            bool* out_one_byte_content) {
+   static_assert(std::is_integral_v<char_t>);
+   static_assert(sizeof(char_t) <= 2);
+   using uchar = std::make_unsigned_t<char_t>;
+@@ -256,7 +266,8 @@ uint32_t StringHasher::HashSequentialString(const char_t* chars_raw,
+             case detail::kSuccess: {
+               uint32_t hash = String::CreateHashFieldValue(
+                   detail::GetUsableRapidHash(chars, length, seed.seed(),
+-                                             seed.secret()),
++                                             seed.secret(),
++                                             out_one_byte_content),
+                   String::HashFieldType::kIntegerIndex);
+               if (Name::ContainsCachedArrayIndex(hash)) {
+                 // The hash accidentally looks like a cached index. Fix that by
+@@ -291,7 +302,8 @@ uint32_t StringHasher::HashSequentialString(const char_t* chars_raw,
+ 
+   // Non-index hash.
+   return String::CreateHashFieldValue(
+-      detail::GetUsableRapidHash(chars, length, seed.seed(), seed.secret()),
++      detail::GetUsableRapidHash(chars, length, seed.seed(), seed.secret(),
++                                 out_one_byte_content),
+       String::HashFieldType::kHash);
+ }
+ 
+diff --git a/chromium/v8/src/strings/string-hasher.h b/chromium/v8/src/strings/string-hasher.h
+index fe824d9bed4..360f7492b90 100644
+--- a/chromium/v8/src/strings/string-hasher.h
++++ b/chromium/v8/src/strings/string-hasher.h
+@@ -35,10 +35,16 @@ class RunningStringHasher final {
+ class V8_EXPORT_PRIVATE StringHasher final {
+  public:
+   StringHasher() = delete;
++  // If `out_one_byte_content` is non-null, it is set to true iff the input
++  // content fits in one byte. Only set on the non-index and integer-index
++  // paths; remains untouched when no content scan happens (array-index hit
++  // and trivial-hash for length > kMaxHashCalcLength). Used by
++  // internalization to canonicalize 2-byte-with-1-byte-content without a
++  // second pass.
+   template <typename char_t>
+-  static inline uint32_t HashSequentialString(const char_t* chars,
+-                                              uint32_t length,
+-                                              const HashSeed seed);
++  static inline uint32_t HashSequentialString(
++      const char_t* chars, uint32_t length, const HashSeed seed,
++      bool* out_one_byte_content = nullptr);
+ 
+   // Calculated hash value for a string consisting of 1 to
+   // String::kMaxArrayIndexSize digits with no leading zeros (except "0").
+-- 
+cgit v1.2.3
+

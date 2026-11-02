@@ -1,0 +1,136 @@
+From f67e82cbe5faabd731dbcc904b9e6c22e7139cca Mon Sep 17 00:00:00 2001
+From: Moss Heim <moss.heim@qt.io>
+Date: Wed, 21 Oct 2026 15:56:10 +0200
+Subject: [sbom] Include missing pdfium dependencies
+
+Because SBOM dep tracking uses `gn desc deps`, which lists build files
+with dependencies used in the target, 3rdparty dependencies defined in
+pdfium/third_party/BUILD.gn such as bigint are missed, even though they
+are compiled and their directories contain README.pdfium.
+
+To get around this, make a stub BUILD.gn in each directory with a dummy
+empty source_set dependency, and include it as a dependency of the
+corresponding vendored dep in pdfium/third_party/BUILD.gn. This causes
+gn to list it as a dependency when it's used, and then
+licenses.py and sbom.py pull in the metadata.
+
+We also backport the missing README.pdfium file for bigint from
+upstream (pdfium commit 47449e8970720ccaba6ce03e49539162c9f70da8).
+
+Pick-to: 146-based
+Change-Id: I3aee6e3d8a2da30b4fc4d4b604e1578d5a9608b9
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782665
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/third_party/pdfium/third_party/BUILD.gn             | 5 +++++
+ chromium/third_party/pdfium/third_party/agg23/BUILD.gn       | 1 +
+ chromium/third_party/pdfium/third_party/bigint/BUILD.gn      | 1 +
+ chromium/third_party/pdfium/third_party/bigint/README.pdfium | 9 +++++++++
+ chromium/third_party/pdfium/third_party/lcms/BUILD.gn        | 1 +
+ chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn | 1 +
+ chromium/third_party/pdfium/third_party/libtiff/BUILD.gn     | 1 +
+ 7 files changed, 19 insertions(+)
+ create mode 100644 chromium/third_party/pdfium/third_party/agg23/BUILD.gn
+ create mode 100644 chromium/third_party/pdfium/third_party/bigint/BUILD.gn
+ create mode 100644 chromium/third_party/pdfium/third_party/bigint/README.pdfium
+ create mode 100644 chromium/third_party/pdfium/third_party/lcms/BUILD.gn
+ create mode 100644 chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn
+ create mode 100644 chromium/third_party/pdfium/third_party/libtiff/BUILD.gn
+
+diff --git a/chromium/third_party/pdfium/third_party/BUILD.gn b/chromium/third_party/pdfium/third_party/BUILD.gn
+index 8ff9f447ef5..dace34a1818 100644
+--- a/chromium/third_party/pdfium/third_party/BUILD.gn
++++ b/chromium/third_party/pdfium/third_party/BUILD.gn
+@@ -34,6 +34,7 @@ if (pdf_enable_xfa) {
+       "bigint/BigUnsignedInABase.hh",
+       "bigint/NumberlikeArray.hh",
+     ]
++    deps = [ "bigint:dummy_dependency_trigger" ]
+   }
+ }
+ 
+@@ -253,6 +254,7 @@ source_set("fx_agg") {
+     "agg23/agg_vertex_sequence.h",
+   ]
+   deps = [ "../core/fxcrt" ]
++  deps += [ "agg23:dummy_dependency_trigger" ]
+ }
+ 
+ config("fx_lcms2_warnings") {
+@@ -307,6 +309,7 @@ source_set("fx_lcms2") {
+     "lcms/src/cmsxform.c",
+   ]
+   deps = [ "../core/fxcrt" ]
++  deps += [ "lcms:dummy_dependency_trigger" ]
+ }
+ 
+ if (!build_with_chromium) {
+@@ -433,6 +436,7 @@ source_set("fx_libopenjpeg") {
+     "libopenjpeg/thread.c",
+   ]
+   deps = [ "../core/fxcrt" ]
++  deps += [ "libopenjpeg:dummy_dependency_trigger" ]
+ }
+ 
+ config("system_libpng_config") {
+@@ -472,6 +476,7 @@ if (pdf_enable_xfa_tiff) {
+         "../core/fxcrt",
+         "//third_party:jpeg",
+       ]
++      deps += [ "libtiff:dummy_dependency_trigger" ]
+       sources = [
+         "libtiff/tif_aux.c",
+         "libtiff/tif_close.c",
+diff --git a/chromium/third_party/pdfium/third_party/agg23/BUILD.gn b/chromium/third_party/pdfium/third_party/agg23/BUILD.gn
+new file mode 100644
+index 00000000000..c32488614ca
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/agg23/BUILD.gn
+@@ -0,0 +1 @@
++source_set("dummy_dependency_trigger") {}
+diff --git a/chromium/third_party/pdfium/third_party/bigint/BUILD.gn b/chromium/third_party/pdfium/third_party/bigint/BUILD.gn
+new file mode 100644
+index 00000000000..c32488614ca
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/bigint/BUILD.gn
+@@ -0,0 +1 @@
++source_set("dummy_dependency_trigger") {}
+diff --git a/chromium/third_party/pdfium/third_party/bigint/README.pdfium b/chromium/third_party/pdfium/third_party/bigint/README.pdfium
+new file mode 100644
+index 00000000000..95ac4fd45e1
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/bigint/README.pdfium
+@@ -0,0 +1,9 @@
++Name: C++ Big Interger Library
++URL: https://mattmccutchen.net/bigint/
++Version: 2010.04.30
++Date: 2010-04-30
++License: Public Domain
++License File: LICENSE
++Update Mechanism: Static (https://crbug.com/537940787)
++Security Critical: yes
++Shipped: yes
+diff --git a/chromium/third_party/pdfium/third_party/lcms/BUILD.gn b/chromium/third_party/pdfium/third_party/lcms/BUILD.gn
+new file mode 100644
+index 00000000000..c32488614ca
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/lcms/BUILD.gn
+@@ -0,0 +1 @@
++source_set("dummy_dependency_trigger") {}
+diff --git a/chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn b/chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn
+new file mode 100644
+index 00000000000..c32488614ca
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn
+@@ -0,0 +1 @@
++source_set("dummy_dependency_trigger") {}
+diff --git a/chromium/third_party/pdfium/third_party/libtiff/BUILD.gn b/chromium/third_party/pdfium/third_party/libtiff/BUILD.gn
+new file mode 100644
+index 00000000000..c32488614ca
+--- /dev/null
++++ b/chromium/third_party/pdfium/third_party/libtiff/BUILD.gn
+@@ -0,0 +1 @@
++source_set("dummy_dependency_trigger") {}
+-- 
+cgit v1.2.3
+

@@ -1,0 +1,58 @@
+From 04fb03512fbc0c6a99f0183e3b36721884dcc236 Mon Sep 17 00:00:00 2001
+From: Vladimir Belyavsky <belyavskyv@gmail.com>
+Date: Tue, 20 Oct 2026 13:32:32 +0300
+Subject: [fixup] Fix crash in SkiaOutputSurfaceImplOnGpu on missing shared
+ context state
+
+Check display compositor context state before getting a new one.
+
+Move the check for a missing SharedContextState in the display
+compositor before GetSharedContextState(), so that Create() does not
+attempt to get or recreate a context state when it is going to fail
+anyway.
+
+Amends d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10.
+
+Task-number: QTBUG-151614
+Change-Id: I44a4f6a81df7500a5bf01bb1eba54269e7530e73
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782150
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../display_embedder/skia_output_surface_impl_on_gpu.cc   | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc b/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+index d25a4a6e2e3..c162e2b6299 100644
+--- a/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
++++ b/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+@@ -267,19 +267,20 @@ std::unique_ptr<SkiaOutputSurfaceImplOnGpu> SkiaOutputSurfaceImplOnGpu::Create(
+     SkiaOutputDevice::ReleaseOverlaysCallback release_overlays_callback) {
+   TRACE_EVENT0("viz", "SkiaOutputSurfaceImplOnGpu::Create");
+ 
+-  auto context_state = deps->GetSharedContextState();
+-  if (!context_state) {
+-    return nullptr;
+-  }
+-
+   // |shared_gpu_deps| keeps the SharedContextState it got when the display
+-  // compositor was created, which may have failed even if getting it above
+-  // succeeded. The constructor dereferences it via memory_tracker().
++  // compositor was created, which may have failed. The constructor
++  // dereferences it via memory_tracker(), so bail out before getting a
++  // context state below.
+   if (!shared_gpu_deps || !shared_gpu_deps->shared_context_state()) {
+     LOG(ERROR) << "No shared context state for the display compositor.";
+     return nullptr;
+   }
+ 
++  auto context_state = deps->GetSharedContextState();
++  if (!context_state) {
++    return nullptr;
++  }
++
+   // Even with Vulkan/Dawn compositing, the SharedImageFactory constructor
+   // always initializes a GL-backed SharedImage factory to fall back on.
+   // Creating the GLTextureImageBackingFactory invokes GL API calls, so
+-- 
+cgit v1.2.3
+

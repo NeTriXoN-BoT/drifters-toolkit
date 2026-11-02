@@ -1,0 +1,232 @@
+{
+  "llvm-mingw.zip": {
+    "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20261006/llvm-mingw-20261006-ucrt-x86_64.zip",
+    "sha256": "317492c456aa27ee607a5919f1d2d38dcdc1112516a24d0bf4b00d078f52d17a"
+  },
+  "webview2.nupkg": {
+    "url": "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/1.0.4258.31",
+    "sha256": "56f7f4b8bf9aee4b8efefbbdd4f67d5f74ebd1b100ed0806da71bf76af481aa9"
+  },
+  "json.hpp": {
+    "url": "https://github.com/nlohmann/json/releases/download/v3.12.0/json.hpp",
+    "sha256": "aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63"
+  },
+  "miniz/LICENSE": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/LICENSE",
+    "sha256": "0115478d567121238cf6cc1c0c361926cf07a49d9e4c9e66da97fac6a01646b3",
+    "size": 1184
+  },
+  "miniz/miniz.c": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz.c",
+    "sha256": "f23204efee2bfaffb72a974d2e28c64c3c1d9787144b5c5890f129c465e467bd",
+    "size": 25991
+  },
+  "miniz/miniz.h": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz.h",
+    "sha256": "f0b67217bdd8e45b74eb9b7c2c7ae20ed6760a1d76f3276b93617039ebd082df",
+    "size": 28290
+  },
+  "miniz/miniz_common.h": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_common.h",
+    "sha256": "f1ba29821c8caef83585b328196aa346c5da7c82890a70a3d10d77c6cec0ed39",
+    "size": 2529
+  },
+  "miniz/miniz_tdef.c": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_tdef.c",
+    "sha256": "85b93205232d51d092f24041934d951f11f9edc02df1f475e8ceb7b281a1e7f6",
+    "size": 75526
+  },
+  "miniz/miniz_tdef.h": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_tdef.h",
+    "sha256": "d62da02953c3834dfcbde4db026c6d9345013ef9b0e53185131016a3a4e48c33",
+    "size": 10733
+  },
+  "miniz/miniz_tinfl.c": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_tinfl.c",
+    "sha256": "2296ebd21ef9af5ebbefd5b454d4bb67d8fb4af2d24945e7fb32114374f75a76",
+    "size": 40637
+  },
+  "miniz/miniz_tinfl.h": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_tinfl.h",
+    "sha256": "da4850920fdf09f8877d9affabe1ebba1852ce4b1ebbd121f2ba7a7ea8e57e5d",
+    "size": 8695
+  },
+  "miniz/miniz_zip.c": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_zip.c",
+    "sha256": "b70e502c425e2a31146178c1466dccaf1874390009950774be2be9bd4ec908a9",
+    "size": 208249
+  },
+  "miniz/miniz_zip.h": {
+    "url": "https://raw.githubusercontent.com/richgel999/miniz/77d0dce8627735138c51770d1799a1ef48f2117d/miniz_zip.h",
+    "sha256": "b062a5def545445c73fd1d664e35a89165dfb0d996ab848f507244e819cfcf04",
+    "size": 26742
+  },
+  "windows-runtime-notices/LLVM-RUNTIME-LICENSE.txt": {
+    "url": "https://raw.githubusercontent.com/llvm/llvm-project/0d261d1ca552c95a8f007e061c787ac7132fbcbc/LICENSE.TXT",
+    "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "size": 15141,
+    "target": "docs/LLVM-RUNTIME-LICENSE.txt"
+  },
+  "windows-runtime-notices/MinGW-w64-RUNTIME-LICENSE.txt": {
+    "url": "https://raw.githubusercontent.com/mingw-w64/mingw-w64/a3d93999ef0521681d45e445c39964a7af0f593f/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt",
+    "sha256": "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f",
+    "size": 12155,
+    "target": "docs/MinGW-w64-RUNTIME-LICENSE.txt"
+  },
+  "linux-runtime-notices/GNU-LGPL-3.0.txt": {
+    "url": "https://raw.githubusercontent.com/qt/qtbase/ef55f427f2c8b410d34f8a7681020a3000cf6866/LICENSES/LGPL-3.0-only.txt",
+    "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+    "size": 7651,
+    "target": "docs/GNU-LGPL-3.0.txt"
+  },
+  "linux-runtime-notices/GNU-GPL-3.0.txt": {
+    "url": "https://raw.githubusercontent.com/qt/qtbase/ef55f427f2c8b410d34f8a7681020a3000cf6866/LICENSES/GPL-3.0-only.txt",
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+    "size": 35147,
+    "target": "docs/GNU-GPL-3.0.txt"
+  },
+  "linux-runtime-notices/GNU-LGPL-2.1.txt": {
+    "url": "https://raw.githubusercontent.com/GNOME/libsecret/4941c2f3088eb0ea4a180737b02e22320b8ff7a7/COPYING",
+    "sha256": "a1a33180d02960ab1c5de36cf20b1a2f0fe9888d83826ad263da5db52f1b183b",
+    "size": 26529,
+    "target": "docs/GNU-LGPL-2.1.txt"
+  },
+  "noto-emoji/svg/emoji_u1f386.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f386.svg",
+    "sha256": "b4c1ba902c69a69884c3dd2115d58375a3f1e703e557b687b6d0d7cda17f20d5",
+    "size": 28111,
+    "target": "vendor/noto-emoji-svg/emoji_u1f386.svg",
+    "seasonalIndex": 0
+  },
+  "noto-emoji/svg/emoji_u1f387.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f387.svg",
+    "sha256": "d4a286d427b4c0e7befe96bf102475973610ea2031115fc6679b0189d0487620",
+    "size": 6621,
+    "target": "vendor/noto-emoji-svg/emoji_u1f387.svg",
+    "seasonalIndex": 1
+  },
+  "noto-emoji/svg/emoji_u2728.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u2728.svg",
+    "sha256": "e17f4ea67fb41fd082235eae90f03722980342d478c817e1359ec068d2fa64ab",
+    "size": 2637,
+    "target": "vendor/noto-emoji-svg/emoji_u2728.svg",
+    "seasonalIndex": 2
+  },
+  "noto-emoji/svg/emoji_u1f383.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f383.svg",
+    "sha256": "ed0f66b9ff48270845e3e400681f99369ce8d5b035ee3569d30c8fff94ef8396",
+    "size": 6111,
+    "target": "vendor/noto-emoji-svg/emoji_u1f383.svg",
+    "seasonalIndex": 3
+  },
+  "noto-emoji/svg/emoji_u1f47b.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f47b.svg",
+    "sha256": "fb90dfe84164e4203c4e74123ace2d69ebd504b33a54c002cf18725844244a3a",
+    "size": 6534,
+    "target": "vendor/noto-emoji-svg/emoji_u1f47b.svg",
+    "seasonalIndex": 4
+  },
+  "noto-emoji/svg/emoji_u1f987.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f987.svg",
+    "sha256": "856da54e4d0fc8bec8262cb0407f4b094b6cea692746e8bbbc67aef5e3d7025f",
+    "size": 4069,
+    "target": "vendor/noto-emoji-svg/emoji_u1f987.svg",
+    "seasonalIndex": 5
+  },
+  "noto-emoji/svg/emoji_u1f342.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f342.svg",
+    "sha256": "428316d19bf469d9319876a76237c2e597142a7d4955dbe4b026e3fe609092d3",
+    "size": 4202,
+    "target": "vendor/noto-emoji-svg/emoji_u1f342.svg",
+    "seasonalIndex": 6
+  },
+  "noto-emoji/svg/emoji_u2744.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u2744.svg",
+    "sha256": "55c9ed52bd0ed4595b07ab0f0695b418256ebc963c214fc3d19efff58f44b419",
+    "size": 7426,
+    "target": "vendor/noto-emoji-svg/emoji_u2744.svg",
+    "seasonalIndex": 7
+  },
+  "noto-emoji/svg/emoji_u2603.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u2603.svg",
+    "sha256": "48286c8047b9f82630c465e04a10909db3940b5034c32f48ec521b17fa23de71",
+    "size": 5096,
+    "target": "vendor/noto-emoji-svg/emoji_u2603.svg",
+    "seasonalIndex": 8
+  },
+  "noto-emoji/svg/emoji_u1f332.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f332.svg",
+    "sha256": "3189e48d6d3aac0948743a0ff050017267905948ac2141a2c406aee38e4f770e",
+    "size": 6639,
+    "target": "vendor/noto-emoji-svg/emoji_u1f332.svg",
+    "seasonalIndex": 9
+  },
+  "noto-emoji/svg/emoji_u1f338.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f338.svg",
+    "sha256": "587438199f316790a9a0f614dcdd7347cccdf4acd8e9ef648d34572b185f2508",
+    "size": 3734,
+    "target": "vendor/noto-emoji-svg/emoji_u1f338.svg",
+    "seasonalIndex": 10
+  },
+  "noto-emoji/svg/emoji_u1f337.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f337.svg",
+    "sha256": "903a426ac185391cf7801b878333aed734692676f7be02a1793f2c3292ab6c9b",
+    "size": 4114,
+    "target": "vendor/noto-emoji-svg/emoji_u1f337.svg",
+    "seasonalIndex": 11
+  },
+  "noto-emoji/svg/emoji_u1f343.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f343.svg",
+    "sha256": "60adf004ce659f588a93be8081763231eaaf4daeffcee506f637e9aca9d1a135",
+    "size": 3069,
+    "target": "vendor/noto-emoji-svg/emoji_u1f343.svg",
+    "seasonalIndex": 12
+  },
+  "noto-emoji/svg/emoji_u2600.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u2600.svg",
+    "sha256": "822abba4f2e39d9059d85964116b1f9300e04320ee1a9e5af09831bf2f8c82df",
+    "size": 2548,
+    "target": "vendor/noto-emoji-svg/emoji_u2600.svg",
+    "seasonalIndex": 13
+  },
+  "noto-emoji/svg/emoji_u1f33b.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f33b.svg",
+    "sha256": "95c16aa44685e1a0999a0b9739a485aee2468983ea2bd9f59b5a97e4a492ed56",
+    "size": 3073,
+    "target": "vendor/noto-emoji-svg/emoji_u1f33b.svg",
+    "seasonalIndex": 14
+  },
+  "noto-emoji/svg/emoji_u1f33f.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f33f.svg",
+    "sha256": "34d3dd811644685688b50fa0ef60e772a6b6fa747a5a855e24cf1239d6a5fce6",
+    "size": 3191,
+    "target": "vendor/noto-emoji-svg/emoji_u1f33f.svg",
+    "seasonalIndex": 15
+  },
+  "noto-emoji/svg/emoji_u1f341.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f341.svg",
+    "sha256": "258cee346b2765ceea012d7b2a5f4a7ebf2fb33ce77668161e0898bb438d6878",
+    "size": 3404,
+    "target": "vendor/noto-emoji-svg/emoji_u1f341.svg",
+    "seasonalIndex": 16
+  },
+  "noto-emoji/svg/emoji_u1f330.svg": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/emoji_u1f330.svg",
+    "sha256": "b84fc716df1de92f3bcb4b1a7dcfb1592dd39fc7698c03c80f3db0357b7eb4fb",
+    "size": 2709,
+    "target": "vendor/noto-emoji-svg/emoji_u1f330.svg",
+    "seasonalIndex": 17
+  },
+  "noto-emoji/svg/LICENSE": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/8998f5dd683424a73e2314a8c1f1e359c19e8742/svg/LICENSE",
+    "sha256": "611ceab36dae96644ca84e8ace6873821790192bf6f73b0d0624a21b24b4b332",
+    "size": 574,
+    "target": "vendor/noto-emoji-svg/LICENSE"
+  },
+  "noto-emoji/Apache-2.0.txt": {
+    "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "size": 11358,
+    "target": "vendor/noto-emoji-svg/Apache-2.0.txt"
+  }
+}

@@ -1,0 +1,73 @@
+From 08360bd966e4daacf2569882cc8a39b87624c12a Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 13 Oct 2026 15:29:08 -0700
+Subject: [Backport] CVE-2026-113072: Memory corruption in CSS
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8545831:
+Do not expose pseudo-elements through LargestContentfulPaint API
+
+If a PseudoElement is stored as the element_ in the
+LargestContentfulPaint object, we would expose that to javascript
+through the element attribute.
+
+This could cause all sorts of problems, letting javascript be able to
+modify them as if they were true elements, moving them around the tree
+in unexpected places and setting attributes on them, for instance.
+
+Specifically, the issue reported was modifying querySelector caches
+while being traversed due to slot re-assignment.
+
+Bug: 570638836
+Change-Id: I44d87a537a7da52fa9dc2aa577a58a888c94f3de
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8545831
+Commit-Queue: Scott Haseley <shaseley@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Auto-Submit: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Scott Haseley <shaseley@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718007}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782966
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../blink/renderer/core/timing/largest_contentful_paint.cc           | 4 +++-
+ .../observe-pseudo-element.tentative-expected.txt                    | 5 +++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+ create mode 100644 chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt
+
+diff --git a/chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc b/chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+index e7ee562f82c..747d8dd4bcc 100644
+--- a/chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
++++ b/chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/performance_entry_names.h"
++#include "third_party/blink/renderer/core/timing/performance.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+ 
+ namespace blink {
+@@ -39,8 +40,9 @@ PerformanceEntryType LargestContentfulPaint::EntryTypeEnum() const {
+ }
+ 
+ Element* LargestContentfulPaint::element() const {
+-  if (!element_ || !element_->isConnected() || element_->IsInShadowTree())
++  if (!Performance::CanExposeNode(element_)) {
+     return nullptr;
++  }
+ 
+   // Do not expose |element_| when the document is not 'fully active'.
+   const Document& document = element_->GetDocument();
+diff --git a/chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt b/chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt
+new file mode 100644
+index 00000000000..9554236940c
+--- /dev/null
++++ b/chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] largest-contentful-paint should not expose pseudo-elements
++  assert_equals: expected Element node <div id="target"></div> but got null
++Harness: the test ran to completion.
++
+-- 
+cgit v1.2.3
+

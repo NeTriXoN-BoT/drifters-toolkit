@@ -1,0 +1,3136 @@
+{
+  "schemaVersion": 1,
+  "incrementalRevision": 1,
+  "qtVersion": "6.11.3",
+  "reviewDate": "2026-10-30",
+  "baseChromiumVersion": "140.0.7339.264",
+  "vendorReferenceHead": "a927ba3741827670206ab9ddb28c935032826235",
+  "baselineFollowupLock": {
+    "sha256": "7093d3c7e09906770c952629c519ebd64862123434728bb129a75d5919edb016",
+    "size": 9853
+  },
+  "patchDirectory": "vendor/qtwebengine-security/2026-10-30",
+  "upstream": [
+    {
+      "kind": "qt-vendor",
+      "commit": "fa806a2adbf951f7c1e91866d56019d1eef2efa2",
+      "name": "01-fa806a2adbf951f7c1e91866d56019d1eef2efa2.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=fa806a2adbf951f7c1e91866d56019d1eef2efa2",
+      "title": "[Backport] CVE-2026-113154: Memory corruption in Canvas",
+      "sha256": "c0856556f533453801409fa5ac8acc390dfdc0084a082d2b2335352b73cba790",
+      "size": 6284
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "fb9ebf36a028116067ab9140e721245a560c8ee0",
+      "name": "02-fb9ebf36a028116067ab9140e721245a560c8ee0.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=fb9ebf36a028116067ab9140e721245a560c8ee0",
+      "title": "[Backport] CVE-2026-113161: Use after free in WebRTC",
+      "sha256": "73ffc4f1846eba1fc12abc30f038c679e09617c47098fddf3a3a773698eb7915",
+      "size": 13654
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "a958b4e234d17e6155f12cf410d144ffd1922213",
+      "name": "03-a958b4e234d17e6155f12cf410d144ffd1922213.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=a958b4e234d17e6155f12cf410d144ffd1922213",
+      "title": "[Backport] CVE-2026-113175: Improper input validation in FileSystem",
+      "sha256": "4a54c783845afb28dc92ebafc9439a52294921f8cacdd56e998502a6357477f1",
+      "size": 7679
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "744f7cdaa677c43ea89ca3e270460f7101e3e799",
+      "name": "04-744f7cdaa677c43ea89ca3e270460f7101e3e799.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=744f7cdaa677c43ea89ca3e270460f7101e3e799",
+      "title": "[Backport] CVE-2026-113181: Use after free in Navigation",
+      "sha256": "1551adcd240ef4ed12112dc7fd88612bdd69dee4a4096d1b3ae80ce0860a0a9c",
+      "size": 5565
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "f561894b552a2fe3a94d7aa3562b2ba1026ce5ea",
+      "name": "05-f561894b552a2fe3a94d7aa3562b2ba1026ce5ea.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=f561894b552a2fe3a94d7aa3562b2ba1026ce5ea",
+      "title": "[Backport] Dependency for CVE-2026-113192",
+      "sha256": "4cc0b4c20ba9e1ade57c7d33c092311d43c913be17295d0939b3211904cddc0b",
+      "size": 11913
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "65c51bddebea4b29a631941f08b11c39852ffcec",
+      "name": "06-65c51bddebea4b29a631941f08b11c39852ffcec.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=65c51bddebea4b29a631941f08b11c39852ffcec",
+      "title": "[Backport] CVE-2026-113192: Memory corruption in V8",
+      "sha256": "b087af5322c5b11147311b3ada7814bb72ebba866385dd3b7b295f18ea8aa50f",
+      "size": 6342
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "1fbb2c37b749fbf5c912957ace16160ca0a6dddd",
+      "name": "07-1fbb2c37b749fbf5c912957ace16160ca0a6dddd.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=1fbb2c37b749fbf5c912957ace16160ca0a6dddd",
+      "title": "[Backport] CVE-2026-113212: Memory corruption in PDF (1/2)",
+      "sha256": "58bd8105d34fed893089fc03aedf15e12a94d8c0be561cc398dbbc3367380a7c",
+      "size": 2561
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "be8c765c037e42d85d7ff974f9fe543c2deb8e0c",
+      "name": "08-be8c765c037e42d85d7ff974f9fe543c2deb8e0c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=be8c765c037e42d85d7ff974f9fe543c2deb8e0c",
+      "title": "[Backport] CVE-2026-113212: Memory corruption in PDF (2/2)",
+      "sha256": "5b60e445fb22577356fff8a6e70080b5ed94810ac807685f4f6d7d292575bf24",
+      "size": 21129
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "d341b6c9f9b6951520704d0e6ed6997faae19962",
+      "name": "09-d341b6c9f9b6951520704d0e6ed6997faae19962.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=d341b6c9f9b6951520704d0e6ed6997faae19962",
+      "title": "[Backport] CVE-2026-113222: Use after free in V8",
+      "sha256": "ca62a04706cd4cb1bf753d4f7f5be5005f1ff22d04d07ec8a61972c4625c7923",
+      "size": 6777
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "3069b61db0fde1a92d5ec489251f8cba9c830ac2",
+      "name": "10-3069b61db0fde1a92d5ec489251f8cba9c830ac2.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=3069b61db0fde1a92d5ec489251f8cba9c830ac2",
+      "title": "[Backport] CVE-2026-113242: Memory corruption in ANGLE",
+      "sha256": "417676478625d10c772d51c8613ecc23a7a4802d27a1d84584ba1d09dd58b06a",
+      "size": 12064
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "00c33d94dbcea53e4eaf1cb9428c7b13a1ce421f",
+      "name": "11-00c33d94dbcea53e4eaf1cb9428c7b13a1ce421f.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=00c33d94dbcea53e4eaf1cb9428c7b13a1ce421f",
+      "title": "[Backport] CVE-2026-113252: Improper input validation in ANGLE",
+      "sha256": "a9f8254433364857f2eb7e2819b7aed43e4520569b9abcacc76e4b200af046f9",
+      "size": 12785
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "50d077ed48e6c1b35e0eebdbb7da9e61f996d461",
+      "name": "15-50d077ed48e6c1b35e0eebdbb7da9e61f996d461.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=50d077ed48e6c1b35e0eebdbb7da9e61f996d461",
+      "title": "[Backport] CVE-2026-113163: Use after free in WebGL",
+      "sha256": "b4e6891ae7a15e68aee6af3c5b2e5a41a96ad93939c19d998620ea0bdd6e1333",
+      "size": 24162
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "d91ffc487d3736dcc70341dd128c1ed6c741b2a6",
+      "name": "16-d91ffc487d3736dcc70341dd128c1ed6c741b2a6.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=d91ffc487d3736dcc70341dd128c1ed6c741b2a6",
+      "title": "[Backport] CVE-2026-113266: Memory corruption in ANGLE",
+      "sha256": "277be14aa9a48787598cb5ca8f7f42aa0b6913409089f9f81dd76672a46a125c",
+      "size": 2596
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "ab1b817f46663247bf9a5b88887f81bed9feae36",
+      "name": "17-ab1b817f46663247bf9a5b88887f81bed9feae36.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=ab1b817f46663247bf9a5b88887f81bed9feae36",
+      "title": "[Backport] CVE-2026-113273: Memory corruption in ANGLE",
+      "sha256": "1c4c4e3d13403710ba49e36d8bbef38619cdfa8b40ffb001f15ad6e5616b077c",
+      "size": 1636
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "65433680f8db0143667f6ebfd1c6e8381fd7569c",
+      "name": "18-65433680f8db0143667f6ebfd1c6e8381fd7569c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=65433680f8db0143667f6ebfd1c6e8381fd7569c",
+      "title": "[Backport] CVE-2026-113284: Memory corruption in XML",
+      "sha256": "aace3615dd1fa2efeb2fa070172910636f4ab6c470e1854f58f60df874028200",
+      "size": 8384
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "2757ce07332540af4bb2e365b9b13e8cd70cdd94",
+      "name": "19-2757ce07332540af4bb2e365b9b13e8cd70cdd94.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=2757ce07332540af4bb2e365b9b13e8cd70cdd94",
+      "title": "[Backport] Dependency for CVE-2026-113285",
+      "sha256": "2155ee78c7abb6ec7e1b697b82f10a125fe52fb74ae270a2e48d18810da30c8a",
+      "size": 2207
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "12ca273f519439ac654cebed23643193452aa4e3",
+      "name": "20-12ca273f519439ac654cebed23643193452aa4e3.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=12ca273f519439ac654cebed23643193452aa4e3",
+      "title": "[Backport] CVE-2026-113285: Memory corruption in ANGLE",
+      "sha256": "3998451e219eaf251508b2c3a9dbff3ab919f4b5629f4ef7ebaebb1f6e2bc4b8",
+      "size": 20398
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "92964018c53c02d38937f8f4cc5fe6ff4a95f7e3",
+      "name": "21-92964018c53c02d38937f8f4cc5fe6ff4a95f7e3.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=92964018c53c02d38937f8f4cc5fe6ff4a95f7e3",
+      "title": "[Backport] CVE-2026-113309: Out of bounds read in Media",
+      "sha256": "26054a63133270335ed4935ce5b001b0e893aa017739e23479f86f69e370a8a7",
+      "size": 2835
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "4e63cf3b12f175bc3bde7069a3c538fc7a8862b6",
+      "name": "22-4e63cf3b12f175bc3bde7069a3c538fc7a8862b6.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=4e63cf3b12f175bc3bde7069a3c538fc7a8862b6",
+      "title": "[Backport] Dependency for CVE-2026-113315",
+      "sha256": "82b1b9d89a7184d7644d89d56b4d4c2ef20dbcf735b521c47c191103b0c78d45",
+      "size": 7335
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "179cb42787b36c8d765f2377621d6929cb5ee44c",
+      "name": "23-179cb42787b36c8d765f2377621d6929cb5ee44c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=179cb42787b36c8d765f2377621d6929cb5ee44c",
+      "title": "[Backport] CVE-2026-113315: Memory corruption in ANGLE",
+      "sha256": "7978f5e4c3922fd009ca3c9433ec71eaadea9b36de072646246cb60bd393ebff",
+      "size": 3031
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "0849ba941e37ed5c95db036123b4debc99a7869a",
+      "name": "24-0849ba941e37ed5c95db036123b4debc99a7869a.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=0849ba941e37ed5c95db036123b4debc99a7869a",
+      "title": "[Backport] CVE-2026-113317: Memory corruption in Accessibility",
+      "sha256": "71349a29076a19253725f08e5c652484e1be28d7b281c6026713be86c9613511",
+      "size": 13471
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "23a6bb84a24720a0064e1a0da9e1c7c71f56f72e",
+      "name": "25-23a6bb84a24720a0064e1a0da9e1c7c71f56f72e.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=23a6bb84a24720a0064e1a0da9e1c7c71f56f72e",
+      "title": "[Backport] CVE-2026-113318: Memory corruption in ServiceWorker",
+      "sha256": "7dcf5598e57402378f6365aba93d0e68d07845a62a9c70cf7ea9636297f97fba",
+      "size": 2011
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "c6b5ba0265ab720574ebd306612c093578424947",
+      "name": "26-c6b5ba0265ab720574ebd306612c093578424947.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=c6b5ba0265ab720574ebd306612c093578424947",
+      "title": "[Backport] CVE-2026-113334: Improper input validation in ANGLE",
+      "sha256": "474d071fe280992766433aeeea01fe795932af29ee6bb9e4d5708e1616d97fb1",
+      "size": 10179
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "1d935a7a3fc9a64ac506bad098e215f9f5cb31dd",
+      "name": "27-1d935a7a3fc9a64ac506bad098e215f9f5cb31dd.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=1d935a7a3fc9a64ac506bad098e215f9f5cb31dd",
+      "title": "[Backport] CVE-2026-113336: Memory corruption in Compositing",
+      "sha256": "230840871aa8cec61080c5d5933d0aebf5e72ee9e5bc49e092b51384c8681f60",
+      "size": 3285
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "eb87442860ee42e8b23644b08aed2ea63fabff89",
+      "name": "28-eb87442860ee42e8b23644b08aed2ea63fabff89.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=eb87442860ee42e8b23644b08aed2ea63fabff89",
+      "title": "[Backport] CVE-2026-113293: Use after free in ANGLE",
+      "sha256": "7f53fe8fffe9b9c9515c552f32a3070694cbdc4cdfbdfb96cff3c668f94e414b",
+      "size": 2319
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "feead8773657d05060b0d9cdbc345d6f5ec5ca9c",
+      "name": "29-feead8773657d05060b0d9cdbc345d6f5ec5ca9c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=feead8773657d05060b0d9cdbc345d6f5ec5ca9c",
+      "title": "[Backport] CVE-2026-113295: Out of bounds read in ANGLE",
+      "sha256": "a75b6bf333b7db30d5ed3b3951a2a96dc7ea17a5aeb161bea0c7b63d28f7ca65",
+      "size": 26832
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "605b9ff1fe8274fde228d8d05e6092c5dc0150be",
+      "name": "30-605b9ff1fe8274fde228d8d05e6092c5dc0150be.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=605b9ff1fe8274fde228d8d05e6092c5dc0150be",
+      "title": "[roll][expat] Roll expat to 2.8.5",
+      "sha256": "f2c1e1ff6edac5aa14d6b7ec4dddd522350372d1733f4b70abd9dc28f4cc46ee",
+      "size": 423072
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "ef1a89f0070afd07f250289a79ca74eab3fac6d0",
+      "name": "31-ef1a89f0070afd07f250289a79ca74eab3fac6d0.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=ef1a89f0070afd07f250289a79ca74eab3fac6d0",
+      "title": "[Backport][parts] CVE-2026-113188: Memory corruption in GPU",
+      "sha256": "f1c87211179772814008346f962b9706a8f9f63c2b630a48f15b2ed2d5bac496",
+      "size": 11482
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "22d7933ea0e2c0b4c04708560daca29ddce9a448",
+      "name": "32-22d7933ea0e2c0b4c04708560daca29ddce9a448.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=22d7933ea0e2c0b4c04708560daca29ddce9a448",
+      "title": "[Backport][parts] CVE-2026-113324: Use after free in GPU",
+      "sha256": "21bd47c792f9f66f7316f76007063576fdd3d93bb279e19e06aeedb6cf8485d5",
+      "size": 6968
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "c7ac02ba30bff138d16bc64c9fca1f4f10dbfa43",
+      "name": "33-c7ac02ba30bff138d16bc64c9fca1f4f10dbfa43.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=c7ac02ba30bff138d16bc64c9fca1f4f10dbfa43",
+      "title": "CVE-2026-113234: Memory corruption in ANGLE",
+      "sha256": "e7e27ae039cc593e0871dce86e713a7203596dc65505fcf14814054ccb48ab52",
+      "size": 4509
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "4b942a0b62ee9ce3029945c293d64158626b5350",
+      "name": "50-4b942a0b62ee9ce3029945c293d64158626b5350.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=4b942a0b62ee9ce3029945c293d64158626b5350",
+      "title": "[Backport] CVE-2026-118304 and CVE-2026-118315: Improper input validation in SVG",
+      "sha256": "8a13d8729da496f4a1dfe313234f2813b9210027fb8d9ae6e55967eb21261a47",
+      "size": 4428
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "5250633b12a28df5d655ef9983d3fcf94cd6e452",
+      "name": "51-5250633b12a28df5d655ef9983d3fcf94cd6e452.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=5250633b12a28df5d655ef9983d3fcf94cd6e452",
+      "title": "[Backport] CVE-2026-118307: Use after free in Paint",
+      "sha256": "fea34762abd6de08b70d4ead41156c73d8fbfb4563f090034aa46244e594bdc2",
+      "size": 2810
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "3234d6d7ecadbcdc9b30aca9de07f27facaa1a94",
+      "name": "52-3234d6d7ecadbcdc9b30aca9de07f27facaa1a94.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=3234d6d7ecadbcdc9b30aca9de07f27facaa1a94",
+      "title": "[Backport] CVE-2026-118308: Use after free in SVG",
+      "sha256": "02beb113c1fa745124697b7f7c667964029b64450d24c9199c8917ee17d0f410",
+      "size": 2090
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "c62b5112f1b98ba87e176ab3fb96d856d8eac209",
+      "name": "53-c62b5112f1b98ba87e176ab3fb96d856d8eac209.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=c62b5112f1b98ba87e176ab3fb96d856d8eac209",
+      "title": "[Backport] CVE-2026-118311: Memory corruption in Media",
+      "sha256": "c8ec1dbc48b316c68e6bfa1e63420cf50de5b1eb6dcd4114b584598657d51f1f",
+      "size": 3622
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "c1e227213f7f088a89e0fd13052de8b264ff17f5",
+      "name": "54-c1e227213f7f088a89e0fd13052de8b264ff17f5.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=c1e227213f7f088a89e0fd13052de8b264ff17f5",
+      "title": "[Backport] CVE-2026-118316: Improper input validation in V8",
+      "sha256": "6cebbd829796efab56833f8b9a738c55a8f2e8117adfcab40069268f3f3df6e3",
+      "size": 3819
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "b71eebc463b5b1a56e865ac69b076dac81ff463c",
+      "name": "55-b71eebc463b5b1a56e865ac69b076dac81ff463c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=b71eebc463b5b1a56e865ac69b076dac81ff463c",
+      "title": "[Backport] CVE-2026-118328: Improper input validation in WebRTC",
+      "sha256": "24c485f8d3b51647727b02d4e61cb8ef8dd823b9ab1ee61e85dd38da67be6b4b",
+      "size": 3472
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "bb31ed6efa16c2f853117dac90be518142e2f73f",
+      "name": "56-bb31ed6efa16c2f853117dac90be518142e2f73f.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=bb31ed6efa16c2f853117dac90be518142e2f73f",
+      "title": "[Backport] CVE-2026-118329: Improper input validation in ANGLE",
+      "sha256": "78b501f3dae6b2a7c9a7f7eae817cea098d32b3f651b9fc7d5e0156d80ad3ea4",
+      "size": 3763
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "444482fea924a9960cb25ad1b1af8b574811d052",
+      "name": "57-444482fea924a9960cb25ad1b1af8b574811d052.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=444482fea924a9960cb25ad1b1af8b574811d052",
+      "title": "[Backport] CVE-2026-118333: Missing authorization in Video",
+      "sha256": "eabfeb6100a09ec12dd2895678fa90cccd0a53b3751e5e5fe249b9187acaff72",
+      "size": 2159
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "6ebdd22b26d7541e483f01002db138c19e6be5c0",
+      "name": "58-6ebdd22b26d7541e483f01002db138c19e6be5c0.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=6ebdd22b26d7541e483f01002db138c19e6be5c0",
+      "title": "[Backport] CVE-2026-118339: Use after free in Animation",
+      "sha256": "e32fef7de4c6bb0026f48de49b0a77b752f7708d8c01f1a957656c76717cfffa",
+      "size": 4053
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "d3675b5458def082d558c61201157dd972dc01c9",
+      "name": "59-d3675b5458def082d558c61201157dd972dc01c9.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=d3675b5458def082d558c61201157dd972dc01c9",
+      "title": "[Backport] CVE-2026-118340: Memory corruption in Skia",
+      "sha256": "44f367704d6b61954d2596ff653a2fc62ef6af52c6c20201ff38d79f53d46b86",
+      "size": 5102
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "5e852951f403da7c8a7a50394034cb2e753ca56c",
+      "name": "60-5e852951f403da7c8a7a50394034cb2e753ca56c.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=5e852951f403da7c8a7a50394034cb2e753ca56c",
+      "title": "[Backport] CVE-2026-118342: Out of bounds write in Editing",
+      "sha256": "29f54d09f596ae859a1037ddfbfb4e2ee36dd195082689db1224b689169e435e",
+      "size": 2823
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "7db57eda7cfb5027971730e12a2d411f61a1eb2d",
+      "name": "61-7db57eda7cfb5027971730e12a2d411f61a1eb2d.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=7db57eda7cfb5027971730e12a2d411f61a1eb2d",
+      "title": "[Backport] CVE-2026-118345: Use after free in PDFium",
+      "sha256": "ab654319ddc53c171e2bacdfde7f0534e9471e25f5994135cb39c6c42e583245",
+      "size": 7429
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "d720f1281491802bed3399d649cb991ab080af53",
+      "name": "62-d720f1281491802bed3399d649cb991ab080af53.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=d720f1281491802bed3399d649cb991ab080af53",
+      "title": "[Backport] CVE-2026-118346: Use after free in Compositing",
+      "sha256": "df3c5689131e65065ecdf6097f1ea6088c74f6bc02f6c20efd34986fcb5196c2",
+      "size": 5972
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "6b464bab759d0d2c7810422b373999fa37d30840",
+      "name": "63-6b464bab759d0d2c7810422b373999fa37d30840.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=6b464bab759d0d2c7810422b373999fa37d30840",
+      "title": "[Backport] CVE-2026-118347 and CVE-2026-118357: Use after free in FileSystem",
+      "sha256": "f48a31a609483057c22c86c870f6276fd2c87157d0e05f07a4480c6c3c4156e5",
+      "size": 8391
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "9a3a7517fe6f75b18a97f8c7d7a67246d850c787",
+      "name": "64-9a3a7517fe6f75b18a97f8c7d7a67246d850c787.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=9a3a7517fe6f75b18a97f8c7d7a67246d850c787",
+      "title": "[Backport] CVE-2026-118351: Memory corruption in Skia",
+      "sha256": "20e26f80b0a8ff22e11fad9c83ddf2a5b29efc96fd86323edccfc17df8c03d64",
+      "size": 2382
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "aaa2e4b8010c6ee951e012713c4ff323da79d7ae",
+      "name": "65-aaa2e4b8010c6ee951e012713c4ff323da79d7ae.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=aaa2e4b8010c6ee951e012713c4ff323da79d7ae",
+      "title": "[Backport] CVE-2026-118352: Memory corruption in Cache",
+      "sha256": "73689509d8202cd8794e35cc3812f90a88427c06446d6e545e53640e51a3607a",
+      "size": 2723
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "c0a24f1252641a3d520281f69ac3d62bedee7560",
+      "name": "66-c0a24f1252641a3d520281f69ac3d62bedee7560.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=c0a24f1252641a3d520281f69ac3d62bedee7560",
+      "title": "[Backport] CVE-2026-118354: Improper input validation in Skia",
+      "sha256": "791caa9601439d6e657ffb1b41b6dc7fc694080e2be46e93067ff68c33577291",
+      "size": 7171
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "a85497ce12a87dc450f5e821b8b5739a02a440eb",
+      "name": "67-a85497ce12a87dc450f5e821b8b5739a02a440eb.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=a85497ce12a87dc450f5e821b8b5739a02a440eb",
+      "title": "[Backport] CVE-2026-118355: Improper input validation in Command",
+      "sha256": "9727c5ddf46224606a88cb941579e2c80a9c06bc48c247a3014e27a02d58217b",
+      "size": 8800
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "43c05a59071ecc91142f6faa56c012fdf45b51d9",
+      "name": "68-43c05a59071ecc91142f6faa56c012fdf45b51d9.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=43c05a59071ecc91142f6faa56c012fdf45b51d9",
+      "title": "[Backport] CVE-2026-118358: Memory corruption in WebAudio",
+      "sha256": "6bcce798cb68894262893ca411ce4a288d159c91323bb1699831449eeac66ee6",
+      "size": 3740
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "a0cd745663fa18c70cb22f1b8fdf8e90405e1da4",
+      "name": "69-a0cd745663fa18c70cb22f1b8fdf8e90405e1da4.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=a0cd745663fa18c70cb22f1b8fdf8e90405e1da4",
+      "title": "[fixup][roll][expat] Roll expat to 2.8.5",
+      "sha256": "814948b56d79d77ded3ab4425b3e1049003da8ac638ffccababc8ac40609176a",
+      "size": 1212
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "dc5dd06d9b4fadf9f0a51eae5fdca5dcc0d25a92",
+      "name": "70-dc5dd06d9b4fadf9f0a51eae5fdca5dcc0d25a92.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=dc5dd06d9b4fadf9f0a51eae5fdca5dcc0d25a92",
+      "title": "[fixup][Backport][parts] CVE-2026-113324: Use after free in GPU",
+      "sha256": "105ab684e6869c70618b680265319634e030eda673b4d5326b808711e16232e9",
+      "size": 2792
+    },
+    {
+      "kind": "qt-vendor",
+      "commit": "5ea6b0039609fe37bd28a62b679bfe8ecbaa3ce7",
+      "name": "72-5ea6b0039609fe37bd28a62b679bfe8ecbaa3ce7.patch",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/patch/?h=140-based&id=5ea6b0039609fe37bd28a62b679bfe8ecbaa3ce7",
+      "title": "[Backport] CVE-2026-118341: Use after free in Modularization",
+      "sha256": "02293cd09d2d6be143fb8ae6895f276d27b17f37cd92820ed10b4be132eead71",
+      "size": 4166
+    },
+    {
+      "kind": "chromium",
+      "commit": "6442ebe52d911b4b0f4df0ac5ffe307e79b705b1",
+      "name": "6442ebe52d911b4b0f4df0ac5ffe307e79b705b1.patch",
+      "url": "https://github.com/chromium/chromium/commit/6442ebe52d911b4b0f4df0ac5ffe307e79b705b1.patch",
+      "title": "CVE-2026-76024: MediaStream StopAndNotify lifetime guards",
+      "sha256": "5ee1e0f21d5df2a20a32d693d9dbadc9e3b038a0a09618ecf5e3ed1810435784",
+      "size": 19908
+    }
+  ],
+  "adapter": {
+    "name": "qt140-incremental-compatibility.patch",
+    "sha256": "11aca934b0d9084f347d5da6f67e9d05579256195f64c96eaf17e8bb2e859d4f",
+    "size": 616480
+  },
+  "files": [
+    {
+      "path": "chromium/cc/tiles/image_controller.cc",
+      "before": {
+        "sha256": "8112f6c91a96ec4e9abbc113c67954f864ea559b52ebbdcc500e01daafa5115d",
+        "size": 22456
+      },
+      "after": {
+        "sha256": "c11cadaaafdadd2a53f1f48bf1f99bbf0e726af25fdc0e4acca35cde7ec1c76f",
+        "size": 22626
+      }
+    },
+    {
+      "path": "chromium/cc/tiles/image_controller.h",
+      "before": {
+        "sha256": "b2b700b8d79559f305b313fbfe1f68cce62aa868973f3c1640247c5240c51936",
+        "size": 7471
+      },
+      "after": {
+        "sha256": "c8bfb6720cb80630e8b4035ee94348ed1bdc17abf4d9a254d0acd5446330f066",
+        "size": 7703
+      }
+    },
+    {
+      "path": "chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc",
+      "before": {
+        "sha256": "eb1ce33a44fdb6ba50f3027945b851a90449e47bc7a5b711b68d342f93ebcda3",
+        "size": 61379
+      },
+      "after": {
+        "sha256": "abba0fa16c80d83d4b2c16f62469e20cd5846fb5c7ab091f16d646c8e31d5195",
+        "size": 61600
+      }
+    },
+    {
+      "path": "chromium/components/viz/service/display/resolved_frame_data.cc",
+      "before": {
+        "sha256": "5e107bdb1806794439998bef09cde9cec44a5a2290914c26db2db200eb18b9ca",
+        "size": 24676
+      },
+      "after": {
+        "sha256": "5a355aacc6547854664be42296221f75fdb2a46c11bdffa2efeeb0a4a21cbdc5",
+        "size": 24922
+      }
+    },
+    {
+      "path": "chromium/components/viz/service/display/resolved_frame_data.h",
+      "before": {
+        "sha256": "e7a580761af68e8b73c5e8dede5a59bb4f18f3fff5cef6e121eaefe5129a4c6b",
+        "size": 16113
+      },
+      "after": {
+        "sha256": "2988bbd9de5e568b363bdfe4b155c72c167bc7dc059e3b73c90b6ce10512425c",
+        "size": 16619
+      }
+    },
+    {
+      "path": "chromium/components/viz/service/display/surface_aggregator.cc",
+      "before": {
+        "sha256": "498124d0127ca0fec62279ac1cfb517f60bc9361b40273fd2960e4359db61384",
+        "size": 110395
+      },
+      "after": {
+        "sha256": "231b43b7719aea4a9552baffe53e1392d9f5fdc5f5988ef18594caac7a8e9734",
+        "size": 110344
+      }
+    },
+    {
+      "path": "chromium/content/browser/accessibility/render_accessibility_host.cc",
+      "before": {
+        "sha256": "80cbd5742d411cae3deb064d0d0a346c840b13fbff49d4b80970492a58d5ec7a",
+        "size": 3814
+      },
+      "after": {
+        "sha256": "5dc95899cff31240bffa2eafe683ac4a725b2deff4b6f7578081c62515a98aa8",
+        "size": 4297
+      }
+    },
+    {
+      "path": "chromium/content/browser/file_system_access/file_system_access_manager_impl.cc",
+      "before": {
+        "sha256": "7e5d5c44941989aa4b7b4b729d37eb6e3cf3e2bd80d73de06af0d00abeb51118",
+        "size": 92521
+      },
+      "after": {
+        "sha256": "b305a1a5f15de7b67795b9cad6c6506f2f99d87d93711e1605715941f6f31800",
+        "size": 96927
+      }
+    },
+    {
+      "path": "chromium/content/browser/file_system_access/file_system_access_manager_impl.h",
+      "before": {
+        "sha256": "d8d6359cd2776357f62eb126bd325ed297d463a7590824d14afc90c55e9ccacc",
+        "size": 34126
+      },
+      "after": {
+        "sha256": "3f992bb3b326bf5c884913a29804165fbe87642dd0b0e0215fdab477124b4e54",
+        "size": 34596
+      }
+    },
+    {
+      "path": "chromium/content/browser/renderer_host/render_frame_host_impl.cc",
+      "before": {
+        "sha256": "48fe4656cef7eebd6ef3239d276ab81f5c95014aefba979f03ea97abd5cda996",
+        "size": 826833
+      },
+      "after": {
+        "sha256": "809ce88d3390e635f9e368c947cfd148323ab247588d5ff65af7aa21e51e27e4",
+        "size": 827330
+      }
+    },
+    {
+      "path": "chromium/content/browser/service_worker/service_worker_client_utils.h",
+      "before": {
+        "sha256": "dc992ded2c4de815441d3b8fe735e4d213adf499d821f6176d831fcfe9fd78e3",
+        "size": 4634
+      },
+      "after": {
+        "sha256": "9ea45410bc588a47ad2bdbbde6f6814d2e59a65e057671444d0e5e574631751d",
+        "size": 4767
+      }
+    },
+    {
+      "path": "chromium/content/browser/web_contents/web_contents_impl.cc",
+      "before": {
+        "sha256": "59309bbc650fd95ad940936bfc39111dccc4738c4cb24f3fcfb07eda0291c3d2",
+        "size": 483953
+      },
+      "after": {
+        "sha256": "1059b7d3fcce619633dcbd8dc86111547c8a7fa2dcaf2d01f4659c8d0e2ca92c",
+        "size": 484734
+      }
+    },
+    {
+      "path": "chromium/content/common/service_worker/race_network_request_simple_buffer_manager.cc",
+      "before": {
+        "sha256": "33823aa506f8fc2c1a209f26c77b30c5ee60b87009f26fe98696ad1de093d938",
+        "size": 3775
+      },
+      "after": {
+        "sha256": "82e5990c135f60218feb4e1faff617726843f009c579d76dca60a0afeedceefa",
+        "size": 3887
+      }
+    },
+    {
+      "path": "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc",
+      "before": {
+        "sha256": "0abb2e9a190d6ad3f25d9c34f4ffc39c03904771b0fd818a0f17d67c73836e92",
+        "size": 51760
+      },
+      "after": {
+        "sha256": "0fa3fadea344204d099239e7732c9ead72fcb4f830174508b985e911fd05d328",
+        "size": 52897
+      }
+    },
+    {
+      "path": "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h",
+      "before": {
+        "sha256": "127c82e793c76d0d9e08b6c5d30bb5561e4f56279530f09b46ef55902cb766db",
+        "size": 10324
+      },
+      "after": {
+        "sha256": "b3ed4a48c1b33eae761913bb303cb3749aa9fd5128ab79f8af0ef72efd7035f0",
+        "size": 10389
+      }
+    },
+    {
+      "path": "chromium/media/base/cdm_promise_adapter.cc",
+      "before": {
+        "sha256": "6508b96e727b65dc9b287c27e9f381877294e7dd59cf2b32a54012e34f2559e1",
+        "size": 4222
+      },
+      "after": {
+        "sha256": "a0b922591cd3ddb86153bd1fbb08576b64f9c2a3a8d2e427094d78948889e9bf",
+        "size": 4658
+      }
+    },
+    {
+      "path": "chromium/media/mojo/clients/mojo_cdm.cc",
+      "before": {
+        "sha256": "9e631d1142bd34ed052a8c1893334ff17ed62574fd8d8d36a567059fed0e4611",
+        "size": 14334
+      },
+      "after": {
+        "sha256": "bcd54cfc6c835f60d12790b804937637ebe8a0f39253061355949fe10e0dd4ab",
+        "size": 14585
+      }
+    },
+    {
+      "path": "chromium/media/mojo/clients/mojo_cdm_unittest.cc",
+      "before": {
+        "sha256": "bc011173700d09c42ae131c56229e6eb9cf88af5161ee8e5e9755645b4044fa7",
+        "size": 22414
+      },
+      "after": {
+        "sha256": "97fce7f6b9d4566df69e6a4680dbc61e96bdff417a6cc5fe1427b349c4610833",
+        "size": 22917
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache.cc",
+      "before": {
+        "sha256": "03ccbe3455a408213ee5d71794724c2b91cd13bc4ffe2dcdf8ae7f8da39ef07f",
+        "size": 58727
+      },
+      "after": {
+        "sha256": "3b6c1fecbf144d279e0d727993607faf9aeb360b339ed417ab18a2990989d60e",
+        "size": 59016
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache_transaction.h",
+      "before": {
+        "sha256": "8cfc208d71b9bad55e4eeb637fc12fc46443a939588918074daf3b6538c1e700",
+        "size": 36252
+      },
+      "after": {
+        "sha256": "1bb6d4a3c73d59cee6f620deaa9525f257345faf1b4ac87a816d72ba6ddd090e",
+        "size": 36342
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler.gni",
+      "before": {
+        "sha256": "b5fd50f1df0d4b236044090728a144018a5738ed6e26b9a5979a63b10f2f3acf",
+        "size": 26414
+      },
+      "after": {
+        "sha256": "49a2fadf7e84041039289a273a36db7149275cf3bf1ff43be9ab087360ba79e6",
+        "size": 26534
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/Compiler.cpp",
+      "before": {
+        "sha256": "0959291d8ffd28a767ecfba2cfb1c3d2c313ba16e188e16211bc9923cd593539",
+        "size": 80319
+      },
+      "after": {
+        "sha256": "34c80e1de784a97facfe9abe52a9ceed502b94f5be600b5896b375d909a8e4e5",
+        "size": 80620
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp",
+      "before": {
+        "sha256": "3abcb403004ff1c19a1c7930144e126d6d665fe3cbfe498f48536a4eb5981c28",
+        "size": 12806
+      },
+      "after": {
+        "sha256": "588fe675f89d762990b59e90c183aae515df37ebb372f20a6d4306b645a83bee",
+        "size": 12807
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/hlsl/UtilsHLSL.cpp",
+      "before": {
+        "sha256": "05196bd3cc934f415409d7494f386145f9cc2eab89df4984fc3b05213b49cc3c",
+        "size": 37845
+      },
+      "after": {
+        "sha256": "2bbcf2fe7de1e74d744964ae15497a71195ea08a850cae62430af37e3bda881b",
+        "size": 37851
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp",
+      "before": null,
+      "after": {
+        "sha256": "7bbf0df91595247437c6c1c0c5db0d685e4688523dc624b8d1b1fa4bd885fd7c",
+        "size": 14174
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.h",
+      "before": null,
+      "after": {
+        "sha256": "dba7a80066a3d3ad60a821840b3b0838429abbff2997263ab7cc82b31f6a4751",
+        "size": 770
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/tree_ops/PruneNoOps.cpp",
+      "before": {
+        "sha256": "a41be5e79d94674c7ece5ba71113e10c74c0fce263392a734df1cba2b3411ec8",
+        "size": 13872
+      },
+      "after": {
+        "sha256": "88d19cd995cf9f23a3b5a4ebd510656478ec93f0be3a710db5a05ccbcec8c870",
+        "size": 12167
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/compiler/translator/tree_util/IntermTraverse.h",
+      "before": {
+        "sha256": "2f9ace707b119987a261a2aae17a38bae8c6a018492136c42ab2b54941a6fc42",
+        "size": 16199
+      },
+      "after": {
+        "sha256": "cbb3785a97d45f88522be6556e36de12ac378084c9f6f57c799f6bd37650f182",
+        "size": 16270
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/Context.cpp",
+      "before": {
+        "sha256": "f2a10522d15a653444a98fd023f3911eeb18425a04ed77b86c99db389e3ab6a1",
+        "size": 402614
+      },
+      "after": {
+        "sha256": "ccf3af75b4d28e2fdbb95ffd357460c690ff86aafa5712e3b95b9f12c5d0cfa4",
+        "size": 402657
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/State.cpp",
+      "before": {
+        "sha256": "4449e0f6789fcc60bd55e95ded820400ac07766c5f394849be46970acb22692d",
+        "size": 144147
+      },
+      "after": {
+        "sha256": "455b9f6aaffb700ef3cdbb4cfd31576fc0af04bbfbc2ad745df8418a251459b1",
+        "size": 144267
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/Texture.cpp",
+      "before": {
+        "sha256": "421f8e254d911e210f34ddbcf661741493208619e89c01247b30e7413a974edc",
+        "size": 97148
+      },
+      "after": {
+        "sha256": "55d5a1cc7255d1bbfa7a6913fb3501fd45b8e109f28e63ce5b0cdd002fccef90",
+        "size": 98256
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/Texture.h",
+      "before": {
+        "sha256": "8b8da56c2ac48b825774bb427df42cf02ac25d06026b84faef548e40412c7a48",
+        "size": 33084
+      },
+      "after": {
+        "sha256": "7439f93ec4ffa6973b89f9ab4a3c2ffc5fbae4845f6c3517057c6450eb7335cc",
+        "size": 33193
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/IndexDataManager.h",
+      "before": {
+        "sha256": "deba77cc5f9d7d7fadc900a6b91a42f8d56cffe85091c13a3ec8e685a90bf8ee",
+        "size": 3442
+      },
+      "after": {
+        "sha256": "dc78c226bc97cb52d93571b2ae30db1eb2ab942ae5500e31da74636f3eb66eaa",
+        "size": 3414
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp",
+      "before": {
+        "sha256": "db2dd40fa1188c12de91f8976711a40b191919e8f8595ec979f4b1224f5fdcc3",
+        "size": 180291
+      },
+      "after": {
+        "sha256": "e5f6a1f4a03c67331534ca4031df50b2b2588e4c551b42e168eb1eb337f01b57",
+        "size": 182230
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.h",
+      "before": {
+        "sha256": "593810796771bd09ee6186b20d07afc4551fd37776dd3e859ee94d6f64a70eb0",
+        "size": 51396
+      },
+      "after": {
+        "sha256": "dcabf41956c2eff647c48270d0a93cd4a1386eaf08d640b172dfb8c917a02cf6",
+        "size": 52082
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp",
+      "before": {
+        "sha256": "02fbaca1eb0e7228b6935a01e43d7f8ef1ea098c57b3d214cd31b3d12b5644e7",
+        "size": 64309
+      },
+      "after": {
+        "sha256": "de9f54ec14d649061cf9b559a12291eb3df1724f4e100f5f6a043fc3b8d18395",
+        "size": 70435
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Image11.cpp",
+      "before": {
+        "sha256": "d87cc55c1fc20591374953ec6533c2d055f3c0bba4a6bb8b0d821cc676bf94a6",
+        "size": 30308
+      },
+      "after": {
+        "sha256": "641f401589403f96a96c37386b310010e719b7ab8da3e1edce5f56997008b0d5",
+        "size": 30346
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp",
+      "before": {
+        "sha256": "9c0f29c66e73186aa0a0fac29fd1dd0b55191d4d73b6f8d2c6bffa7754f9a07b",
+        "size": 12348
+      },
+      "after": {
+        "sha256": "2fc23c8bcadd7793442be210468981acc633cbaa61f53fc8820d17429981163d",
+        "size": 12379
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp",
+      "before": {
+        "sha256": "fba8d984957d0a0755f1857f7439a63e64cdd58278981252e2f1c1daf214ae03",
+        "size": 179809
+      },
+      "after": {
+        "sha256": "a906ac935540ea4b465fdda377d24fa9b6059ca952f0a8a0bb3c102015f032f4",
+        "size": 179841
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp",
+      "before": {
+        "sha256": "82370f6e10f9a1a1f967e89bd0f894be6b1d917975cef80cb77f1643c6dc9b2a",
+        "size": 22648
+      },
+      "after": {
+        "sha256": "c0469d4c9a9fa0e3e9be6bb03f9528d40ea3002e09632fb00d5df4b685fc492a",
+        "size": 23270
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h",
+      "before": {
+        "sha256": "d25067dfbaf6193155b89366772c6ef36ff663b05d9727dea79f948108b8bb6f",
+        "size": 14466
+      },
+      "after": {
+        "sha256": "d17d2d1b4e56468581d14ce130b9a230ee678ed815427d76192691ce742370da",
+        "size": 14513
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp",
+      "before": {
+        "sha256": "e7426973d5c02fd15ba51e10f9f8138822d7dd14a29b565a25988d9ea71245e4",
+        "size": 157849
+      },
+      "after": {
+        "sha256": "c969a4833695789f9481d081ddfa8626b3a0736e231dfccf4e32dc4425f6d483",
+        "size": 160406
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.h",
+      "before": {
+        "sha256": "ebf7ea69b93906ffa4b63b322a3b1f9c187db82640a2199eed04d972fd9e77f9",
+        "size": 27625
+      },
+      "after": {
+        "sha256": "1baa524dfc0d47b9995b11c7f6706afd37d866a5b7e6b05e49d35f5eff698c2d",
+        "size": 27708
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp",
+      "before": {
+        "sha256": "b1b20a89561a41aa1ea8ec194c2d53b3f9279af1abd9b6aaa326de0ca6ba76fa",
+        "size": 185043
+      },
+      "after": {
+        "sha256": "2721dfdf115229552ab2045193d3afa2677e5d7deab27504f26ca2ade24b772d",
+        "size": 185313
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp",
+      "before": {
+        "sha256": "dfdf5656d5ccce52a6384c9acd6459ea9f86b3d5f5ef2dd0765b9c7bbf7ce371",
+        "size": 16707
+      },
+      "after": {
+        "sha256": "834864f9ca1b0e5328e422eeccc2082abc2236336dc3adefb3a9aed6cf412282",
+        "size": 17551
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp",
+      "before": {
+        "sha256": "d510f3896f486b5c8dc649e8925e48f70939f016235b9c7d075bac418ab4ba58",
+        "size": 100303
+      },
+      "after": {
+        "sha256": "3ab6c10946ff5513378bb5646f6cbb090c78179276008ab43b17356b5c3cb835",
+        "size": 100446
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h",
+      "before": {
+        "sha256": "322529585396168b9c5e9bd10256cbec778713f56344239806c9b45986091d80",
+        "size": 14277
+      },
+      "after": {
+        "sha256": "52f0d2cf49238187ed892b596fc7bf23c9d4487b4c2905ed3b5fa355fae25e70",
+        "size": 14360
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/TextureMtl.mm",
+      "before": {
+        "sha256": "6991820bd5d3645a1f924e777ab9ef33a1c854bed1a1be76f31fdf941d404b6f",
+        "size": 130735
+      },
+      "after": {
+        "sha256": "73c4829f56a1987234a480b4f9a92ab79267b539e3bc9eb911b5b03794d5602b",
+        "size": 131415
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp",
+      "before": {
+        "sha256": "b7d67a14d6ca5ef6afdbe3089e1bd18a31c9179cb6c0c776ab92b94f80454e55",
+        "size": 18183
+      },
+      "after": {
+        "sha256": "8afbc516fae0d612e54f3322b39b62a2ce071b104bb9fdbab4b2bd655fdbb2b4",
+        "size": 18937
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/vulkan/TextureVk.cpp",
+      "before": {
+        "sha256": "4c1a69638bf078024694cf8c081589b93e27a339c8a3653fec8ad74c8b3ff3ce",
+        "size": 219643
+      },
+      "after": {
+        "sha256": "682b62ba1c6478ef70c49f7ebf9963717916df6d08a3b7d756f36d83c46690d2",
+        "size": 220065
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp",
+      "before": {
+        "sha256": "33f906d0ce73ede16e580dfcb4069a5c36f245198e64c581500a0f6651c74040",
+        "size": 577265
+      },
+      "after": {
+        "sha256": "83dc91baf495c2c441f520c2dea13fdc3054f981c9e4e28edfe4fba8712fd728",
+        "size": 578042
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/validationES.cpp",
+      "before": {
+        "sha256": "2d52976c54a8f582a057f34409d9bdb60da25a6e7e1d1fed485cf1ee4746e8fa",
+        "size": 323681
+      },
+      "after": {
+        "sha256": "6e6fcacbb2c04937f7af14f78153163c9c13f004d846c5e244ae019e2bb0ffe4",
+        "size": 326436
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/validationES.h",
+      "before": {
+        "sha256": "0eb9b7ca8be10d3aad2d2c8ebf94e0470de770e1d79058c5c7565fcad23664ed",
+        "size": 53199
+      },
+      "after": {
+        "sha256": "41b5fc5c809ba85b00e5f76119562226a14083a42a9b5295e879b77750c7cf6e",
+        "size": 53240
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/validationES2.cpp",
+      "before": {
+        "sha256": "0e6489d965575787ec1bb436ffcda44fb5fdbc221b281568dbd7f22a102fe265",
+        "size": 214456
+      },
+      "after": {
+        "sha256": "77809d35579e97ff9303f68ead3847c94391eb512f2d1da291a91a4843e6006a",
+        "size": 214468
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/validationES3.cpp",
+      "before": {
+        "sha256": "9275f66e3d0189b9b38fdf0e5c8c91c3e4bb282fb2d85740eb8177dda32b1d32",
+        "size": 177871
+      },
+      "after": {
+        "sha256": "feaab8284a97766cf4a81317505d47e93c3d7d5977e81223fdebfa5fd67b1145",
+        "size": 174940
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/controller/oom_intervention_impl.cc",
+      "before": {
+        "sha256": "b2585559e5bc98cf986ff23f868fad4327ff6d18e2db3833a17cf63817461ded",
+        "size": 6237
+      },
+      "after": {
+        "sha256": "af3689a2f9ce9f58a5bbb4a616cdf2f80aacaee6d8c0a4bf775ac69636698bf5",
+        "size": 6446
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/controller/oom_intervention_impl.h",
+      "before": {
+        "sha256": "200af7be5ddcdefa170a6b871054d21b19d63a0589e4bd88cbde39212222b7bc",
+        "size": 3514
+      },
+      "after": {
+        "sha256": "74316796235938c3a467bafc73b6d8d2047d08ffaf59439b5901a9558b56f551",
+        "size": 3613
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/animation/animation.cc",
+      "before": {
+        "sha256": "b116c3fa686227dbbe3a8d67e85c5455f6cd25e36e613773dd05a53b6aa3053a",
+        "size": 143547
+      },
+      "after": {
+        "sha256": "b3fbef26b4812c199f943c294914dcec1f2db6b7758ff8d7e508eb04b0089289",
+        "size": 143882
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/dom/id_target_observer.h",
+      "before": {
+        "sha256": "5b026a32ef4e3324b18bc4e24df4820507d6aae6dbba3e1b04dafc623fba94c0",
+        "size": 2308
+      },
+      "after": {
+        "sha256": "b46c988e40dc7716a2f30834f3d9c5ae83a587722d5661b7fb7e461d8fb1044a",
+        "size": 2377
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/editing/commands/split_element_command.cc",
+      "before": {
+        "sha256": "fafebcd5ada5e2827e76eb51fe371e6f9f243e53d223d5256563c94a1fd6e1b6",
+        "size": 4040
+      },
+      "after": {
+        "sha256": "3703300c49b8067fc0d7e0d04745145cbfcf5c31509dca34f1be38e2388e446d",
+        "size": 4185
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc",
+      "before": {
+        "sha256": "8d0780f164e3c8330b9585354241b8ae37dd520563e89f4b200564d5eae301b6",
+        "size": 4250
+      },
+      "after": {
+        "sha256": "a801e0e464d598177cf7caed34f7607ef6af30adfe895ef56816eda860777975",
+        "size": 8216
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/html_object_element_test.cc",
+      "before": {
+        "sha256": "c80760fcacb822a641313a994399f7ac5587a0361321356c7abe6101fa91e9e2",
+        "size": 1948
+      },
+      "after": {
+        "sha256": "06973084df47a05582409805eab666c11201f261052d6bab85a4a61a4f9ec811",
+        "size": 2741
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/html_plugin_element.cc",
+      "before": {
+        "sha256": "3c9ddb91f1cb919f72946e8926a5417eca27fc191742ae934cf8670c8e23dac7",
+        "size": 36608
+      },
+      "after": {
+        "sha256": "a9df41529e3d2c7fbad9e1ff249532b0560d755a046babf83367133552e69739",
+        "size": 36800
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc",
+      "before": {
+        "sha256": "aab1dfe40b5bfb3f095fb959e6b7f93456355e57289874422c11a200561c9698",
+        "size": 7963
+      },
+      "after": {
+        "sha256": "11fc45eddf1317b94c5b16bc30e641ab65ff351d12ce9d983ab3b66b58758e43",
+        "size": 8181
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc",
+      "before": {
+        "sha256": "0a4033c8f272d0e92f4f220448069467bb33eae9ddd4e22666ef6a7eee0796a9",
+        "size": 51206
+      },
+      "after": {
+        "sha256": "ba61444babab40696ada75ce2817ce14b20fec5615d84c5855138d504a1e0658",
+        "size": 51358
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc",
+      "before": {
+        "sha256": "6f55c862d60c49d60f007a90ed8c13e0cb50a8a6d44525e92d375eba8ca5351c",
+        "size": 67615
+      },
+      "after": {
+        "sha256": "82f02410a0c91109cdf4d7d87239b3f8225ea2866067203bef4ebbc608756857",
+        "size": 68889
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.h",
+      "before": {
+        "sha256": "043914c0e5b8682b121aad5a612bc16fcb9835481a15e5f80b226d00b4cbe8a3",
+        "size": 8711
+      },
+      "after": {
+        "sha256": "06327fb20fe05bab3c2508d1f2875cc740d9881fd8925e1db09927a1a29d5f40",
+        "size": 8719
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+      "before": {
+        "sha256": "d1d60d316b30f1b8bbe4afb53fd87d1bbfc15175abba28b215f4e01113cf688a",
+        "size": 65286
+      },
+      "after": {
+        "sha256": "ea50a97d96592cf3d9c9a0407cc3bcfeed5b503fd78ce6282786f0eb1e3db55d",
+        "size": 65546
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc",
+      "before": {
+        "sha256": "e7b583d1080c8c157b6ecc1bbe83d4fd62067c0aa13f7439475c4d69ffac57e5",
+        "size": 109303
+      },
+      "after": {
+        "sha256": "28d9849d6ec99431b43990588f34e50c66cefbbf969232fbc38b43a0c939375a",
+        "size": 109415
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css",
+      "before": {
+        "sha256": "97c20f0846b0826e55648c1a8cde431e69cee544fe2b327e13e56794a107cc6e",
+        "size": 70836
+      },
+      "after": {
+        "sha256": "d6b5b8d8220d67b0c5d831b5da8a4a52a7296bc8bbbd687cf471104f146c79ca",
+        "size": 71024
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc",
+      "before": {
+        "sha256": "3b56797d726aeb0855c37338bdd4ed0c637db0fdc1602ccf102eb3768fca409b",
+        "size": 53123
+      },
+      "after": {
+        "sha256": "3154a810515fa378c500cafcff331c64f518c14bbc6ea78887b5e8930771df33",
+        "size": 54167
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc",
+      "before": {
+        "sha256": "f3fc36dc78f2cd5c476d4e6abf40429a37a2a3fb3a45624aed02bdc15fcc8ff6",
+        "size": 1122
+      },
+      "after": {
+        "sha256": "4fc106c77d743433c6844c26c0d0e35d0ebe80640764641a2cc481450ba169cf",
+        "size": 1461
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc",
+      "before": {
+        "sha256": "e98ba591752a27eb0744cf7aa12613e5332491dba704ab376cae125dc3bfab8d",
+        "size": 1365
+      },
+      "after": {
+        "sha256": "9f06be96a1c56bf14131b50a21d9712d8871a58a5df6e86a81629d117502e40e",
+        "size": 1701
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc",
+      "before": {
+        "sha256": "67b03ea9e07fb5d7986931706e6f0985838b7f806fcaf3ab04e75e9b0e1bf7ca",
+        "size": 1219
+      },
+      "after": {
+        "sha256": "57761be07d325f6b6cb23f2d8f928a16fa672d92c755f151504af8b2695e9750",
+        "size": 1556
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc",
+      "before": {
+        "sha256": "5008422905e3a8d99e7a139110027b9b387679ad47b322c60e3867555b8f38ac",
+        "size": 1491
+      },
+      "after": {
+        "sha256": "a95c8a8b192efd0144656725d27244c027e2e2398e0fbb538d264c1b250e2c43",
+        "size": 1827
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc",
+      "before": {
+        "sha256": "d06ac96509a24876e572f503451e00aba5a3b71696f0fd8cf8b2e9a00cbd0ff2",
+        "size": 1227
+      },
+      "after": {
+        "sha256": "4dd54d512894399a5b259b0300b1a12a4a865b7ce9e84f86aeb714ec96af6375",
+        "size": 1566
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc",
+      "before": {
+        "sha256": "09d5e73ea55bd15a61ac455f2fff35b6703fdc9188cdd793dabc1793b36e9b2f",
+        "size": 1499
+      },
+      "after": {
+        "sha256": "fb6ccde03fa7e230073b7cd6c27b5560e77ee433d66ecde6b125e12092d5917c",
+        "size": 1835
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc",
+      "before": {
+        "sha256": "1d9f09330c72ce04211db87d1c16827d501a904434eeed221eaa1da980352eb8",
+        "size": 1219
+      },
+      "after": {
+        "sha256": "c55d7955562b3911b0c2fd80b20429bd2e0d42a531aa26999808030102f2d72f",
+        "size": 1556
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc",
+      "before": {
+        "sha256": "d141a7dfa5ee2354067dc4f92e01e596fc64abc014a4f0e17524aa46454d5c32",
+        "size": 1491
+      },
+      "after": {
+        "sha256": "9c7e08f3bfa366695cd62ac7a5b784117d636af2a23144ac2cbcb67ce2902ccb",
+        "size": 1827
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc",
+      "before": {
+        "sha256": "b3df9765757d96f411a39859693bcc0350b06d21b034282aa0a8a38be31525e9",
+        "size": 21125
+      },
+      "after": {
+        "sha256": "18981fa97bd88c4759568f0bb6ec1c637645e09e3b381c781d89e359094bf438",
+        "size": 21350
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc",
+      "before": {
+        "sha256": "b5e69f4cb39e924951f3e29e48b5aca516316037339aaa5a6326c7992f0cd613",
+        "size": 7561
+      },
+      "after": {
+        "sha256": "ed919669b7b7e27745b7b4220a72862c66323a9c21293d139188a3c7dbedd4b1",
+        "size": 8429
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html",
+      "before": null,
+      "after": {
+        "sha256": "0bc1a645df817c0597a014c2689623b337ce828ec0b977a01bf8fbf945010d2c",
+        "size": 1037
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/README.chromium",
+      "before": {
+        "sha256": "981caaa01a7d6f040cf409324ee9ab0dacbabd93a4d9727793840bdc3107dc20",
+        "size": 1171
+      },
+      "after": {
+        "sha256": "7d5f241a229f353fa4c08f7eb1ae80472edc22e6f6204506e0e7e497ce69f830",
+        "size": 1170
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/include/expat_config/expat_config.h",
+      "before": {
+        "sha256": "d2dc338829c92cfd73fcad53eaaeab004260edc1b3331ea29be42a081684d285",
+        "size": 4178
+      },
+      "after": {
+        "sha256": "d67316ce5214c50d2d2dfbd602efd6f5461d671c4d061414ea14efb3e257f5ed",
+        "size": 4207
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.ci.sh",
+      "before": {
+        "sha256": "45c1991273cd303748d9e3d44a5eed609e1687b33926dd6a241ed1e6a380bf9e",
+        "size": 2724
+      },
+      "after": {
+        "sha256": "890a027863d1c2a4a324ec43b2533988fa703baaf5ad317df3f836bc46b50691",
+        "size": 2724
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.gitattributes",
+      "before": null,
+      "after": {
+        "sha256": "e0c8113c29dade6a9f5358032c608d5d3d99aceef3dd51576b62254c123b14b2",
+        "size": 101
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/dependabot.yml",
+      "before": {
+        "sha256": "51715200bebc6c624a67cf7595b754814c0b4697fe49cf164c4238c78f8cbef3",
+        "size": 1728
+      },
+      "after": {
+        "sha256": "c90f3d61afa34e3e2e74c321123c0663a85d3a12544fd280e5a947c21c379c3d",
+        "size": 2037
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/autotools-cmake.yml",
+      "before": {
+        "sha256": "934bdaee2c4cd777c1e7cd6d76b79e64dc496c38332fba46fb60f69f3ca29f06",
+        "size": 8334
+      },
+      "after": {
+        "sha256": "dbf901134e2cc3037fa0f231a1d91143272e43b504650d27e2dbf3182871a4e7",
+        "size": 8477
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/clang-format.yml",
+      "before": {
+        "sha256": "730d0e4dfb8c600387d313305710acb5a3fee73ba4113e4e254c0f1534694e73",
+        "size": 2683
+      },
+      "after": {
+        "sha256": "aad92b1d5854989c3ce097661dc2ecae1f446c179d3f5b344a057e8ccea3720a",
+        "size": 2766
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/clang-static-analyzer.yml",
+      "before": {
+        "sha256": "7775a67b1e34e94321baf6011832de5cb523883bbd14f06e67addd3591cd64a6",
+        "size": 3692
+      },
+      "after": {
+        "sha256": "46024e54bcb37819e7a4438271ce370e00c1c97b1df753aa5d6ab7070a0c8ce3",
+        "size": 3846
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/clang-tidy.yml",
+      "before": {
+        "sha256": "18785763ba8fd7503a0d66f20aa4c66c5d3f8825d6a9188c026a84e793131f50",
+        "size": 2525
+      },
+      "after": {
+        "sha256": "50e10ecd93dee97e2c86bc39eab6ee8de0be2efd1556c5665c6371185679e7db",
+        "size": 2608
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/cmake-required-version.yml",
+      "before": {
+        "sha256": "673b71371f3ebef4dd25019cfe6fd4b1a48185057a1bf37e1b6ae6570b24c182",
+        "size": 3096
+      },
+      "after": {
+        "sha256": "3aa7a2c8bc9b60e2d24e145b4026a6e798dfa7a3bec7a14833122fbaa65ca81c",
+        "size": 3167
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/codespell.yml",
+      "before": {
+        "sha256": "77439a9633344e4c95b1897f432ee214efb9422420d36c93f841b43554ed3159",
+        "size": 2229
+      },
+      "after": {
+        "sha256": "f2f54f651541560d8516aee7b27778544a8d4d4f62a354b20dc2710eb8f039b2",
+        "size": 2301
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/coverage.yml",
+      "before": {
+        "sha256": "9c4ae82bca3ef56910ad09e82f6f09b19ebffa1683e284ae16f8baf051400cc0",
+        "size": 3247
+      },
+      "after": {
+        "sha256": "df340edd1c77c692cd3ff871469f8bc1682129a747ff8e6d70e8fb1c40ea90ce",
+        "size": 3345
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/coverity-scan.yml",
+      "before": {
+        "sha256": "ceab64de0ebc4397fa164aa98c883721c5e7da96721780b5b465f147bd46fc9d",
+        "size": 4999
+      },
+      "after": {
+        "sha256": "f8dfcc5654af9f1cbd7b753abff907243ba752b54f87f8d577fbfb94bbea6129",
+        "size": 5082
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/cppcheck.yml",
+      "before": {
+        "sha256": "555bfc212a3df4ad42461c79790a3b087f0a6cc727f0608347e0e8e8ef730740",
+        "size": 2186
+      },
+      "after": {
+        "sha256": "585ccd7ee3f1cb2cd9ab5333ece1bfe4014592a7d29b0bb0c83a945cf8084a8c",
+        "size": 2969
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/emscripten.yml",
+      "before": {
+        "sha256": "28852deb347ce38b453aad7f2cea856b714a038106511f715158555c0ea4a805",
+        "size": 2616
+      },
+      "after": {
+        "sha256": "88daae106387126785d0095540b3ecde199bc6954f5abb6aa5f0b44b075192f8",
+        "size": 2617
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/expat_config_h.yml",
+      "before": {
+        "sha256": "8c3e01f65349f4750e0b3fbd3a46fdeb7981ef21932ada0ae9c030d8496e0d95",
+        "size": 2900
+      },
+      "after": {
+        "sha256": "444d4c9c1bc837f3ecb2cf0f30ac1153d75f4cbafb8eeaf692ddc1643c82ecf0",
+        "size": 3123
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/fil-c.yml",
+      "before": null,
+      "after": {
+        "sha256": "61ae7b92fe9a28734e5253d1246b7cf82be3f4d0d688bb13bb40a76f99b5f578",
+        "size": 3030
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/freebsd.yml",
+      "before": {
+        "sha256": "4b62be02278bd6d03712b80cb7b7557019c4fd5ce2e1014eacf84f3a5ab3cfc5",
+        "size": 3310
+      },
+      "after": {
+        "sha256": "3c28806cfcf3f5e7a76471f4b563d55fa00f2c02954befc527450cc8b6c01956",
+        "size": 3393
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/fuzzing.yml",
+      "before": {
+        "sha256": "7741bf22099c820dc3a19c18973590d31caa45acd3148d515cb053afa1601b8c",
+        "size": 6803
+      },
+      "after": {
+        "sha256": "a1164566f3c491ff0c765f9b093413682e7d5add256d3f54ff990a8705de5366",
+        "size": 6898
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/linux.yml",
+      "before": {
+        "sha256": "60f0104bc257849817a43f4a7ae5ed39df0417bcff1d787ae2743fb645adad1f",
+        "size": 5874
+      },
+      "after": {
+        "sha256": "facad03ebb854f2f782d9defae4518e46397bd9f658cea04a169747ed77f4065",
+        "size": 6081
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/macos.yml",
+      "before": {
+        "sha256": "28051f340949235e36f41ce4ac5d2f4d39adc56b66cf719f04adfd50156fb1ed",
+        "size": 2527
+      },
+      "after": {
+        "sha256": "40f2bebccff5ff3e4b456c37b0681ce4d46fdbfc008a2902df536aa7461f89f4",
+        "size": 2600
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/mingw-clang.yml",
+      "before": null,
+      "after": {
+        "sha256": "cb5598fa5f2f74472c1fb711ab0621cab355a696d99b5385ef84348eb5422b04",
+        "size": 6253
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/musl.yml",
+      "before": {
+        "sha256": "dc85e2cf297fdf1e861d5de3eacc0692bdeb21e0913f70161acf51b33dd887aa",
+        "size": 2534
+      },
+      "after": {
+        "sha256": "34357072d99e26bb389822bcaf2baf316e18aee3f465a8d0d4255b1e5261fa9a",
+        "size": 2709
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/perl-integration.yml",
+      "before": {
+        "sha256": "c0fa0cd101367d114577cb0c15ae08faa9be6b64a3062eda28e9627ceeebf5da",
+        "size": 3470
+      },
+      "after": {
+        "sha256": "17a518fdb47f5817898aa09a8dc24481b698c2264b7e212ea16865d32f2b27af",
+        "size": 3553
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/qemu.yml",
+      "before": null,
+      "after": {
+        "sha256": "4c2acc68c135eeb272b5a730f178998d467a774584ccf362d9af707145da647b",
+        "size": 3279
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/scripts/check_for_missing_config_header_includes.sh",
+      "before": null,
+      "after": {
+        "sha256": "140a460c26d4681e32a4d615416e49dd780505461c6658e2dca6bb203758ca12",
+        "size": 2996
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/solaris.yml",
+      "before": {
+        "sha256": "0b36a58fe78942a87c3636bdd5ecd29bd7088a04ffb89a84db54dfe56d1d605d",
+        "size": 3640
+      },
+      "after": {
+        "sha256": "61ce9a600af1bdbf0e59a2d8962862894ce5a830f1fb40f9e9d649d0f6013364",
+        "size": 3723
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/valid-xml.yml",
+      "before": {
+        "sha256": "2248df7bf0689405a0aee0cb412df5fd6424919dae4483faf87c046b795b8446",
+        "size": 3974
+      },
+      "after": {
+        "sha256": "acb0c293db9ebbb63c90892fa2673e1cf4d282a2640b08e419767a88436eb0b0",
+        "size": 3792
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/wasi_sdk.yml",
+      "before": {
+        "sha256": "5a7da3e37b65b3855211096139eef8a002f101e00865af7e618a0c6cdea1b333",
+        "size": 2900
+      },
+      "after": {
+        "sha256": "56ed0aa1836df54e0d6c840cf00d9eab2bd0423ac433f77e4f3e8bf670fc2f60",
+        "size": 3083
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/windows-binaries.yml",
+      "before": {
+        "sha256": "485c4c31db023543124611f5f105378a2f4223f9d4bef8b3782bf5ccc52e386f",
+        "size": 7404
+      },
+      "after": {
+        "sha256": "1a54f5ed19329d737e8381099213d7e8dc533181a9ccb795a1f469241312c255",
+        "size": 7475
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/windows-build.yml",
+      "before": {
+        "sha256": "2f59f2ac64355a9fa823995ae20a546af4fe97cb8eac6be75cd67ea0b3ea34bb",
+        "size": 4869
+      },
+      "after": {
+        "sha256": "f0ba17c8ccebabe4f19e30c3531467a932297a417f89f6884c2c9e9a96b034ea",
+        "size": 5727
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.github/workflows/zizmor.yml",
+      "before": null,
+      "after": {
+        "sha256": "fe558a10461dc372880c4617aeb3529c63e1126054bf1a2f0435206b0a5f6534",
+        "size": 2077
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.gitignore",
+      "before": null,
+      "after": {
+        "sha256": "8b7e8d7ba5bde98574fa3ca561faddc31324df976c883721b762f64f5c02e481",
+        "size": 368
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/.mailmap",
+      "before": {
+        "sha256": "f5ccd51c3a0febf15f03ba43189268f9d7c9467fffb28eaa5df5fbcdc479df5e",
+        "size": 1251
+      },
+      "after": {
+        "sha256": "0589457531b488a7804ab9850c2199d7b72e8f0752050ccef6450aa92b0786ce",
+        "size": 1534
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/CMake.README",
+      "before": {
+        "sha256": "f00416720553339eb440cb7c84dcbccd1261b0c3a4d6ffeb59a6d6403caab21f",
+        "size": 1723
+      },
+      "after": {
+        "sha256": "db8f863ebe588b8af6f322d21c7e33adf4f8ddc0b00cd42bece1bdb90580641b",
+        "size": 1723
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/CMakeLists.txt",
+      "before": {
+        "sha256": "abe0a6d11a721d33c0f932cd7d855471e468b6ca1d2ccd70dad528451c664799",
+        "size": 41503
+      },
+      "after": {
+        "sha256": "391dad264d5332998f9222925a900bfb6ac3dbf0144125bf5b8b2396de9170f0",
+        "size": 42376
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/Changes",
+      "before": {
+        "sha256": "c18e619e9717c6d6b92444f6918e35278d65c132c924c4ef1bcc147002102444",
+        "size": 101414
+      },
+      "after": {
+        "sha256": "d524be92cf55121cb6cb7bc13625f0498f1d31b4990fb52c93a574edbb372939",
+        "size": 116977
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/ConfigureChecks.cmake",
+      "before": {
+        "sha256": "e240d2e2315fcc5e2a7cfedae15bef28eca008588c5de9497924e6946ad3eb01",
+        "size": 3869
+      },
+      "after": {
+        "sha256": "bded6ccff89d4c66249116cb5c8fff3f28fb96e07663b43dea4f10f65ccf79c1",
+        "size": 3990
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/Makefile.am",
+      "before": {
+        "sha256": "485bc2a9a93ede69cb75617b75c434e97216fa57c2073d7676a1e8a0cadbf9ce",
+        "size": 6352
+      },
+      "after": {
+        "sha256": "df5ebc4f628eaeef70e0c1ca9e1cdcba89ca54913702d4cd5ec311f0523f7162",
+        "size": 6296
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/README.md",
+      "before": {
+        "sha256": "ea63e986f9a4f934d7dec810fe431a60092067249dc6bf8830107264467ad5c1",
+        "size": 9775
+      },
+      "after": {
+        "sha256": "bce315e3b4c90a34ac4c4a4d8f34874c9d9abdd5b36ff12d1f264e01df7ca5ad",
+        "size": 9934
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/apply-htmltidy.sh",
+      "before": null,
+      "after": {
+        "sha256": "4ae707b0f957fbea69b9e5745dd88f13c75eef75192ed43e8c9f809971dba1d4",
+        "size": 1878
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/cmake/autotools/expat__macos.cmake.in",
+      "before": {
+        "sha256": "b360c0dca98a754b2ac3396187141fbd0e4cebe18bb032a1335cc85f2db4a2f4",
+        "size": 4134
+      },
+      "after": {
+        "sha256": "55d2201e6979677d353e081b1e8aba91ef50c78557c9c1b1053427bdd1d0428a",
+        "size": 4134
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win32.cmake",
+      "before": null,
+      "after": {
+        "sha256": "0ebef88ce46dbbf571dc71987c9db908cb3a64dae184e09c12470511f0c6a1d0",
+        "size": 1686
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win64.cmake",
+      "before": null,
+      "after": {
+        "sha256": "383dc6ad6b58909c4626d988cc7dab59c148f9c8f417e6ce947b735edea2ec24",
+        "size": 1692
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/configure.ac",
+      "before": {
+        "sha256": "cd1d3ed1cab71813deab002746c65e2914daf7f4f1696b2f3315cb577c43c2ae",
+        "size": 23319
+      },
+      "after": {
+        "sha256": "92d0a64c5913f8170c054574b1209153ed2cf865913f2bbc2145c29594365e26",
+        "size": 24517
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/coverage.sh",
+      "before": {
+        "sha256": "d312a4dec75a1aea026605b06f26453b76ccf11ff7ec2af50d7ec2a943b1ed6f",
+        "size": 9582
+      },
+      "after": {
+        "sha256": "5d6473cdf05e9b638926b480a4a4f694b6dbe54ca3c646071707d7b67bf7b849",
+        "size": 9588
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/distribute.sh",
+      "before": {
+        "sha256": "838190961bdcfdc65f98bdcbc06859c959087965306da81ee4c18ece788742a1",
+        "size": 1955
+      },
+      "after": {
+        "sha256": "9ce0cf11c96cfbca50e9ea55fa326578da489f61e9ebeb7e737c60f9760424c5",
+        "size": 1963
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/doc/reference.html",
+      "before": {
+        "sha256": "8a5b49729815d9fc30609de7cafcf86e7d88ee701b8e2630d57100a32b55fd1c",
+        "size": 140121
+      },
+      "after": {
+        "sha256": "76351001baeab4877654e354bcd0834c2cf0e619b344c30d91a6bc7f5612b176",
+        "size": 142052
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/doc/xmlwf.xml",
+      "before": {
+        "sha256": "fc8ab33dada5d4b5a04a14d92a4e7aed55500f4766e2046e93c240093fa5fdcb",
+        "size": 21326
+      },
+      "after": {
+        "sha256": "f0094f6c1b165ff8e5684ec7e615397899af4c72527b29dc2318dcfea50aba57",
+        "size": 21330
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/examples/element_declarations.c",
+      "before": {
+        "sha256": "a638c154a8c30fa204b3a7c1e76b7d17fd4d46944f7d6db22712afc86a27ddec",
+        "size": 6947
+      },
+      "after": {
+        "sha256": "c4194cb7eadfa7de68baf7d768a8947f05f270dbc0b9c7778b32019036d3e66e",
+        "size": 6980
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/examples/elements.c",
+      "before": {
+        "sha256": "5b805d5116fd7971cc62243e4870c1e164e15c82d54ce4e71123e50f9526bf09",
+        "size": 3966
+      },
+      "after": {
+        "sha256": "87b28863e1c4539694b103d996365d95cc44238d1a9fb9b2cc193a99b722460c",
+        "size": 3999
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/examples/outline.c",
+      "before": {
+        "sha256": "9d47b0e9c6486368625541f79cff810fd1f69a0de6008d20bdaf68871d3cb861",
+        "size": 3852
+      },
+      "after": {
+        "sha256": "701b4dbe8906a3f7b861bea7116c82bf5b7ade0006f467da541f519e9f390469",
+        "size": 3885
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/fix-xmltest-log.sh",
+      "before": {
+        "sha256": "f55e3d3644e5b4b3c088279dd9abe9a212c9b40fbe2d2e01ba48a0e35c60b96e",
+        "size": 2433
+      },
+      "after": {
+        "sha256": "07abceb2d1a9c0fb54ec0a11da2019cc4e9c031c5fa66aba0e8c6821f03199f6",
+        "size": 2597
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/fuzz/xml_lpm_fuzzer.cpp",
+      "before": {
+        "sha256": "13e1fff6b2b48ba2cd22ca74b5722bd06d787ccc806dafc83e4145147d24626a",
+        "size": 13851
+      },
+      "after": {
+        "sha256": "19485c699d499d70847b9399c132ed5d0423f757af78e9a27a9c1351a5105716",
+        "size": 14073
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/fuzz/xml_parse_fuzzer.c",
+      "before": {
+        "sha256": "8d142202df7f157c821aeb131658b2d94c2236aff025fe028252bafee966d268",
+        "size": 3445
+      },
+      "after": {
+        "sha256": "ed77751395f9891b9788a767ca2b23f467e512698aa4dd06216eb6c32186581e",
+        "size": 3817
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/fuzz/xml_parsebuffer_fuzzer.c",
+      "before": {
+        "sha256": "9d5c69ff2280451592e22fd5c99d9ee403c15e43718ed26b24203f1489989c37",
+        "size": 3647
+      },
+      "after": {
+        "sha256": "7d0825ca0a9b0e80759de7f52a19ceac8fe78bc44997e2f7614fdef524556e98",
+        "size": 3999
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/Makefile.am",
+      "before": {
+        "sha256": "3ccc57184f3d523f3010aec146523fbe2b092be9985b6934e1a1c2dc7ebc7e70",
+        "size": 3447
+      },
+      "after": {
+        "sha256": "f0a9b25eee893830ec487ac29bec3cd96a673ddeb7e11f0a2417c9a386cf90e1",
+        "size": 3658
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/ascii.h",
+      "before": {
+        "sha256": "42f8b392c70366743eacbc60ce021389ccaa333598dd49eef6ee5c93698ca205",
+        "size": 3682
+      },
+      "after": {
+        "sha256": "5ce49460794894b78f97060f634c129d13f2e9cc9b8dacd829f4be2dbc6e0649",
+        "size": 3715
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/asciitab.h",
+      "before": {
+        "sha256": "1cc0ae749019fc0e488cd1cf245f6beaa6d4f7c55a1fc797e5aa40a408bc266b",
+        "size": 3520
+      },
+      "after": {
+        "sha256": "5792cb56f285c8876b988d875a70d49019bc7e6d5ebcd0f8224b24e695301832",
+        "size": 3553
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/expat.h",
+      "before": {
+        "sha256": "1ec3bad08b6864c2c479e1fd941038c2dcd24c6d9a16400f4da54912d95aa321",
+        "size": 45224
+      },
+      "after": {
+        "sha256": "17cd1fc3b4c61d00de96091ceed0a3721d5bac9755c6d04e89d9f8a79d037c12",
+        "size": 45522
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/expat_external.h",
+      "before": {
+        "sha256": "6eb9cf931ecc6710c90e4b08ac1c973096729e4c1bb01ac10d787017d2540fd4",
+        "size": 6213
+      },
+      "after": {
+        "sha256": "2249eae72c6bc9021b7110267507cca98ff6a269fb8b5af5bcb508858e83bfc1",
+        "size": 6760
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/fallthrough.h",
+      "before": null,
+      "after": {
+        "sha256": "5e42477487bca7e7caac6b832ab940f39a1a20b8765c945374e4f6c2670f55b6",
+        "size": 2094
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/hash_table.h",
+      "before": null,
+      "after": {
+        "sha256": "ad93851f86df1f4e8f85488dbac53cab3539e59d701ad747c7beea354d69e0dc",
+        "size": 3022
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/iasciitab.h",
+      "before": {
+        "sha256": "ad8b01e9f323cc4208bcd22241df383d7e8641fe3c8b3415aa513de82531f89f",
+        "size": 3590
+      },
+      "after": {
+        "sha256": "a9cd6f2cf5199ae3c29d22ee4913736fcd984f62132146a0352c88549700e83f",
+        "size": 3623
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/internal.h",
+      "before": {
+        "sha256": "4feb1df53898a48ae0ae04b5d0352c90395c8e693e5c2675f8ced41903d6fa94",
+        "size": 7327
+      },
+      "after": {
+        "sha256": "0123d00963768b5779544cc54dcccad311824b192a38d3489c4fb1fbbfa33b17",
+        "size": 6141
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/latin1tab.h",
+      "before": {
+        "sha256": "eab66226da100372e01e42e1cbcd8ac2bbbb5c1b5f95d735289cc85c7a8fc2ba",
+        "size": 3573
+      },
+      "after": {
+        "sha256": "b0daf8a75c690e895421f765ddb2ae2fbc1ba14694e06a3215dba84f1ff3427d",
+        "size": 3606
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/libexpat.def.cmake",
+      "before": {
+        "sha256": "4957f66ebf6481a1bbd23978b47867d669b871cab84bffda2fade267918ef97e",
+        "size": 2636
+      },
+      "after": {
+        "sha256": "3be6f98774580420c8563a9aee487ecf13b35f418144c3659fcce5d877199bb5",
+        "size": 2692
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/memory_sanitizer.h",
+      "before": null,
+      "after": {
+        "sha256": "377ca054fdc531360f42a5cb7c522bcbf88b6c67aebc2e29544c37d14e836bde",
+        "size": 2185
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/nametab.h",
+      "before": {
+        "sha256": "67dcf415d37a4b692a6a8bb46f990c02d83f2ef3d01a65cd61c8594a084246f2",
+        "size": 9044
+      },
+      "after": {
+        "sha256": "8f78e64f11e2b23df8b32cb5528cfeda6215acd6abf6bcf1ad59fdc7b1ffd105",
+        "size": 9077
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_arc4random.c",
+      "before": {
+        "sha256": "18447dc342183cda691c43b5325ab9aabf7763022fb9fefb26f30758d509ad72",
+        "size": 2233
+      },
+      "after": {
+        "sha256": "33b936335d0bbe1bb36b0da65d82e2d656fef9cf2e49660101c74a3f4f9d5c37",
+        "size": 2266
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_arc4random.h",
+      "before": {
+        "sha256": "f07b8dd117765caa4a8c69b4d443b2a8e594822fecfae290f5c8954c77e797f1",
+        "size": 1743
+      },
+      "after": {
+        "sha256": "dd1a23b22604b61e1942e9fccdefe4d876cdf55477cd2e61904e50af162c15bf",
+        "size": 1776
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.c",
+      "before": {
+        "sha256": "b22d98b10443a6cdfcae1fafa2800c4b99c8da839b95fb4c6f9ad286dba918d7",
+        "size": 1798
+      },
+      "after": {
+        "sha256": "e9a72469deea3c7faed0fd45e3ac7d81e8ce4e63b52ef7bb647baf71f3d0fd78",
+        "size": 2034
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.h",
+      "before": {
+        "sha256": "35f51f27d305b2dfd1a6256fb489495738293bb442cca73222b802b82c7c42bf",
+        "size": 1759
+      },
+      "after": {
+        "sha256": "fccc4650a76f0b4df0b1123abeb248087a22d4eba9acbd1188cd44e21de4377b",
+        "size": 1792
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_dev_urandom.c",
+      "before": {
+        "sha256": "c7d68fb6652c645eb915a18d22268b1846cc0019febee0061a4e74205c1051cb",
+        "size": 2677
+      },
+      "after": {
+        "sha256": "4d2a204c94285b0c459397619acfca5a8f5d690fbd8f419ac45879074e6afebd",
+        "size": 2704
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_dev_urandom.h",
+      "before": {
+        "sha256": "1c417526f3c63bf327f5cf55e98d7702f5fd549d404d08a3d3460d2aefb25fcc",
+        "size": 1770
+      },
+      "after": {
+        "sha256": "65a0bf3666927824029dd52dc4b6af3218719999ab9f45db8d8406645960f5ab",
+        "size": 1803
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_getentropy.c",
+      "before": {
+        "sha256": "bc55abfa2da705fd6cc3ae515551790335fc19592dec0a67b6d3f8340c7d7898",
+        "size": 2111
+      },
+      "after": {
+        "sha256": "ba99df7b694ff0b62d2871cc13b87e75d1a715af6045102ee7aff120ec1ae332",
+        "size": 2394
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_getentropy.h",
+      "before": {
+        "sha256": "e3b8c0ae84db0f29743b19eac2cfb1a45d945f34e8e661f901ad7a1e4263d0d7",
+        "size": 1766
+      },
+      "after": {
+        "sha256": "8a122afb95decf1fcf960cf92004d0305d7c9154f84c1ac739e67ef554e02e59",
+        "size": 1799
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_getrandom.c",
+      "before": {
+        "sha256": "2350c1b11986ac846bbd781a74fb2781ad84831dfad1695fe304bd670c9eabd2",
+        "size": 3279
+      },
+      "after": {
+        "sha256": "7d813973f1b021bd6576820180df180d3b07e5c47072ce083b7cb2029bcaed6d",
+        "size": 3551
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_getrandom.h",
+      "before": {
+        "sha256": "8753352bbbb276bfbde4908ea886e4cd8e6b63ae578ba6f9bf8046fd1ca7e3b8",
+        "size": 1771
+      },
+      "after": {
+        "sha256": "06738fafa3ec5b0148a699efeaa55aa80b8956b78a95bf5f78fcd9e0be998c48",
+        "size": 1804
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_rand_s.c",
+      "before": {
+        "sha256": "dddf9803dcf5a08b6fbc809bd53cbb0a0d92e46232df3aa5e0840b5488b5a972",
+        "size": 3520
+      },
+      "after": {
+        "sha256": "39ae3d8d337517ae2db5935a501cc9d6f55cc12e8ba552c03ea78eda6bdc2200",
+        "size": 3553
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/random_rand_s.h",
+      "before": {
+        "sha256": "6f77bc881012fc32fd3613636d8c3580fed1aec3df5278910290f7b4f155564f",
+        "size": 1812
+      },
+      "after": {
+        "sha256": "941134a3796e544bf44c428cd1e1553506c9f344a5c0c4479a8a819745a0c0ff",
+        "size": 1845
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/siphash.h",
+      "before": {
+        "sha256": "f537add526ecda8389503b7ef45fb52b6217e4dc171dcc3a8dc6903ff6134726",
+        "size": 13014
+      },
+      "after": {
+        "sha256": "12ecc9915bccb793ea8bb543cc7d002e226f4e4d6b97ec9839dca41cbe4e2e27",
+        "size": 13078
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/utf8tab.h",
+      "before": {
+        "sha256": "8cd26bd461d334d5e1caedb3af4518d401749f2fc66d56208542b29085159c18",
+        "size": 3522
+      },
+      "after": {
+        "sha256": "3fa349a3a19143366e80a58d9aa950152ef9cd7903f557f971051410b47f335c",
+        "size": 3555
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/winconfig.h",
+      "before": {
+        "sha256": "e70948500d34dfcba4e9f0b305319dfe2a937c7cbfb687905128b56e1a6f8b33",
+        "size": 2038
+      },
+      "after": {
+        "sha256": "0ab6446eb98abc492ae341ef7607b535e44dedf52633fdc7c6e1a1361aec3922",
+        "size": 2071
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xcsinc.c",
+      "before": null,
+      "after": {
+        "sha256": "1210979a688301412f46e058d0497fa3c1c63c296c2e015834cda0f0b314875d",
+        "size": 1961
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmlparse.c",
+      "before": {
+        "sha256": "0819371a06448223a63ff7828fa597636da7a92e34a7b8323e4dc0a478a76a47",
+        "size": 309443
+      },
+      "after": {
+        "sha256": "73e23fc6220bc12f13eda7022444f6d4d1027aaf025cc7e8d4284c3c297d37d7",
+        "size": 318819
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmlrole.c",
+      "before": {
+        "sha256": "5b81f0eb0e144b611dbd1bc9e6037075a16bff94f823d57a81eb2a3e4999e91a",
+        "size": 35512
+      },
+      "after": {
+        "sha256": "b1ad87cc3c0d4722358a7dfb1642df7f62066d1613a0a56dc9289e7112fb3f0c",
+        "size": 35068
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmlrole.h",
+      "before": {
+        "sha256": "92e41f373b67f6e0dcd7735faef3c3f1e2c17fe59e007e6b74beef6a2e70fa88",
+        "size": 4457
+      },
+      "after": {
+        "sha256": "8a0b61cd6efcd7427acbc86759e9013e7a61755097a1f82cbb2a79c011af5ee5",
+        "size": 4399
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmltok.c",
+      "before": {
+        "sha256": "0ad3f915f2748dc91bf4e4b4a50cf40bf2c95769d0eca7e3b293a230d82bb779",
+        "size": 54395
+      },
+      "after": {
+        "sha256": "47ffd58f56f61284fd84cecd94ddad4c79cde922f57994c1525f8df1eb9272eb",
+        "size": 58005
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmltok.h",
+      "before": {
+        "sha256": "91bf003a725a675761ea8d92cebc299a76fd28c3a950572f41bc7ce5327ee7b5",
+        "size": 13088
+      },
+      "after": {
+        "sha256": "623dea24bc27712e2e205a0c0517c79e211234f8d1051fe46d780839f754cf9e",
+        "size": 12887
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmltok_impl.c",
+      "before": {
+        "sha256": "a3fe18ff32b21fbcb7c190895c68158404e1b9fb449db6431bc08b261dc03938",
+        "size": 53720
+      },
+      "after": {
+        "sha256": "4dcd7ae88dd90bbc89d0e41ba6affb46a107ee28df3b49cb84cdf228b7cc7981",
+        "size": 53513
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmltok_impl.h",
+      "before": {
+        "sha256": "f05ad4fe5e98429a7349ff04f57192cac58c324601f2a2e5e697ab0bc05d36d5",
+        "size": 3430
+      },
+      "after": {
+        "sha256": "a5053c69219d12788088de9bd670537e1c784302766c331afe6b253460d0417d",
+        "size": 3463
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/lib/xmltok_ns.c",
+      "before": {
+        "sha256": "b2188c7e5fa5b33e355cf6cf342dfb8f6e23859f2a6b1ddf79841d7f84f7b196",
+        "size": 4711
+      },
+      "after": {
+        "sha256": "ea723a3470d3eed5c4a4e873bec2f996c605326fad25709b45452664261c5465",
+        "size": 4728
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/qa.sh",
+      "before": {
+        "sha256": "7197b3b7f7ea22e5cc9f94243018c4b97eafcfb5fcd70ae976a24224b8e4756b",
+        "size": 8691
+      },
+      "after": {
+        "sha256": "badb4b26d052dfc9580809cb8b43b456bd96cd393b97420d994806b07bd6c4c6",
+        "size": 8708
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/win32/expat.iss",
+      "before": {
+        "sha256": "fb67e556e230637861b04ad8a3561e6da78079d2233a469cad9f26807c4efa43",
+        "size": 6348
+      },
+      "after": {
+        "sha256": "60936b7e0e302d9a81a438bbea1d575ac996d07c2a98f38a2d16e28fc2a674ec",
+        "size": 6348
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/codepage.c",
+      "before": {
+        "sha256": "48496fb3a226701a1b7c1295a3394ae580a1f254f57f0973278fb401fc73d84e",
+        "size": 3180
+      },
+      "after": {
+        "sha256": "1a2f9785862feaa7bc96602a66f818c9026494a7998e710e716ef0936f33feea",
+        "size": 3213
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/codepage.h",
+      "before": {
+        "sha256": "fa862dd29ae33acd54a71edb4f1c7ee2836d7fcddde11f5949630533bb0ad8d3",
+        "size": 1832
+      },
+      "after": {
+        "sha256": "d97800c0fb370665cd4c122597232aa6d9f427fd1fce93e095ee48f91216ced6",
+        "size": 1865
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/ct.c",
+      "before": {
+        "sha256": "fb223fd0493c481879fcf855fd6fdf1edf2956cb520cd534bd5b2f95450e7860",
+        "size": 4583
+      },
+      "after": {
+        "sha256": "14666beb38dc8b35b8efe376fd4bf81fe418c2098b6670580bfdede3820cffc9",
+        "size": 4616
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/filemap.h",
+      "before": {
+        "sha256": "46c4905001f8257851ffb03b8731a1e71882b0d081f04605d9c751f39615e55a",
+        "size": 2378
+      },
+      "after": {
+        "sha256": "be0b64c4da62c9cb299ac30f213a45cba03c7e02b85e02f142a6c9ce3f9823f7",
+        "size": 2487
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/readfilemap.c",
+      "before": {
+        "sha256": "9aee63b13915330d4de417194b7db14ae60f2147c8269087463933249afbcba8",
+        "size": 4395
+      },
+      "after": {
+        "sha256": "b5aa1bdd2a7d9e68ccb8d524fef0b6953d1875f202d8a97ddd8dc2faba81f3e4",
+        "size": 4428
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/unixfilemap.c",
+      "before": {
+        "sha256": "f3fe3581aed6dc41f7b8fe2264526c3b5f185b9ab16f674fafe0566bd3a8b979",
+        "size": 3276
+      },
+      "after": {
+        "sha256": "ee32d5f3f34be7ebc474fd143816239de2286a428a1f237e016f6529f9937b5a",
+        "size": 3424
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/win32filemap.c",
+      "before": {
+        "sha256": "42d122a49d5bb3ddc4d9d489f0de833f97d55dbf00ce11d21fdb0177128621b0",
+        "size": 3833
+      },
+      "after": {
+        "sha256": "7b578506af82cac899891037593355f437900627177e8c40045e26e9f16f1340",
+        "size": 3866
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlfile.c",
+      "before": {
+        "sha256": "030c54157c403d3f2bd4edc9448a11a70e38b131564d0f66ccafd6cebb2da05e",
+        "size": 8751
+      },
+      "after": {
+        "sha256": "3c358d0735b262ecf1ab07d22ea160b8f0b1746a6a01b866092e80259c12b9a1",
+        "size": 9388
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlfile.h",
+      "before": {
+        "sha256": "8436efe970300139650e1889a972175c2257775cefdc66c3b47353b47807ca37",
+        "size": 2116
+      },
+      "after": {
+        "sha256": "8140b905f2a9868a16711a018602874c5a1289bee2b55cd2f301ad466763dbd2",
+        "size": 2173
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlmime.c",
+      "before": {
+        "sha256": "a369d434714863e4cab18b1b5696bd381e144f0fc204fba01ff23100b9c24232",
+        "size": 5019
+      },
+      "after": {
+        "sha256": "5061a6442db55bb85153040ebae2ed0e132ad3be67804ebf713c285c7c3c576d",
+        "size": 5052
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlmime.h",
+      "before": {
+        "sha256": "1e786f9316329ca95d5330dd1716eab361ccd9a2c9726747db357c5e2f83efd8",
+        "size": 2173
+      },
+      "after": {
+        "sha256": "01515428e8af51f0a9c93856a68c883728d8b02ba2f9659ced71514f945b000b",
+        "size": 2137
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmltchar.h",
+      "before": {
+        "sha256": "6b8c6deee065850997ba7b60fb8be76661e4d55e4bf723064f1c2066bd5ea288",
+        "size": 2836
+      },
+      "after": {
+        "sha256": "3ca28b7ff0f149de1e022ce4031aed1092a8981cc86e62e45131fa1b04964755",
+        "size": 2869
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlwf.c",
+      "before": {
+        "sha256": "e979eb1caa148e9452d0377b4dc38599dc68e1351041a2163a2cc7c59a76696a",
+        "size": 39578
+      },
+      "after": {
+        "sha256": "01c4a19e804272702e569ad2ae40f76b29895a7c68672fc79c82608054bc5b14",
+        "size": 41952
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.py",
+      "before": {
+        "sha256": "1c6d9578a875969b8d9a67b827f79ea11e192097c4cf04bcbb224723ef65323f",
+        "size": 6318
+      },
+      "after": {
+        "sha256": "7ed57832aa08952eee34c8af67f5ffa428bf7bc08c6d2ebbe192840613085c01",
+        "size": 6444
+      }
+    },
+    {
+      "path": "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.sh",
+      "before": {
+        "sha256": "480ebbb48a38d8f553882c0ac9b4000b44e9c836e3477ef2aff09aaa07bc04f2",
+        "size": 1717
+      },
+      "after": {
+        "sha256": "8abc9b59ccd8f072de24556c016e095ec2ed9f5c1f86fc00d5d33c41d90115a5",
+        "size": 1787
+      }
+    },
+    {
+      "path": "chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c",
+      "before": {
+        "sha256": "7ecb13b780117a39068c1f7fbddd61ba95f694b1769803cf7911acf16bfb2b3f",
+        "size": 23999
+      },
+      "after": {
+        "sha256": "c797f51d4d743e3bf979d8d3dbef6788cd13c0ffff7fabdd0d0a96c7a9dbc4b2",
+        "size": 24155
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.cpp",
+      "before": {
+        "sha256": "cc7aeebdfc7cdbac76d16c949338bc3ca2b02f3dc1e0ecf1a7e17f9a0bc786d6",
+        "size": 41281
+      },
+      "after": {
+        "sha256": "4af7bd6635619b97b1cf11346b37501ada9b52048056f93f67a4f2feb925da85",
+        "size": 43735
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.h",
+      "before": {
+        "sha256": "2d0281b8d54e4f2955724188c64f990088c8b3121eb1d888297c5a887315b4f8",
+        "size": 12291
+      },
+      "after": {
+        "sha256": "1300fe1cec511eeb2bcb5136ad367cda0dfc48a22f782929e534cc4b73070e54",
+        "size": 12307
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/fxjs/cjs_app.cpp",
+      "before": {
+        "sha256": "87ef21e49627dc4ffda1eef2eddbd57ffcdef142afe9194096e218a6b6cfa291",
+        "size": 20547
+      },
+      "after": {
+        "sha256": "377707160f433106148a47958245a78057c1d72096adcfb6e0ea4e005bc85430",
+        "size": 20649
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/fxjs/cjs_runtime.cpp",
+      "before": {
+        "sha256": "93decb09f0be3521e0bb98f00df285a9e20be9ae79372e54adcdff494b22f04c",
+        "size": 7307
+      },
+      "after": {
+        "sha256": "140c317f12bd727eacdba571fb718c2791f905d8ed1bfbc78a83ef37085a21ba",
+        "size": 7331
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/third_party/libopenjpeg/README.pdfium",
+      "before": {
+        "sha256": "ae72c6ced82cf8bdb6f2266b70307f09436426699976e1694d2769c35c5a50e7",
+        "size": 1949
+      },
+      "after": {
+        "sha256": "84b075b8b33ec258adc273b2db0402d66c4a30fc77878e03227812ca6c047bc2",
+        "size": 2051
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/third_party/libopenjpeg/image.c",
+      "before": {
+        "sha256": "d8cc7e7dd380aa39e8aeebea8bee62790d0fe4f02472eb7cc0e0617fc657ecd9",
+        "size": 9806
+      },
+      "after": {
+        "sha256": "afa33bcf1a6d0692ba0bb47fb569cbf749098f240f43be4efe44bc4e5687dd7f",
+        "size": 9993
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/third_party/libopenjpeg/image.h",
+      "before": {
+        "sha256": "3890c9fa361ebee6e276b56e25b80f44145516b6d15fa1655d8588b1da4fad1e",
+        "size": 2616
+      },
+      "after": {
+        "sha256": "7b7a1d0358975f7658a86551e8cd527e018ee24d7876f7e7fd22f8bd46bb8484",
+        "size": 2624
+      }
+    },
+    {
+      "path": "chromium/third_party/pdfium/third_party/libopenjpeg/j2k.c",
+      "before": {
+        "sha256": "de09800e07be8e6d1a6102561ccf7649da80119ff659976931608dca9696f649",
+        "size": 516140
+      },
+      "after": {
+        "sha256": "6f47b9b1051ae2b66aaee1c5ff139d760fa48e18b974783c0163611807ba1abd",
+        "size": 516585
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/core/SkImageFilter.cpp",
+      "before": {
+        "sha256": "fb1c245d15e1261b72048a2be9b20f589bdf66bfcf907e6c930184f76503ae61",
+        "size": 14993
+      },
+      "after": {
+        "sha256": "8cf3959cca3290dc4b54cd623ec8b1c93d08f532d1e115b8b2c7d19365e54c5c",
+        "size": 14996
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/core/SkImageFilterCache.h",
+      "before": {
+        "sha256": "89e7904fddfb496932aedf77c7e028d09d0fc8818658382a75c51289519dfb0a",
+        "size": 3212
+      },
+      "after": {
+        "sha256": "1ea4ee800d775911a9a1274ec918865e247903510822453044d8807258bd8067",
+        "size": 3291
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/core/SkImageFilter_Base.h",
+      "before": {
+        "sha256": "3cf66ba9a191173ec65ad05361753f4121fd6c64d81b8cdfc6e5919db03aab2c",
+        "size": 18113
+      },
+      "after": {
+        "sha256": "1fd1c2d127a7c948cc571d7c6d7e30379e34b951a8e50dea296e0f3d3730f64b",
+        "size": 18113
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp",
+      "before": {
+        "sha256": "a33e1c76ed94641beab43f371c107e50ff84ab5e0222efeaa38f1be35cf9e4b2",
+        "size": 35372
+      },
+      "after": {
+        "sha256": "e91ad3f8a13648b476a080e16c54c5125c6af64b2920ff43296dce02feb2e385",
+        "size": 35827
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp",
+      "before": {
+        "sha256": "eab9bd5a35805215da4c1a1c28f6c8bef3812bf51b5457e76a06868d77f60090",
+        "size": 119441
+      },
+      "after": {
+        "sha256": "d4d9b73bfef04f791c274ec3d03963a552947b072514519b7def76c7b397b350",
+        "size": 119567
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp",
+      "before": {
+        "sha256": "a003826eab531e0712db282559f72662b35266d33979757af6fbd850e8dd95c7",
+        "size": 7125
+      },
+      "after": {
+        "sha256": "64205aa5a13b6e32e1e1d8df01afb61aff09c1d3cb509ab9e5e92473b7c6c2ff",
+        "size": 7239
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp",
+      "before": {
+        "sha256": "1025b5059166c0cda9458fbdd4d2958f37e74cdea7c92c61128bf9b364c8e6b4",
+        "size": 21881
+      },
+      "after": {
+        "sha256": "3535c04a6816d8baa38ef823e9e0510a52243bd167493f563d493defd93e7b0a",
+        "size": 22208
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h",
+      "before": {
+        "sha256": "eca14799791ceb1daaa6d6683326f1c72f14caefefa93f75f8101042ed82e477",
+        "size": 15426
+      },
+      "after": {
+        "sha256": "e1589638de2d2c163f47fa47dfdad2b3318a0b663e11784ad5a46d8d39414d29",
+        "size": 15538
+      }
+    },
+    {
+      "path": "chromium/third_party/webrtc/modules/rtp_rtcp/BUILD.gn",
+      "before": {
+        "sha256": "b1984b3d8e7123aea2bb2fc8d2ee9d2a094f92a843309b725524b44708d4ae54",
+        "size": 28214
+      },
+      "after": {
+        "sha256": "4d885b94473bdfc8aeee6eeb2c8adb3e9b01eb9b070a41b3bff964910eeb4c96",
+        "size": 28249
+      }
+    },
+    {
+      "path": "chromium/third_party/webrtc/modules/rtp_rtcp/source/forward_error_correction.cc",
+      "before": {
+        "sha256": "18f003f249611b9d3697746e5f6a8360478b9c3e2cd44469b4c37d2149838f4e",
+        "size": 33310
+      },
+      "after": {
+        "sha256": "c459afacf23e47663d6abe144c09ca023fe640f9563a28008dffa152b09fce27",
+        "size": 33717
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_location_and_scroll_updates.cc",
+      "before": {
+        "sha256": "6f779e4f31b354dfbb2497b9db716dd645eb82b59cad02ff44822e8078706859",
+        "size": 1265
+      },
+      "after": {
+        "sha256": "a8d68285411c053f1909876ae96c0b2a1ac8c0a4fc36737911a9484a6c9c191e",
+        "size": 1683
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_location_and_scroll_updates.h",
+      "before": {
+        "sha256": "bd98436551362f2820a958aa184a85e8a24e11565c365aa7c4fbfccaff4fc78a",
+        "size": 1901
+      },
+      "after": {
+        "sha256": "c1501f15bcb4bc61081c8bce5edf38682e4971428f54ffe70f067386d5fd4159",
+        "size": 2020
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_node_data.cc",
+      "before": {
+        "sha256": "b327b31a41b35964779225345851570bd75883ac8c9cb96017c950669c159153",
+        "size": 76357
+      },
+      "after": {
+        "sha256": "1b02876ece4c20df2ccb532f2c3550943c05163f8333f8b7b5b041da60ed9a0b",
+        "size": 76616
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_node_data.h",
+      "before": {
+        "sha256": "f3f9a0c4ad2497b34309e9e08acbdd70f4b3b271a849cc29c87c1bb93cc535b0",
+        "size": 22664
+      },
+      "after": {
+        "sha256": "4374ab68f50d49eb202a05fd4e7ad2be32d557c29510791480d31a696f093918",
+        "size": 22783
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_tree_update.cc",
+      "before": {
+        "sha256": "b94a7287edba81770882b5ba6df72eb5538d21f98df91938911d6ada35162071",
+        "size": 3063
+      },
+      "after": {
+        "sha256": "9bddec4f9f1a2dc9b3e37a610920c3b283842c32f983125fb2e831c5a41eb7b9",
+        "size": 3456
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_tree_update.h",
+      "before": {
+        "sha256": "e28b97dd3eefc39dbf5ddd67359971f831146b1cfc6de3e0657718bdf3e5b109",
+        "size": 4540
+      },
+      "after": {
+        "sha256": "a7bed455736c3a5bb6cf98a7df40469cbcdb609aae90faa80333977a33ada1d1",
+        "size": 4659
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_updates_and_events.cc",
+      "before": {
+        "sha256": "dd745bb3230ae8ca9fdad5e3f0e2ad663ff9cbf5c13344adb0aa7626f9bcc846",
+        "size": 575
+      },
+      "after": {
+        "sha256": "d5fe318c357adb0d34332eef16884e193326565c6570aa2ad3e33a461d4f5df9",
+        "size": 955
+      }
+    },
+    {
+      "path": "chromium/ui/accessibility/ax_updates_and_events.h",
+      "before": {
+        "sha256": "64ab50fb33debb1355de2e57c60e410e2259310ddbc77189f386baf9fc3649bb",
+        "size": 1295
+      },
+      "after": {
+        "sha256": "aa7648e10b8e6067f2ad26222088a702273577f90e83e2a0253008e68fffa0c0",
+        "size": 1414
+      }
+    },
+    {
+      "path": "chromium/v8/src/codegen/compiler.cc",
+      "before": {
+        "sha256": "d28b2e93a95271828cf414a9cdb56c6a36f94ec02ae8d929af1eb97656c790b9",
+        "size": 192387
+      },
+      "after": {
+        "sha256": "d5546eb7a8d36852525a3697fdfcac7d5551aba00a8d806d30aef70dfba2c996",
+        "size": 192903
+      }
+    },
+    {
+      "path": "chromium/v8/src/execution/frames.cc",
+      "before": {
+        "sha256": "498be5c2e914e4803b2a950553070023deac21c994c2aec220ac102d7a07c8d8",
+        "size": 171717
+      },
+      "after": {
+        "sha256": "aa10b4475a2dd5c73b7fac89a6513bf9392676081a13443fec6b716df29cc551",
+        "size": 172931
+      }
+    },
+    {
+      "path": "chromium/v8/src/ic/ic.cc",
+      "before": {
+        "sha256": "183ff0cd13fefa2913638641b2db47fa45c723d69ef9122ea3dda10253a603cc",
+        "size": 171641
+      },
+      "after": {
+        "sha256": "d1aabc943d8712747e9d21a8a107da34ca25b4e025b7d98e5e6ca7557dfba8ad",
+        "size": 171953
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/script-inl.h",
+      "before": {
+        "sha256": "7f245561f8f8b6d25f0f2458e48a689e59edb1fcc0060799f1fcd7ed556191d6",
+        "size": 8052
+      },
+      "after": {
+        "sha256": "055d2c16b13c79064f6cbc8189722b8a62631399a9e9c99edc1b92183a206b45",
+        "size": 8696
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/script.cc",
+      "before": {
+        "sha256": "aa6813ac38cd8e623e0e4356438e580f809a7a1be43a51968654d716a24d0d3a",
+        "size": 19435
+      },
+      "after": {
+        "sha256": "69eda1f66cf2863a4ffa207ddbb1ce008e257c002040d4402c4ec099315097c2",
+        "size": 20029
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/script.h",
+      "before": {
+        "sha256": "be09a51410411e4e998e50406ba20c2d7a2b88e6e7be31dc7dbd78326ad011c2",
+        "size": 11389
+      },
+      "after": {
+        "sha256": "528aa501bd7064300ce2669a22751dce51384b018597122feb5bbd42f07abf17",
+        "size": 11991
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/script.tq",
+      "before": {
+        "sha256": "68ce0f5ddcf98e7eb726a329065a05ff0f0921f57d57b26934f7806c73b3f584",
+        "size": 2752
+      },
+      "after": {
+        "sha256": "019886ea87a6b25edd16aff7e6cf4ee001a4fa68444b0347aa8141c4e2367550",
+        "size": 2796
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/shared-function-info.h",
+      "before": {
+        "sha256": "ce4b4fe9437781878b24dd6f46256ae0a95c2635f9c2d87514fb4b44fbd3416e",
+        "size": 39415
+      },
+      "after": {
+        "sha256": "365cefda128863c19d89389f02e6b4ed9af2610f80a36091a1d7ab4ef47c517a",
+        "size": 39451
+      }
+    },
+    {
+      "path": "chromium/v8/src/parsing/parse-info.cc",
+      "before": {
+        "sha256": "a49ef09da1beafb3ae6ab0f43adf73b2dc694cce41dd40021cbdc2b1af02f89f",
+        "size": 12874
+      },
+      "after": {
+        "sha256": "dc7be95537d2c6d368629251705bd0c0fa5a218df2cff342c1663183aad8bd6b",
+        "size": 13309
+      }
+    },
+    {
+      "path": "chromium/v8/src/parsing/parser.cc",
+      "before": {
+        "sha256": "99c5a0829fc168659e09dfe7e91b9c0e13e1c45175d4e35ea60f85b8e2de2c58",
+        "size": 152242
+      },
+      "after": {
+        "sha256": "c24b168c201d0beefe7e19bda6b7eb720d5b5032ab0ccfc66a7bd1cc07e3506a",
+        "size": 152117
+      }
+    },
+    {
+      "path": "chromium/v8/test/mjsunit/regress/regress-566091009.js",
+      "before": null,
+      "after": {
+        "sha256": "bd3a59a6ed7bcd36ded202d8594a83a033863776c1daee6870f53f0d165c7926",
+        "size": 1992
+      }
+    }
+  ],
+  "excludedVendorCommits": [
+    {
+      "commit": "42e4283a10443310d0c5f1df9ac66ccf2ab87a47",
+      "title": "[angle][metal] Fix crash on failed event creation",
+      "decision": "platform-excluded",
+      "reason": "Metal-only ANGLE implementation is not built on Linux.",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=42e4283a10443310d0c5f1df9ac66ccf2ab87a47"
+    },
+    {
+      "commit": "b7849cb032f0c5f760454da257f405cef85ffa7e",
+      "title": "[backport] Block a handful of intermediate certificates",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=b7849cb032f0c5f760454da257f405cef85ffa7e"
+    },
+    {
+      "commit": "dfe972d1d0a64f68e06954d7b4023700fff8c4b5",
+      "title": "[backport] Update cert_verify_proc_blocklist.inc",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=dfe972d1d0a64f68e06954d7b4023700fff8c4b5"
+    },
+    {
+      "commit": "ee09b30029082913a7c9b0a429e24d8bff279fa7",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=ee09b30029082913a7c9b0a429e24d8bff279fa7"
+    },
+    {
+      "commit": "bc795d17417eeeddcd497646342de6316553dccd",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=bc795d17417eeeddcd497646342de6316553dccd"
+    },
+    {
+      "commit": "fb5d0396dabb2c7caf40cea8487d160678ffa3df",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=fb5d0396dabb2c7caf40cea8487d160678ffa3df"
+    },
+    {
+      "commit": "79d6b17154d226dab17ed299088e399bc46b1430",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=79d6b17154d226dab17ed299088e399bc46b1430"
+    },
+    {
+      "commit": "1aca3d9e55c36dd1c8f6b45d8ebd9c3f77e106fc",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=1aca3d9e55c36dd1c8f6b45d8ebd9c3f77e106fc"
+    },
+    {
+      "commit": "19ab42715df325039c4d0af672e8481a84ba31e7",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=19ab42715df325039c4d0af672e8481a84ba31e7"
+    },
+    {
+      "commit": "d69f79a0aeb89758c9de5f3521083fc2aaaf6269",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=d69f79a0aeb89758c9de5f3521083fc2aaaf6269"
+    },
+    {
+      "commit": "9f2a27c37943a8c8087246db81da1d7236e4e494",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=9f2a27c37943a8c8087246db81da1d7236e4e494"
+    },
+    {
+      "commit": "576917fd50ea080257c01233cbaccc4625ba466e",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=576917fd50ea080257c01233cbaccc4625ba466e"
+    },
+    {
+      "commit": "b1bd3bb5e78bd737efc3ab81905523f57988d7cf",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=b1bd3bb5e78bd737efc3ab81905523f57988d7cf"
+    },
+    {
+      "commit": "727d57daf0d7861ed1c6ce8be0a8c62e8c40fbc8",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=727d57daf0d7861ed1c6ce8be0a8c62e8c40fbc8"
+    },
+    {
+      "commit": "3ab957402620e0eea9b06bbc36c37ec20e74bf91",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=3ab957402620e0eea9b06bbc36c37ec20e74bf91"
+    },
+    {
+      "commit": "97e4c72e1e0ac2e6470fcfd01a1ac6a1bd166ba6",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=97e4c72e1e0ac2e6470fcfd01a1ac6a1bd166ba6"
+    },
+    {
+      "commit": "40de8dd979024ce6459306e575dd157cfae31967",
+      "title": "[backport] Automatic update from google3",
+      "decision": "optional-pki",
+      "reason": "",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=40de8dd979024ce6459306e575dd157cfae31967"
+    },
+    {
+      "commit": "392213b38f673f3014a7aa01d6f3c05537d8ec0d",
+      "title": "[Backport] CVE-2026-118306: Memory corruption in FileSystem",
+      "decision": "overlap",
+      "reason": "Existing four-repair layer: FileSystem iterator lifetime (CVE-2026-118306).",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=392213b38f673f3014a7aa01d6f3c05537d8ec0d"
+    },
+    {
+      "commit": "a743843b327cea49ced03652843f533d4ab89d0c",
+      "title": "[Backport] CVE-2026-118331: Improper input validation in FileAPI",
+      "decision": "overlap",
+      "reason": "Existing four-repair layer: reference-counted blob entries (CVE-2026-118331/118319).",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=a743843b327cea49ced03652843f533d4ab89d0c"
+    },
+    {
+      "commit": "c7a9f6fb74bf9a02ba9a2b5782db886b64038907",
+      "title": "[Backport] CVE-2026-118348: Improper input validation in Skia",
+      "decision": "overlap",
+      "reason": "Existing four-repair layer: Skia raster-pipeline integer overflow (CVE-2026-118348).",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=c7a9f6fb74bf9a02ba9a2b5782db886b64038907"
+    },
+    {
+      "commit": "dae6ccf3ec67a12ec6a718642b291aa42b8cb024",
+      "title": "[fixup][android][qtpdf] Support android build for qtpdf",
+      "decision": "platform-excluded",
+      "reason": "Android-only QtPdf build configuration is not the Linux target.",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=dae6ccf3ec67a12ec6a718642b291aa42b8cb024"
+    },
+    {
+      "commit": "a927ba3741827670206ab9ddb28c935032826235",
+      "title": "[Backport] Dependency for CVE-2026-19142",
+      "decision": "overlap",
+      "reason": "Existing baseline Aura compatibility adapter supplies the shared weak-window dependency; preserve its ScopedDeleteBlockers and last-member factory.",
+      "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?h=140-based&id=a927ba3741827670206ab9ddb28c935032826235"
+    }
+  ],
+  "adaptations": [
+    "Two archive-absent .gitignore updates in the Expat roll omitted; all production/build/test changes retained.",
+    "MediaStream critical repair retains both production lifetime guards; missing TRACE_EVENT context removed. Upstream new test/header-only exports retained in the original patch; not added to trimmed Qt140 tests."
+  ],
+  "coverage": "52 compatible vendor changes and one additional Critical repair layered after the immutable24/Aura/four-repair history. This does not claim all Chromium156 fixes or change the reported major version."
+}

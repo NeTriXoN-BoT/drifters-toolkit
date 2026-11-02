@@ -1,0 +1,56 @@
+From 7f36c49d30de45ee5518bcb2cf7ec52d4f970d40 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Fri, 30 Oct 2026 14:51:54 +0100
+Subject: [PATCH] [fixup][3rdparty] Fix building with system ffmpeg
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes build error:
+In file included from .../chromium/build/build_config.h:59,
+                 from .../chromium/base/compiler_specific.h:8,
+                 from .../chromium/base/check.h:13,
+                 from .../chromium/media/filters/ffmpeg_glue.h:28,
+                 from .../chromium/media/filters/ffmpeg_glue.cc:10:
+.../chromium/build/buildflag.h:45:66: error: missing binary operator before token ‘(’
+   45 | #define BUILDFLAG(flag) (BUILDFLAG_CAT(BUILDFLAG_INTERNAL_, flag)())
+      |                                                                  ^
+.../chromium/media/filters/ffmpeg_glue.cc:13:34: note: in expansion of macro ‘BUILDFLAG’
+   13 | #if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
+      |                                  ^~~~~~~~~
+
+ffmpeg_common.h provides the missing guard definition.
+
+Task-number: QTBUG-151657
+Change-Id: I741db35f72069a359bd239702ad71e4e3f9c9120
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784950
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ chromium/media/filters/ffmpeg_glue.cc | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/chromium/media/filters/ffmpeg_glue.cc b/chromium/media/filters/ffmpeg_glue.cc
+index b2d24f05c30..d8a40561981 100644
+--- a/chromium/media/filters/ffmpeg_glue.cc
++++ b/chromium/media/filters/ffmpeg_glue.cc
+@@ -10,9 +10,6 @@
+ #include "media/filters/ffmpeg_glue.h"
+ 
+ #include "base/check_op.h"
+-#if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
+-#include "base/logging.h"
+-#endif
+ #include "base/metrics/histogram_functions.h"
+ #include "base/no_destructor.h"
+ #include "base/notreached.h"
+@@ -23,6 +20,10 @@
+ #include "media/base/supported_types.h"
+ #include "media/ffmpeg/ffmpeg_common.h"
+ 
++#if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
++#include "base/logging.h"
++#endif
++
+ namespace media {
+ 
+ // Internal buffer size used by AVIO for reading.

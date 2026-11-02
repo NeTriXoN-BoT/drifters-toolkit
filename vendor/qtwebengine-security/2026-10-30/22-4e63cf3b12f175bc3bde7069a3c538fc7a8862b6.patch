@@ -1,0 +1,148 @@
+From 4e63cf3b12f175bc3bde7069a3c538fc7a8862b6 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Thu, 30 Jul 2026 22:20:41 -0400
+Subject: [PATCH] [Backport] Dependency for CVE-2026-113315
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8177726:
+Optimize robust init check during GenerateMipmap
+
+Add an enum class EnsureInitializedLevels to optionally skip robust
+initialization for texture levels above the base level during
+glGenerateMipmap since they will be overwritten.
+
+Test: angle_end2end_tests --gtest_filter="MipmapRobustInitTestES3.GenerateMipmapRobustInitOptimization*"
+Bug: b/532617619
+Change-Id: I5bc60b0df7e72839f61a4f8a65c3d2e64825b67f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8177726
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783835
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../third_party/angle/src/libANGLE/Context.cpp  |  2 +-
+ .../third_party/angle/src/libANGLE/State.cpp    |  6 ++++--
+ .../third_party/angle/src/libANGLE/Texture.cpp  | 17 +++++++++++++----
+ .../third_party/angle/src/libANGLE/Texture.h    |  8 +++++++-
+ 4 files changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/Context.cpp b/chromium/third_party/angle/src/libANGLE/Context.cpp
+index 44c94dbbdf56..9cca81ab8eef 100644
+--- a/chromium/third_party/angle/src/libANGLE/Context.cpp
++++ b/chromium/third_party/angle/src/libANGLE/Context.cpp
+@@ -1665,7 +1665,7 @@ void Context::bindImageTexture(GLuint unit,
+     // For robust init, make sure the texture is initialized before storage writes.
+     if (tex != nullptr)
+     {
+-        ANGLE_CONTEXT_TRY(tex->ensureInitialized(this));
++        ANGLE_CONTEXT_TRY(tex->ensureInitialized(this, EnsureInitializedLevels::AllEnabledLevels));
+     }
+     mState.setImageUnit(this, unit, tex, level, layered, layer, access, format);
+     mImageObserverBindings[unit].bind(tex);
+diff --git a/chromium/third_party/angle/src/libANGLE/State.cpp b/chromium/third_party/angle/src/libANGLE/State.cpp
+index 9d28504706b9..ec4dcad83d84 100644
+--- a/chromium/third_party/angle/src/libANGLE/State.cpp
++++ b/chromium/third_party/angle/src/libANGLE/State.cpp
+@@ -3844,7 +3844,8 @@ angle::Result State::syncTexturesInit(const Context *context, Command command)
+         Texture *texture = mActiveTexturesCache[textureUnitIndex];
+         if (texture)
+         {
+-            ANGLE_TRY(texture->ensureInitialized(context));
++            ANGLE_TRY(
++                texture->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+         }
+     }
+     return angle::Result::Continue;
+@@ -3859,7 +3860,8 @@ angle::Result State::syncImagesInit(const Context *context, Command command)
+         Texture *texture = mImageUnits[imageUnitIndex].texture.get();
+         if (texture)
+         {
+-            ANGLE_TRY(texture->ensureInitialized(context));
++            ANGLE_TRY(
++                texture->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+         }
+     }
+     return angle::Result::Continue;
+diff --git a/chromium/third_party/angle/src/libANGLE/Texture.cpp b/chromium/third_party/angle/src/libANGLE/Texture.cpp
+index 2ae2c288bb11..8ccbf225065e 100644
+--- a/chromium/third_party/angle/src/libANGLE/Texture.cpp
++++ b/chromium/third_party/angle/src/libANGLE/Texture.cpp
+@@ -1721,7 +1721,7 @@ angle::Result Texture::copyTexture(Context *context,
+ 
+     // Initialize source texture.
+     // Note: we don't have a way to notify which portions of the image changed currently.
+-    ANGLE_TRY(source->ensureInitialized(context));
++    ANGLE_TRY(source->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+ 
+     ImageIndex index = ImageIndex::MakeFromTarget(target, level, ImageIndex::kEntireLevel);
+ 
+@@ -1754,7 +1754,7 @@ angle::Result Texture::copySubTexture(const Context *context,
+     ASSERT(TextureTargetToType(target) == mState.mType);
+ 
+     // Ensure source is initialized.
+-    ANGLE_TRY(source->ensureInitialized(context));
++    ANGLE_TRY(source->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+ 
+     Box destBox(destOffset.x, destOffset.y, destOffset.z, sourceBox.width, sourceBox.height,
+                 sourceBox.depth);
+@@ -2472,7 +2472,11 @@ angle::Result Texture::syncState(const Context *context, Command source)
+ {
+     ASSERT(hasAnyDirtyBit() || source == Command::GenerateMipmap ||
+            (context->isRobustResourceInitEnabled() && mState.mInitState == InitState::MayNeedInit));
+-    ANGLE_TRY(ensureInitialized(context));
++    // During glGenerateMipmap, robust initialization of levels i > baseLevel can be skipped
++    // because they will be completely overwritten by the generated mipmaps.
++    ANGLE_TRY(ensureInitialized(context, source == Command::GenerateMipmap
++                                             ? EnsureInitializedLevels::BaseOnly
++                                             : EnsureInitializedLevels::AllEnabledLevels));
+     ANGLE_TRY(mTexture->syncState(context, mDirtyBits, source));
+     mDirtyBits.reset();
+     return angle::Result::Continue;
+@@ -2520,7 +2524,7 @@ void Texture::invalidateCompletenessCache() const
+     mCompletenessCache.context = {0};
+ }
+ 
+-angle::Result Texture::ensureInitialized(const Context *context)
++angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializedLevels levels)
+ {
+     if (!context->isRobustResourceInitEnabled() || mState.mInitState == InitState::Initialized)
+     {
+@@ -2536,6 +2540,11 @@ angle::Result Texture::ensureInitialized(const Context *context)
+     while (it.hasNext())
+     {
+         const ImageIndex index = it.next();
++        if (levels == EnsureInitializedLevels::BaseOnly &&
++            index.getLevelIndex() != static_cast<GLint>(mState.getEffectiveBaseLevel()))
++        {
++            break;
++        }
+         ImageDesc &desc =
+             mState.mImageDescs[GetImageDescIndex(index.getTarget(), index.getLevelIndex())];
+         if (desc.initState == InitState::MayNeedInit && !desc.size.empty())
+diff --git a/chromium/third_party/angle/src/libANGLE/Texture.h b/chromium/third_party/angle/src/libANGLE/Texture.h
+index 11cca2a12ab2..87a589bf7d43 100644
+--- a/chromium/third_party/angle/src/libANGLE/Texture.h
++++ b/chromium/third_party/angle/src/libANGLE/Texture.h
+@@ -48,6 +48,12 @@ class Sampler;
+ class State;
+ class Texture;
+ 
++enum class EnsureInitializedLevels
++{
++    BaseOnly,
++    AllEnabledLevels,
++};
++
+ constexpr GLuint kInitialMaxLevel = 1000;
+ 
+ bool IsMipmapFiltered(GLenum minFilterMode);
+@@ -686,7 +692,7 @@ class Texture final : public RefCountObject<TextureID>,
+     GLuint getNativeID() const;
+ 
+     // Needed for robust resource init.
+-    angle::Result ensureInitialized(const Context *context);
++    angle::Result ensureInitialized(const Context *context, EnsureInitializedLevels levels);
+     InitState initState(GLenum binding, const ImageIndex &imageIndex) const override;
+     InitState initState() const { return mState.mInitState; }
+     void setInitState(GLenum binding, const ImageIndex &imageIndex, InitState initState) override;

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "component": "DriftersToolkitSaveCodec",
+  "version": "0.1.0",
+  "licence": "GPL-3.0-or-later",
+  "sourceManifestSha256": "7c17a9c902aca33fe189c8ef35b274fa5a8e54f6781fbbbe2b9e86455743bf4c",
+  "sourceArchive": "Drifters-Toolkit-SaveCodec-0.1.0-Source.zip",
+  "targets": {
+    "windows": {
+      "triple": "x86_64-pc-windows-gnu",
+      "file": "DriftersToolkitSaveCodec.exe",
+      "sha256": "3dfa067798141d3641ecb898c8737e59d0b209bc3980069cb995d34502db868e",
+      "size": 488960
+    },
+    "linux": {
+      "triple": "x86_64-unknown-linux-musl",
+      "file": "DriftersToolkitSaveCodec",
+      "sha256": "902a78998be9138d34f9ad01fd047fd8672b6d05c10171f5b2f1e423e4067f16",
+      "size": 651992
+    }
+  },
+  "noticeInventorySha256": "5178cb979520241deb558a58c19ad324bf78fbd34b32b83544f6ea68ace76017"
+}

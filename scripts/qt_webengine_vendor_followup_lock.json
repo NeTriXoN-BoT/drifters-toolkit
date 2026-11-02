@@ -1,0 +1,1332 @@
+{
+  "schemaVersion": 1,
+  "vendorFollowupRevision": 1,
+  "qtVersion": "6.11.3",
+  "baseChromiumVersion": "140.0.7339.264",
+  "vendorBaseHead": "43bcb1ece119814c1be448629ba0bd751b51ec7d",
+  "vendorReferenceHead": "7f36c49d30de45ee5518bcb2cf7ec52d4f970d40",
+  "baselineResidualLock": {
+    "sha256": "7e2f30a9b394cc83aaecff4cb0f7697ba8615f482a48ade5104e13a12398e3a9",
+    "size": 120820
+  },
+  "baselineRuntimeProof": {
+    "sha256": "f51d6b2f647645128133ee84fc708760dc2e96d804ccbbb5770881de15ef59d3",
+    "size": 41651
+  },
+  "baselineRuntimeProofMeaning": "Observed predecessor on this builder, not a universal reproducible binary requirement. A new build must capture its exact validated predecessor proof and outputs before mutation.",
+  "baselineSourceCheckpoint": {
+    "chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc": "25b942ffe93d3784f6ea346b7b530de21cb0ab6f3a15c71ebba394a232a4a559",
+    "chromium/content/browser/file_system_access/file_system_access_directory_handle_impl.cc": "0d8d141c84cf08978f6134ce2250008e4b4ece1a6dde9f72252c10447bb124e8",
+    "chromium/content/browser/file_system_access/file_system_access_file_handle_impl.cc": "05fd8b4dfbb7b471be17be4bb7555de9a402c99ca8e596be2daf0cf09bb46a4d",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base.cc": "6a408d01185f514cbfe94fdd37e4eafe76d590c581e19214e71414f529f85de3",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base.h": "865b9def8815b5c23ec6760a95b842021a14350912dc70040aa974915bb9589f",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base_unittest.cc": "8ad5c02fa14c0bb0638670817d7c5a9bee9b5a427738074da4fb5e3f221d6ebb",
+    "chromium/content/browser/file_system_access/file_system_access_manager_impl.cc": "b305a1a5f15de7b67795b9cad6c6506f2f99d87d93711e1605715941f6f31800",
+    "chromium/content/browser/file_system_access/file_system_access_observer_host.cc": "5a4c9a9b4fc1b257666d358a58833de70839dbffbe0923be1b0c5a5d94a79f3a",
+    "chromium/content/browser/file_system_access/file_system_access_transfer_token_impl.cc": "1c75b007f69ff29b312a860cbfca10464638c3addcea452a6ba6ee3cb26e2809",
+    "chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc": "e2e4d7c434a6f296ac435c96eaca5305e0ed22e9008df6e45491b9b31f0616e6",
+    "chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc": "3482dd9c7d15d2f0f18bea8166e4260e02b51b65e98fe3a79ffa0490f975c328",
+    "chromium/media/filters/ffmpeg_glue.cc": "c40861af68a24800a6de1bcea8f2087f95a967fdc6db69cb436c1a306f291114",
+    "chromium/mojo/core/channel_posix.cc": "ad58b95303799e263e282d154fd67c6b740b41cb4339ff688299ca349644c8d2",
+    "chromium/net/http/http_auth_controller.cc": "55700f3237766a6dd8296561eefd53bc8707e33f06f36d1279b2ca0a3e6325de",
+    "chromium/net/http/http_auth_controller.h": "dbb91bfeb5ba44b53a3568418b7a4f390bfb29f1046c5b86f94e8fd72b7a8a10",
+    "chromium/net/http/http_network_transaction.cc": "9660f895cc9b2ccadaf6f1029aebd248d3a9d4884a5678e864ce062a0852da19",
+    "chromium/net/http/http_network_transaction.h": "2bd177880820fd109a6740b9128c11d2081fc96123c589b6a26c324b6ecb5c66",
+    "chromium/net/http/http_proxy_client_socket.cc": "3e0037c0e3994684cb5945b0922f8cdcdd48ca8c056bf8228ee351c1eeaedd98",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_request.cc": "e38d7d3377ac5f6e6dd20724f6f9d93481a65350837a4cfad026b7462a375222",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_request.h": "453b9a0fb07562756e9c0e42d33a3f334203be869317152f06068ee0a7f0e55c",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_service.cc": "39931da1cc3d34e825c73fc9b4dc4709d342aebd465c968ce5cce7c260d786ab",
+    "chromium/net/quic/quic_proxy_client_socket.cc": "4fc3e4604b600867e8e87536dca26a55a6c89cc5b29b5370ec04bde812d34d19",
+    "chromium/net/spdy/spdy_proxy_client_socket.cc": "a3b483036fa03f925ee4e9763c5489b3a7e5c65cf04e7929770829889e2f0ddb",
+    "chromium/third_party/blink/renderer/core/display_lock/display_lock_context.cc": "3aaa0f5b02067669fd8c49c82d0fb92d5be152d902cf1a1ed317ed177390cbda",
+    "chromium/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc": "06ab1f84b23e63d8f1a80167c051896dd3bde3d8a226030bbedd6c6069ca23e9",
+    "chromium/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc": "8b821ffa5464faa0c35a6c06b7ef85cafb4a317fd8f81f13d5b159c043d499cb",
+    "chromium/third_party/blink/renderer/core/editing/frame_caret.cc": "6d00f56a7f188232617e17c34fc91de4d0ef9fec0d70e0d91aa38e99c0ce9d0d",
+    "chromium/third_party/blink/renderer/core/editing/selection_controller.cc": "9cfc0a9dfb113f509931423189a91d42176b3d292fdb974a639e17e16599453e",
+    "chromium/third_party/blink/renderer/core/editing/selection_template.cc": "0a91e7817b0966c6fcfee8579af88dfc54992e263e727e17a8173d87fedf9165",
+    "chromium/third_party/blink/renderer/core/exported/web_view_test.cc": "3a92232210da833eaf006a591205e6d9aaa96431a9e9ac6688c8435a8794c33f",
+    "chromium/third_party/blink/renderer/core/input/event_handler_test.cc": "96cfe2be96ed9a64ee73ae825940b47db904b1d1d7121cc38e70affda89fefd1",
+    "chromium/third_party/blink/renderer/core/input/gesture_manager.cc": "8f3c6a37d773b04d8081e9c8cf10ab2815b1682c057384e448f267eada37017e",
+    "chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc": "e780e791c3820c85cea6d5b69c4209ac6e0a0469fd91c36e850c5e96ddc67797",
+    "chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc": "10eccd08ea3b069c332beb6dc91399b6cdef548ced5c00e8fdd891b35878a234",
+    "chromium/third_party/blink/renderer/core/timing/performance.cc": "4e7deacb7209e2e61b929696bd1be1c4e0656f1239f05b9d30bfe58f83aa1f35",
+    "chromium/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc": "ce91029dd3cd217f6f5eab928a1c6dab75c9ec5525da62bfc1ee65131ba67512",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc": "409746f76000ce095221d2be2211d49b51524486ae515c4438b40e9057da76fe",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h": "09664e67b99aadb179a1f353cef73c52fb2f3cae704e1a60d093fad7dbb46417",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc": "f166e42529dde6ee4495599d579e3127602d44b83e0cb496b8ae8fd671fa8c6f",
+    "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc": "223ebff292db6f64bdaa289d810f60d1831736187d3bf929dfc8bf3bfec7cd50",
+    "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h": "1cfa33cdd37c665e64f64a570d04164064bd746dea771f93f91e011332180ff3",
+    "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5": "02cf084e0e9d9158cc1989ba877288b5a07d6b623688ad1537ab6966b717bc9c",
+    "chromium/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html": "f0386058066c3f9ca0a5ea1961300b983f4eb6ed30280d40fa87b8e53683ef02",
+    "chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt": "f7daec8d46310df734330fe326f48e3a275dc61de942badbe6946d62a469adcf",
+    "chromium/third_party/pdfium/third_party/BUILD.gn": "25bb8bd1a59a0ef1d2c671e3c1c327687ea4b94ac056aa876ed23d4e0355876f",
+    "chromium/third_party/pdfium/third_party/agg23/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/bigint/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/bigint/README.pdfium": "5a65a1539b279172d4bc942af9200fac6165dffdaf5663e962a302fc27e16e60",
+    "chromium/third_party/pdfium/third_party/lcms/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/libtiff/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp": "86dd304dcb7c4b09deb0afcc24f5f87af1ebcd1a54423afb728a408a995aed60",
+    "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h": "92fd92e59f3da0a7e4163fa18afba8fab67c3dc57aa25f42f9d72a952fb6ecca",
+    "chromium/ui/aura/client/default_capture_client.cc": "03cb061a31a2ce07b06dbc0948e711ba1544b114135a582167abb6a6926dc8e9",
+    "chromium/ui/aura/client/default_capture_client.h": "85efb775f28f89b6684989e3c9ed1961587fca29d06a3e4ebe942fbe4e35259f",
+    "chromium/ui/aura/window.cc": "1b847422fc5e88c969754bc8095e64766b12b36050d07078fa48a1e26e3039ab",
+    "chromium/ui/aura/window.h": "21b31c5b700f4643862f247816f58b512521d7cec9fbb471837fe506125475de",
+    "chromium/ui/aura/window_event_dispatcher.cc": "4e3285faa265d3969339de8e604bb243aa8bb20e86106adbd96bd2af4a67e662",
+    "chromium/ui/aura/window_event_dispatcher_unittest.cc": "7dc2bf547aaa14c1997b7166465a1c5fee6cf801ad735758589a6b2711d30ab3",
+    "chromium/ui/events/gestures/gesture_provider_aura_unittest.cc": "5b4e1e100e019070da26f3bbfb546b93266d48105858ea8e308bdbd26377e6a2",
+    "chromium/ui/events/gestures/gesture_types.cc": "5a43f4002dcccb058353cc2c4cd4115e351494ca5dfc5326256f9eb8caa61ffa",
+    "chromium/ui/events/gestures/gesture_types.h": "bb9fbb3f866513c71697d3adbc5f96ff787b6d056c92040de1d9b9d859cb3dea",
+    "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc": "99c0c99f64976ac801b771dc60b24a4bfce72bf7383af45b5853956384487e03",
+    "chromium/ui/views/widget/desktop_aura/desktop_capture_client.h": "80ca33063a1a60e9e29d5c8b8dbd13059f64c716cc50a53fdd36536a13a007ab",
+    "chromium/ui/wm/core/capture_controller.cc": "2086a5c0f9003b47921f82ed67a10770d3fc1942ad96100216e73d6a008eefc6",
+    "chromium/ui/wm/core/capture_controller.h": "955a445167ee85de27177576d9eb5475f981493b1d9fcb9632122d6e13fa295f",
+    "chromium/ui/wm/core/focus_controller.cc": "00fe8cfd35af018a001476aeba03547bb7fe96cc57d142d5373050bf067d1276",
+    "chromium/v8/src/ast/ast-value-factory.cc": "35e74a104227d7776a9a24716427c159d56c6f46a222c6a33dd90d40c9a83822",
+    "chromium/v8/src/ast/ast-value-factory.h": "c8d7f34a224bbeeef30a2f9d67da98ec44c1f25fe1813298f8845643c68e2c38",
+    "chromium/v8/src/codegen/compiler.cc": "d5546eb7a8d36852525a3697fdfcac7d5551aba00a8d806d30aef70dfba2c996",
+    "chromium/v8/src/heap/factory.cc": "e507f3472a60ac99e0e9d2738839e6f2d02008ac572908919ed9cde8c03f38c0",
+    "chromium/v8/src/heap/factory.h": "bd2170dd3db9df35629c53ee0d54563a674e3bf591367d4faa71d371420991d7",
+    "chromium/v8/src/objects/name-inl.h": "84213e3a6aa553d795d708b7bdbf45afa892740a2004db0048a89845c389fd6b",
+    "chromium/v8/src/objects/name.h": "a7b65b2c610e6f2de85681ff41a8cf192e578f3261bba513a8547a47168c56dc",
+    "chromium/v8/src/objects/shared-function-info-inl.h": "0b02f5c34c5cf0061d369ba34798d6566b00d277fc98279b4a3b7529838440b7",
+    "chromium/v8/src/objects/shared-function-info.h": "365cefda128863c19d89389f02e6b4ed9af2610f80a36091a1d7ab4ef47c517a",
+    "chromium/v8/src/objects/string-table.cc": "31aced2efab6b0cb5681479aa8135fcb13148b501276b4b9509beaca7c19bd16",
+    "chromium/v8/src/objects/string.cc": "5e7f0ec923ac59b11f68473d3d2937182745631ad8f4b60d393f166db36861ca",
+    "chromium/v8/src/objects/string.h": "685e50972ab41e30a794541b0b93d5dac54f79f92ae54732a40491190523023d",
+    "chromium/v8/src/strings/string-hasher-inl.h": "8bc3e4e645c4c83067110d6873d9fbfe5dd3fddcce4ee8af7c3ae965caf485f4",
+    "chromium/v8/src/strings/string-hasher.h": "83c36c380061ef1c883e7e4249c4e3b16ce4432e0e788e6bdec3a7ca60662bf3",
+    "chromium/storage/browser/blob/blob_data_builder.cc": "e9b6de28bc1df637192ad6bb1cc477c5bb2d87606503d140020d7ad4989de17a",
+    "chromium/storage/browser/blob/blob_data_builder.h": "a5fc7becce7fd37d183ab1e16686caebd145703598b59972ef268cd2ce449cb3",
+    "chromium/storage/browser/blob/blob_data_handle.cc": "54333918d9e218a77b7ebec9a96e43344c9c62425726725fdb71d34bbc918576",
+    "chromium/storage/browser/blob/blob_entry.cc": "153c71e280a9f2e66499dc4a45d0ca7986c451cc133e8361c8293c98fb1b7f4f",
+    "chromium/storage/browser/blob/blob_entry.h": "bc7f78388f1c6cbb084db38dcbe82951713b32f99f494bddd8a8202eb1ca9595",
+    "chromium/storage/browser/blob/blob_flattener_unittest.cc": "f279880178575f3f2ca08ced326cc10add65c9ec7a72805af869f1e10ad43b37",
+    "chromium/storage/browser/blob/blob_slice_unittest.cc": "5807c37c77c54eeb705a5176c77ffac5d2b3a447d6fc34ef37e65fde9681f80d",
+    "chromium/storage/browser/blob/blob_storage_context.cc": "3d2dc23f1ff4a382117869d9b7f9e00912733754aec7114ac81bca6b38532d4f",
+    "chromium/storage/browser/blob/blob_storage_context.h": "24e953f415d78bae32ce67dabc8bced7fbcdcb2bffc9fbd5954acbf419f31c50",
+    "chromium/storage/browser/blob/blob_storage_context_unittest.cc": "8b7cb457896ca95accd7e8613371bf1af44eee47bafb7e50125dd84f53c38de2",
+    "chromium/storage/browser/blob/blob_storage_registry.cc": "014601821290b1e19b2a1e22a791c709c3d2cb5a8ebb837d9a8840d33b9b2ca6",
+    "chromium/storage/browser/blob/blob_storage_registry.h": "f624a83c039174de13704b93e147ae4efb5049104df5df8ce530c967d535561a",
+    "chromium/storage/browser/blob/blob_storage_registry_unittest.cc": "5945ceb7e40744f7fb8e85604040a4a6db4df8380ed49a8248b0bfa0579aa411",
+    "chromium/storage/browser/blob/view_blob_internals_job.cc": "a9076f06ad6b92caa61644fcd43dda2adec5907f3ab6aea1d19a2fd636ccbe66",
+    "chromium/storage/browser/file_system/sandbox_directory_database.cc": "429e955715677be8922d73ba606a5014e87dfd33f4fbe4f73ea6ee992e451146",
+    "chromium/storage/browser/file_system/sandbox_directory_database_unittest.cc": "3f5f0dc3f9df7613c8ec0e96d2230a253ada32e3b7c9813451a418fa7e2a5e60",
+    "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc": "5247a968630c1d6f83d85e85f290fb06eace289f989cc46a0073c3ae17faf93b",
+    "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h": "2dd8d5f420f6c184c0910d11bb1060ab15f971d34d5eb8aa107f1a3f60bc6b71",
+    "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp": "67cd6cd0e0e6fdde86241bfbd6a0dccd1976981370c4695dff6d7bef9e412629",
+    "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp": "913c2974c1e8472e13dea49386cd9aec73d9ce7d1fb7ca370cfdf5ce78fad778",
+    "chromium/cc/tiles/image_controller.cc": "c11cadaaafdadd2a53f1f48bf1f99bbf0e726af25fdc0e4acca35cde7ec1c76f",
+    "chromium/cc/tiles/image_controller.h": "c8bfb6720cb80630e8b4035ee94348ed1bdc17abf4d9a254d0acd5446330f066",
+    "chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc": "abba0fa16c80d83d4b2c16f62469e20cd5846fb5c7ab091f16d646c8e31d5195",
+    "chromium/components/viz/service/display/resolved_frame_data.cc": "5a355aacc6547854664be42296221f75fdb2a46c11bdffa2efeeb0a4a21cbdc5",
+    "chromium/components/viz/service/display/resolved_frame_data.h": "2988bbd9de5e568b363bdfe4b155c72c167bc7dc059e3b73c90b6ce10512425c",
+    "chromium/components/viz/service/display/surface_aggregator.cc": "231b43b7719aea4a9552baffe53e1392d9f5fdc5f5988ef18594caac7a8e9734",
+    "chromium/content/browser/accessibility/render_accessibility_host.cc": "5dc95899cff31240bffa2eafe683ac4a725b2deff4b6f7578081c62515a98aa8",
+    "chromium/content/browser/file_system_access/file_system_access_manager_impl.h": "3f992bb3b326bf5c884913a29804165fbe87642dd0b0e0215fdab477124b4e54",
+    "chromium/content/browser/renderer_host/render_frame_host_impl.cc": "809ce88d3390e635f9e368c947cfd148323ab247588d5ff65af7aa21e51e27e4",
+    "chromium/content/browser/service_worker/service_worker_client_utils.h": "9ea45410bc588a47ad2bdbbde6f6814d2e59a65e057671444d0e5e574631751d",
+    "chromium/content/browser/web_contents/web_contents_impl.cc": "1059b7d3fcce619633dcbd8dc86111547c8a7fa2dcaf2d01f4659c8d0e2ca92c",
+    "chromium/content/common/service_worker/race_network_request_simple_buffer_manager.cc": "82e5990c135f60218feb4e1faff617726843f009c579d76dca60a0afeedceefa",
+    "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc": "0fa3fadea344204d099239e7732c9ead72fcb4f830174508b985e911fd05d328",
+    "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h": "b3ed4a48c1b33eae761913bb303cb3749aa9fd5128ab79f8af0ef72efd7035f0",
+    "chromium/media/base/cdm_promise_adapter.cc": "a0b922591cd3ddb86153bd1fbb08576b64f9c2a3a8d2e427094d78948889e9bf",
+    "chromium/media/mojo/clients/mojo_cdm.cc": "bcd54cfc6c835f60d12790b804937637ebe8a0f39253061355949fe10e0dd4ab",
+    "chromium/media/mojo/clients/mojo_cdm_unittest.cc": "97fce7f6b9d4566df69e6a4680dbc61e96bdff417a6cc5fe1427b349c4610833",
+    "chromium/net/http/http_cache.cc": "3b6c1fecbf144d279e0d727993607faf9aeb360b339ed417ab18a2990989d60e",
+    "chromium/net/http/http_cache_transaction.h": "1bb6d4a3c73d59cee6f620deaa9525f257345faf1b4ac87a816d72ba6ddd090e",
+    "chromium/third_party/angle/src/compiler.gni": "49a2fadf7e84041039289a273a36db7149275cf3bf1ff43be9ab087360ba79e6",
+    "chromium/third_party/angle/src/compiler/translator/Compiler.cpp": "34c80e1de784a97facfe9abe52a9ceed502b94f5be600b5896b375d909a8e4e5",
+    "chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp": "588fe675f89d762990b59e90c183aae515df37ebb372f20a6d4306b645a83bee",
+    "chromium/third_party/angle/src/compiler/translator/hlsl/UtilsHLSL.cpp": "2bbcf2fe7de1e74d744964ae15497a71195ea08a850cae62430af37e3bda881b",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp": "7bbf0df91595247437c6c1c0c5db0d685e4688523dc624b8d1b1fa4bd885fd7c",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.h": "dba7a80066a3d3ad60a821840b3b0838429abbff2997263ab7cc82b31f6a4751",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/PruneNoOps.cpp": "88d19cd995cf9f23a3b5a4ebd510656478ec93f0be3a710db5a05ccbcec8c870",
+    "chromium/third_party/angle/src/compiler/translator/tree_util/IntermTraverse.h": "cbb3785a97d45f88522be6556e36de12ac378084c9f6f57c799f6bd37650f182",
+    "chromium/third_party/angle/src/libANGLE/Context.cpp": "ccf3af75b4d28e2fdbb95ffd357460c690ff86aafa5712e3b95b9f12c5d0cfa4",
+    "chromium/third_party/angle/src/libANGLE/State.cpp": "455b9f6aaffb700ef3cdbb4cfd31576fc0af04bbfbc2ad745df8418a251459b1",
+    "chromium/third_party/angle/src/libANGLE/Texture.cpp": "55d5a1cc7255d1bbfa7a6913fb3501fd45b8e109f28e63ce5b0cdd002fccef90",
+    "chromium/third_party/angle/src/libANGLE/Texture.h": "7439f93ec4ffa6973b89f9ab4a3c2ffc5fbae4845f6c3517057c6450eb7335cc",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/IndexDataManager.h": "dc78c226bc97cb52d93571b2ae30db1eb2ab942ae5500e31da74636f3eb66eaa",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp": "e5f6a1f4a03c67331534ca4031df50b2b2588e4c551b42e168eb1eb337f01b57",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.h": "dcabf41956c2eff647c48270d0a93cd4a1386eaf08d640b172dfb8c917a02cf6",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp": "de9f54ec14d649061cf9b559a12291eb3df1724f4e100f5f6a043fc3b8d18395",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Image11.cpp": "641f401589403f96a96c37386b310010e719b7ab8da3e1edce5f56997008b0d5",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp": "2fc23c8bcadd7793442be210468981acc633cbaa61f53fc8820d17429981163d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp": "a906ac935540ea4b465fdda377d24fa9b6059ca952f0a8a0bb3c102015f032f4",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp": "c0469d4c9a9fa0e3e9be6bb03f9528d40ea3002e09632fb00d5df4b685fc492a",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h": "d17d2d1b4e56468581d14ce130b9a230ee678ed815427d76192691ce742370da",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp": "c969a4833695789f9481d081ddfa8626b3a0736e231dfccf4e32dc4425f6d483",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.h": "1baa524dfc0d47b9995b11c7f6706afd37d866a5b7e6b05e49d35f5eff698c2d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp": "2721dfdf115229552ab2045193d3afa2677e5d7deab27504f26ca2ade24b772d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp": "834864f9ca1b0e5328e422eeccc2082abc2236336dc3adefb3a9aed6cf412282",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp": "3ab6c10946ff5513378bb5646f6cbb090c78179276008ab43b17356b5c3cb835",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h": "52f0d2cf49238187ed892b596fc7bf23c9d4487b4c2905ed3b5fa355fae25e70",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/TextureMtl.mm": "73c4829f56a1987234a480b4f9a92ab79267b539e3bc9eb911b5b03794d5602b",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp": "8afbc516fae0d612e54f3322b39b62a2ce071b104bb9fdbab4b2bd655fdbb2b4",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/TextureVk.cpp": "682b62ba1c6478ef70c49f7ebf9963717916df6d08a3b7d756f36d83c46690d2",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp": "83dc91baf495c2c441f520c2dea13fdc3054f981c9e4e28edfe4fba8712fd728",
+    "chromium/third_party/angle/src/libANGLE/validationES.cpp": "6e6fcacbb2c04937f7af14f78153163c9c13f004d846c5e244ae019e2bb0ffe4",
+    "chromium/third_party/angle/src/libANGLE/validationES.h": "41b5fc5c809ba85b00e5f76119562226a14083a42a9b5295e879b77750c7cf6e",
+    "chromium/third_party/angle/src/libANGLE/validationES2.cpp": "77809d35579e97ff9303f68ead3847c94391eb512f2d1da291a91a4843e6006a",
+    "chromium/third_party/angle/src/libANGLE/validationES3.cpp": "feaab8284a97766cf4a81317505d47e93c3d7d5977e81223fdebfa5fd67b1145",
+    "chromium/third_party/blink/renderer/controller/oom_intervention_impl.cc": "af3689a2f9ce9f58a5bbb4a616cdf2f80aacaee6d8c0a4bf775ac69636698bf5",
+    "chromium/third_party/blink/renderer/controller/oom_intervention_impl.h": "74316796235938c3a467bafc73b6d8d2047d08ffaf59439b5901a9558b56f551",
+    "chromium/third_party/blink/renderer/core/animation/animation.cc": "b3fbef26b4812c199f943c294914dcec1f2db6b7758ff8d7e508eb04b0089289",
+    "chromium/third_party/blink/renderer/core/dom/id_target_observer.h": "b46c988e40dc7716a2f30834f3d9c5ae83a587722d5661b7fb7e461d8fb1044a",
+    "chromium/third_party/blink/renderer/core/editing/commands/split_element_command.cc": "3703300c49b8067fc0d7e0d04745145cbfcf5c31509dca34f1be38e2388e446d",
+    "chromium/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc": "a801e0e464d598177cf7caed34f7607ef6af30adfe895ef56816eda860777975",
+    "chromium/third_party/blink/renderer/core/html/html_object_element_test.cc": "06973084df47a05582409805eab666c11201f261052d6bab85a4a61a4f9ec811",
+    "chromium/third_party/blink/renderer/core/html/html_plugin_element.cc": "a9df41529e3d2c7fbad9e1ff249532b0560d755a046babf83367133552e69739",
+    "chromium/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc": "11fc45eddf1317b94c5b16bc30e641ab65ff351d12ce9d983ab3b66b58758e43",
+    "chromium/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc": "ba61444babab40696ada75ce2817ce14b20fec5615d84c5855138d504a1e0658",
+    "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc": "82f02410a0c91109cdf4d7d87239b3f8225ea2866067203bef4ebbc608756857",
+    "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.h": "06327fb20fe05bab3c2508d1f2875cc740d9881fd8925e1db09927a1a29d5f40",
+    "chromium/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "ea50a97d96592cf3d9c9a0407cc3bcfeed5b503fd78ce6282786f0eb1e3db55d",
+    "chromium/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc": "28d9849d6ec99431b43990588f34e50c66cefbbf969232fbc38b43a0c939375a",
+    "chromium/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css": "d6b5b8d8220d67b0c5d831b5da8a4a52a7296bc8bbbd687cf471104f146c79ca",
+    "chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc": "3154a810515fa378c500cafcff331c64f518c14bbc6ea78887b5e8930771df33",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc": "4fc106c77d743433c6844c26c0d0e35d0ebe80640764641a2cc481450ba169cf",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc": "9f06be96a1c56bf14131b50a21d9712d8871a58a5df6e86a81629d117502e40e",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc": "57761be07d325f6b6cb23f2d8f928a16fa672d92c755f151504af8b2695e9750",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc": "a95c8a8b192efd0144656725d27244c027e2e2398e0fbb538d264c1b250e2c43",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc": "4dd54d512894399a5b259b0300b1a12a4a865b7ce9e84f86aeb714ec96af6375",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc": "fb6ccde03fa7e230073b7cd6c27b5560e77ee433d66ecde6b125e12092d5917c",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc": "c55d7955562b3911b0c2fd80b20429bd2e0d42a531aa26999808030102f2d72f",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc": "9c7e08f3bfa366695cd62ac7a5b784117d636af2a23144ac2cbcb67ce2902ccb",
+    "chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc": "18981fa97bd88c4759568f0bb6ec1c637645e09e3b381c781d89e359094bf438",
+    "chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc": "ed919669b7b7e27745b7b4220a72862c66323a9c21293d139188a3c7dbedd4b1",
+    "chromium/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html": "0bc1a645df817c0597a014c2689623b337ce828ec0b977a01bf8fbf945010d2c",
+    "chromium/third_party/expat/README.chromium": "7d5f241a229f353fa4c08f7eb1ae80472edc22e6f6204506e0e7e497ce69f830",
+    "chromium/third_party/expat/include/expat_config/expat_config.h": "d67316ce5214c50d2d2dfbd602efd6f5461d671c4d061414ea14efb3e257f5ed",
+    "chromium/third_party/expat/src/.ci.sh": "890a027863d1c2a4a324ec43b2533988fa703baaf5ad317df3f836bc46b50691",
+    "chromium/third_party/expat/src/.gitattributes": "e0c8113c29dade6a9f5358032c608d5d3d99aceef3dd51576b62254c123b14b2",
+    "chromium/third_party/expat/src/.github/dependabot.yml": "c90f3d61afa34e3e2e74c321123c0663a85d3a12544fd280e5a947c21c379c3d",
+    "chromium/third_party/expat/src/.github/workflows/autotools-cmake.yml": "dbf901134e2cc3037fa0f231a1d91143272e43b504650d27e2dbf3182871a4e7",
+    "chromium/third_party/expat/src/.github/workflows/clang-format.yml": "aad92b1d5854989c3ce097661dc2ecae1f446c179d3f5b344a057e8ccea3720a",
+    "chromium/third_party/expat/src/.github/workflows/clang-static-analyzer.yml": "46024e54bcb37819e7a4438271ce370e00c1c97b1df753aa5d6ab7070a0c8ce3",
+    "chromium/third_party/expat/src/.github/workflows/clang-tidy.yml": "50e10ecd93dee97e2c86bc39eab6ee8de0be2efd1556c5665c6371185679e7db",
+    "chromium/third_party/expat/src/.github/workflows/cmake-required-version.yml": "3aa7a2c8bc9b60e2d24e145b4026a6e798dfa7a3bec7a14833122fbaa65ca81c",
+    "chromium/third_party/expat/src/.github/workflows/codespell.yml": "f2f54f651541560d8516aee7b27778544a8d4d4f62a354b20dc2710eb8f039b2",
+    "chromium/third_party/expat/src/.github/workflows/coverage.yml": "df340edd1c77c692cd3ff871469f8bc1682129a747ff8e6d70e8fb1c40ea90ce",
+    "chromium/third_party/expat/src/.github/workflows/coverity-scan.yml": "f8dfcc5654af9f1cbd7b753abff907243ba752b54f87f8d577fbfb94bbea6129",
+    "chromium/third_party/expat/src/.github/workflows/cppcheck.yml": "585ccd7ee3f1cb2cd9ab5333ece1bfe4014592a7d29b0bb0c83a945cf8084a8c",
+    "chromium/third_party/expat/src/.github/workflows/emscripten.yml": "88daae106387126785d0095540b3ecde199bc6954f5abb6aa5f0b44b075192f8",
+    "chromium/third_party/expat/src/.github/workflows/expat_config_h.yml": "444d4c9c1bc837f3ecb2cf0f30ac1153d75f4cbafb8eeaf692ddc1643c82ecf0",
+    "chromium/third_party/expat/src/.github/workflows/fil-c.yml": "61ae7b92fe9a28734e5253d1246b7cf82be3f4d0d688bb13bb40a76f99b5f578",
+    "chromium/third_party/expat/src/.github/workflows/freebsd.yml": "3c28806cfcf3f5e7a76471f4b563d55fa00f2c02954befc527450cc8b6c01956",
+    "chromium/third_party/expat/src/.github/workflows/fuzzing.yml": "a1164566f3c491ff0c765f9b093413682e7d5add256d3f54ff990a8705de5366",
+    "chromium/third_party/expat/src/.github/workflows/linux.yml": "facad03ebb854f2f782d9defae4518e46397bd9f658cea04a169747ed77f4065",
+    "chromium/third_party/expat/src/.github/workflows/macos.yml": "40f2bebccff5ff3e4b456c37b0681ce4d46fdbfc008a2902df536aa7461f89f4",
+    "chromium/third_party/expat/src/.github/workflows/mingw-clang.yml": "cb5598fa5f2f74472c1fb711ab0621cab355a696d99b5385ef84348eb5422b04",
+    "chromium/third_party/expat/src/.github/workflows/musl.yml": "34357072d99e26bb389822bcaf2baf316e18aee3f465a8d0d4255b1e5261fa9a",
+    "chromium/third_party/expat/src/.github/workflows/perl-integration.yml": "17a518fdb47f5817898aa09a8dc24481b698c2264b7e212ea16865d32f2b27af",
+    "chromium/third_party/expat/src/.github/workflows/qemu.yml": "4c2acc68c135eeb272b5a730f178998d467a774584ccf362d9af707145da647b",
+    "chromium/third_party/expat/src/.github/workflows/scripts/check_for_missing_config_header_includes.sh": "140a460c26d4681e32a4d615416e49dd780505461c6658e2dca6bb203758ca12",
+    "chromium/third_party/expat/src/.github/workflows/solaris.yml": "61ce9a600af1bdbf0e59a2d8962862894ce5a830f1fb40f9e9d649d0f6013364",
+    "chromium/third_party/expat/src/.github/workflows/valid-xml.yml": "acb0c293db9ebbb63c90892fa2673e1cf4d282a2640b08e419767a88436eb0b0",
+    "chromium/third_party/expat/src/.github/workflows/wasi_sdk.yml": "56ed0aa1836df54e0d6c840cf00d9eab2bd0423ac433f77e4f3e8bf670fc2f60",
+    "chromium/third_party/expat/src/.github/workflows/windows-binaries.yml": "1a54f5ed19329d737e8381099213d7e8dc533181a9ccb795a1f469241312c255",
+    "chromium/third_party/expat/src/.github/workflows/windows-build.yml": "f0ba17c8ccebabe4f19e30c3531467a932297a417f89f6884c2c9e9a96b034ea",
+    "chromium/third_party/expat/src/.github/workflows/zizmor.yml": "fe558a10461dc372880c4617aeb3529c63e1126054bf1a2f0435206b0a5f6534",
+    "chromium/third_party/expat/src/.gitignore": "8b7e8d7ba5bde98574fa3ca561faddc31324df976c883721b762f64f5c02e481",
+    "chromium/third_party/expat/src/.mailmap": "0589457531b488a7804ab9850c2199d7b72e8f0752050ccef6450aa92b0786ce",
+    "chromium/third_party/expat/src/expat/CMake.README": "db8f863ebe588b8af6f322d21c7e33adf4f8ddc0b00cd42bece1bdb90580641b",
+    "chromium/third_party/expat/src/expat/CMakeLists.txt": "391dad264d5332998f9222925a900bfb6ac3dbf0144125bf5b8b2396de9170f0",
+    "chromium/third_party/expat/src/expat/Changes": "d524be92cf55121cb6cb7bc13625f0498f1d31b4990fb52c93a574edbb372939",
+    "chromium/third_party/expat/src/expat/ConfigureChecks.cmake": "bded6ccff89d4c66249116cb5c8fff3f28fb96e07663b43dea4f10f65ccf79c1",
+    "chromium/third_party/expat/src/expat/Makefile.am": "df5ebc4f628eaeef70e0c1ca9e1cdcba89ca54913702d4cd5ec311f0523f7162",
+    "chromium/third_party/expat/src/expat/README.md": "bce315e3b4c90a34ac4c4a4d8f34874c9d9abdd5b36ff12d1f264e01df7ca5ad",
+    "chromium/third_party/expat/src/expat/apply-htmltidy.sh": "4ae707b0f957fbea69b9e5745dd88f13c75eef75192ed43e8c9f809971dba1d4",
+    "chromium/third_party/expat/src/expat/cmake/autotools/expat__macos.cmake.in": "55d2201e6979677d353e081b1e8aba91ef50c78557c9c1b1053427bdd1d0428a",
+    "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win32.cmake": "0ebef88ce46dbbf571dc71987c9db908cb3a64dae184e09c12470511f0c6a1d0",
+    "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win64.cmake": "383dc6ad6b58909c4626d988cc7dab59c148f9c8f417e6ce947b735edea2ec24",
+    "chromium/third_party/expat/src/expat/configure.ac": "92d0a64c5913f8170c054574b1209153ed2cf865913f2bbc2145c29594365e26",
+    "chromium/third_party/expat/src/expat/coverage.sh": "5d6473cdf05e9b638926b480a4a4f694b6dbe54ca3c646071707d7b67bf7b849",
+    "chromium/third_party/expat/src/expat/distribute.sh": "9ce0cf11c96cfbca50e9ea55fa326578da489f61e9ebeb7e737c60f9760424c5",
+    "chromium/third_party/expat/src/expat/doc/reference.html": "76351001baeab4877654e354bcd0834c2cf0e619b344c30d91a6bc7f5612b176",
+    "chromium/third_party/expat/src/expat/doc/xmlwf.xml": "f0094f6c1b165ff8e5684ec7e615397899af4c72527b29dc2318dcfea50aba57",
+    "chromium/third_party/expat/src/expat/examples/element_declarations.c": "c4194cb7eadfa7de68baf7d768a8947f05f270dbc0b9c7778b32019036d3e66e",
+    "chromium/third_party/expat/src/expat/examples/elements.c": "87b28863e1c4539694b103d996365d95cc44238d1a9fb9b2cc193a99b722460c",
+    "chromium/third_party/expat/src/expat/examples/outline.c": "701b4dbe8906a3f7b861bea7116c82bf5b7ade0006f467da541f519e9f390469",
+    "chromium/third_party/expat/src/expat/fix-xmltest-log.sh": "07abceb2d1a9c0fb54ec0a11da2019cc4e9c031c5fa66aba0e8c6821f03199f6",
+    "chromium/third_party/expat/src/expat/fuzz/xml_lpm_fuzzer.cpp": "19485c699d499d70847b9399c132ed5d0423f757af78e9a27a9c1351a5105716",
+    "chromium/third_party/expat/src/expat/fuzz/xml_parse_fuzzer.c": "ed77751395f9891b9788a767ca2b23f467e512698aa4dd06216eb6c32186581e",
+    "chromium/third_party/expat/src/expat/fuzz/xml_parsebuffer_fuzzer.c": "7d0825ca0a9b0e80759de7f52a19ceac8fe78bc44997e2f7614fdef524556e98",
+    "chromium/third_party/expat/src/expat/lib/Makefile.am": "f0a9b25eee893830ec487ac29bec3cd96a673ddeb7e11f0a2417c9a386cf90e1",
+    "chromium/third_party/expat/src/expat/lib/ascii.h": "5ce49460794894b78f97060f634c129d13f2e9cc9b8dacd829f4be2dbc6e0649",
+    "chromium/third_party/expat/src/expat/lib/asciitab.h": "5792cb56f285c8876b988d875a70d49019bc7e6d5ebcd0f8224b24e695301832",
+    "chromium/third_party/expat/src/expat/lib/expat.h": "17cd1fc3b4c61d00de96091ceed0a3721d5bac9755c6d04e89d9f8a79d037c12",
+    "chromium/third_party/expat/src/expat/lib/expat_external.h": "2249eae72c6bc9021b7110267507cca98ff6a269fb8b5af5bcb508858e83bfc1",
+    "chromium/third_party/expat/src/expat/lib/fallthrough.h": "5e42477487bca7e7caac6b832ab940f39a1a20b8765c945374e4f6c2670f55b6",
+    "chromium/third_party/expat/src/expat/lib/hash_table.h": "ad93851f86df1f4e8f85488dbac53cab3539e59d701ad747c7beea354d69e0dc",
+    "chromium/third_party/expat/src/expat/lib/iasciitab.h": "a9cd6f2cf5199ae3c29d22ee4913736fcd984f62132146a0352c88549700e83f",
+    "chromium/third_party/expat/src/expat/lib/internal.h": "0123d00963768b5779544cc54dcccad311824b192a38d3489c4fb1fbbfa33b17",
+    "chromium/third_party/expat/src/expat/lib/latin1tab.h": "b0daf8a75c690e895421f765ddb2ae2fbc1ba14694e06a3215dba84f1ff3427d",
+    "chromium/third_party/expat/src/expat/lib/libexpat.def.cmake": "3be6f98774580420c8563a9aee487ecf13b35f418144c3659fcce5d877199bb5",
+    "chromium/third_party/expat/src/expat/lib/memory_sanitizer.h": "377ca054fdc531360f42a5cb7c522bcbf88b6c67aebc2e29544c37d14e836bde",
+    "chromium/third_party/expat/src/expat/lib/nametab.h": "8f78e64f11e2b23df8b32cb5528cfeda6215acd6abf6bcf1ad59fdc7b1ffd105",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random.c": "33b936335d0bbe1bb36b0da65d82e2d656fef9cf2e49660101c74a3f4f9d5c37",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random.h": "dd1a23b22604b61e1942e9fccdefe4d876cdf55477cd2e61904e50af162c15bf",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.c": "e9a72469deea3c7faed0fd45e3ac7d81e8ce4e63b52ef7bb647baf71f3d0fd78",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.h": "fccc4650a76f0b4df0b1123abeb248087a22d4eba9acbd1188cd44e21de4377b",
+    "chromium/third_party/expat/src/expat/lib/random_dev_urandom.c": "4d2a204c94285b0c459397619acfca5a8f5d690fbd8f419ac45879074e6afebd",
+    "chromium/third_party/expat/src/expat/lib/random_dev_urandom.h": "65a0bf3666927824029dd52dc4b6af3218719999ab9f45db8d8406645960f5ab",
+    "chromium/third_party/expat/src/expat/lib/random_getentropy.c": "ba99df7b694ff0b62d2871cc13b87e75d1a715af6045102ee7aff120ec1ae332",
+    "chromium/third_party/expat/src/expat/lib/random_getentropy.h": "8a122afb95decf1fcf960cf92004d0305d7c9154f84c1ac739e67ef554e02e59",
+    "chromium/third_party/expat/src/expat/lib/random_getrandom.c": "7d813973f1b021bd6576820180df180d3b07e5c47072ce083b7cb2029bcaed6d",
+    "chromium/third_party/expat/src/expat/lib/random_getrandom.h": "06738fafa3ec5b0148a699efeaa55aa80b8956b78a95bf5f78fcd9e0be998c48",
+    "chromium/third_party/expat/src/expat/lib/random_rand_s.c": "39ae3d8d337517ae2db5935a501cc9d6f55cc12e8ba552c03ea78eda6bdc2200",
+    "chromium/third_party/expat/src/expat/lib/random_rand_s.h": "941134a3796e544bf44c428cd1e1553506c9f344a5c0c4479a8a819745a0c0ff",
+    "chromium/third_party/expat/src/expat/lib/siphash.h": "12ecc9915bccb793ea8bb543cc7d002e226f4e4d6b97ec9839dca41cbe4e2e27",
+    "chromium/third_party/expat/src/expat/lib/utf8tab.h": "3fa349a3a19143366e80a58d9aa950152ef9cd7903f557f971051410b47f335c",
+    "chromium/third_party/expat/src/expat/lib/winconfig.h": "0ab6446eb98abc492ae341ef7607b535e44dedf52633fdc7c6e1a1361aec3922",
+    "chromium/third_party/expat/src/expat/lib/xcsinc.c": "1210979a688301412f46e058d0497fa3c1c63c296c2e015834cda0f0b314875d",
+    "chromium/third_party/expat/src/expat/lib/xmlparse.c": "73e23fc6220bc12f13eda7022444f6d4d1027aaf025cc7e8d4284c3c297d37d7",
+    "chromium/third_party/expat/src/expat/lib/xmlrole.c": "b1ad87cc3c0d4722358a7dfb1642df7f62066d1613a0a56dc9289e7112fb3f0c",
+    "chromium/third_party/expat/src/expat/lib/xmlrole.h": "8a0b61cd6efcd7427acbc86759e9013e7a61755097a1f82cbb2a79c011af5ee5",
+    "chromium/third_party/expat/src/expat/lib/xmltok.c": "47ffd58f56f61284fd84cecd94ddad4c79cde922f57994c1525f8df1eb9272eb",
+    "chromium/third_party/expat/src/expat/lib/xmltok.h": "623dea24bc27712e2e205a0c0517c79e211234f8d1051fe46d780839f754cf9e",
+    "chromium/third_party/expat/src/expat/lib/xmltok_impl.c": "4dcd7ae88dd90bbc89d0e41ba6affb46a107ee28df3b49cb84cdf228b7cc7981",
+    "chromium/third_party/expat/src/expat/lib/xmltok_impl.h": "a5053c69219d12788088de9bd670537e1c784302766c331afe6b253460d0417d",
+    "chromium/third_party/expat/src/expat/lib/xmltok_ns.c": "ea723a3470d3eed5c4a4e873bec2f996c605326fad25709b45452664261c5465",
+    "chromium/third_party/expat/src/expat/qa.sh": "badb4b26d052dfc9580809cb8b43b456bd96cd393b97420d994806b07bd6c4c6",
+    "chromium/third_party/expat/src/expat/win32/expat.iss": "60936b7e0e302d9a81a438bbea1d575ac996d07c2a98f38a2d16e28fc2a674ec",
+    "chromium/third_party/expat/src/expat/xmlwf/codepage.c": "1a2f9785862feaa7bc96602a66f818c9026494a7998e710e716ef0936f33feea",
+    "chromium/third_party/expat/src/expat/xmlwf/codepage.h": "d97800c0fb370665cd4c122597232aa6d9f427fd1fce93e095ee48f91216ced6",
+    "chromium/third_party/expat/src/expat/xmlwf/ct.c": "14666beb38dc8b35b8efe376fd4bf81fe418c2098b6670580bfdede3820cffc9",
+    "chromium/third_party/expat/src/expat/xmlwf/filemap.h": "be0b64c4da62c9cb299ac30f213a45cba03c7e02b85e02f142a6c9ce3f9823f7",
+    "chromium/third_party/expat/src/expat/xmlwf/readfilemap.c": "b5aa1bdd2a7d9e68ccb8d524fef0b6953d1875f202d8a97ddd8dc2faba81f3e4",
+    "chromium/third_party/expat/src/expat/xmlwf/unixfilemap.c": "ee32d5f3f34be7ebc474fd143816239de2286a428a1f237e016f6529f9937b5a",
+    "chromium/third_party/expat/src/expat/xmlwf/win32filemap.c": "7b578506af82cac899891037593355f437900627177e8c40045e26e9f16f1340",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlfile.c": "3c358d0735b262ecf1ab07d22ea160b8f0b1746a6a01b866092e80259c12b9a1",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlfile.h": "8140b905f2a9868a16711a018602874c5a1289bee2b55cd2f301ad466763dbd2",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlmime.c": "5061a6442db55bb85153040ebae2ed0e132ad3be67804ebf713c285c7c3c576d",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlmime.h": "01515428e8af51f0a9c93856a68c883728d8b02ba2f9659ced71514f945b000b",
+    "chromium/third_party/expat/src/expat/xmlwf/xmltchar.h": "3ca28b7ff0f149de1e022ce4031aed1092a8981cc86e62e45131fa1b04964755",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf.c": "01c4a19e804272702e569ad2ae40f76b29895a7c68672fc79c82608054bc5b14",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.py": "7ed57832aa08952eee34c8af67f5ffa428bf7bc08c6d2ebbe192840613085c01",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.sh": "8abc9b59ccd8f072de24556c016e095ec2ed9f5c1f86fc00d5d33c41d90115a5",
+    "chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c": "c797f51d4d743e3bf979d8d3dbef6788cd13c0ffff7fabdd0d0a96c7a9dbc4b2",
+    "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.cpp": "4af7bd6635619b97b1cf11346b37501ada9b52048056f93f67a4f2feb925da85",
+    "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.h": "1300fe1cec511eeb2bcb5136ad367cda0dfc48a22f782929e534cc4b73070e54",
+    "chromium/third_party/pdfium/fxjs/cjs_app.cpp": "377707160f433106148a47958245a78057c1d72096adcfb6e0ea4e005bc85430",
+    "chromium/third_party/pdfium/fxjs/cjs_runtime.cpp": "140c317f12bd727eacdba571fb718c2791f905d8ed1bfbc78a83ef37085a21ba",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/README.pdfium": "84b075b8b33ec258adc273b2db0402d66c4a30fc77878e03227812ca6c047bc2",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/image.c": "afa33bcf1a6d0692ba0bb47fb569cbf749098f240f43be4efe44bc4e5687dd7f",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/image.h": "7b7a1d0358975f7658a86551e8cd527e018ee24d7876f7e7fd22f8bd46bb8484",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/j2k.c": "6f47b9b1051ae2b66aaee1c5ff139d760fa48e18b974783c0163611807ba1abd",
+    "chromium/third_party/skia/src/core/SkImageFilter.cpp": "8cf3959cca3290dc4b54cd623ec8b1c93d08f532d1e115b8b2c7d19365e54c5c",
+    "chromium/third_party/skia/src/core/SkImageFilterCache.h": "1ea4ee800d775911a9a1274ec918865e247903510822453044d8807258bd8067",
+    "chromium/third_party/skia/src/core/SkImageFilter_Base.h": "1fd1c2d127a7c948cc571d7c6d7e30379e34b951a8e50dea296e0f3d3730f64b",
+    "chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp": "e91ad3f8a13648b476a080e16c54c5125c6af64b2920ff43296dce02feb2e385",
+    "chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp": "d4d9b73bfef04f791c274ec3d03963a552947b072514519b7def76c7b397b350",
+    "chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp": "64205aa5a13b6e32e1e1d8df01afb61aff09c1d3cb509ab9e5e92473b7c6c2ff",
+    "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp": "3535c04a6816d8baa38ef823e9e0510a52243bd167493f563d493defd93e7b0a",
+    "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h": "e1589638de2d2c163f47fa47dfdad2b3318a0b663e11784ad5a46d8d39414d29",
+    "chromium/third_party/webrtc/modules/rtp_rtcp/BUILD.gn": "4d885b94473bdfc8aeee6eeb2c8adb3e9b01eb9b070a41b3bff964910eeb4c96",
+    "chromium/third_party/webrtc/modules/rtp_rtcp/source/forward_error_correction.cc": "c459afacf23e47663d6abe144c09ca023fe640f9563a28008dffa152b09fce27",
+    "chromium/ui/accessibility/ax_location_and_scroll_updates.cc": "a8d68285411c053f1909876ae96c0b2a1ac8c0a4fc36737911a9484a6c9c191e",
+    "chromium/ui/accessibility/ax_location_and_scroll_updates.h": "c1501f15bcb4bc61081c8bce5edf38682e4971428f54ffe70f067386d5fd4159",
+    "chromium/ui/accessibility/ax_node_data.cc": "1b02876ece4c20df2ccb532f2c3550943c05163f8333f8b7b5b041da60ed9a0b",
+    "chromium/ui/accessibility/ax_node_data.h": "4374ab68f50d49eb202a05fd4e7ad2be32d557c29510791480d31a696f093918",
+    "chromium/ui/accessibility/ax_tree_update.cc": "9bddec4f9f1a2dc9b3e37a610920c3b283842c32f983125fb2e831c5a41eb7b9",
+    "chromium/ui/accessibility/ax_tree_update.h": "a7bed455736c3a5bb6cf98a7df40469cbcdb609aae90faa80333977a33ada1d1",
+    "chromium/ui/accessibility/ax_updates_and_events.cc": "d5fe318c357adb0d34332eef16884e193326565c6570aa2ad3e33a461d4f5df9",
+    "chromium/ui/accessibility/ax_updates_and_events.h": "aa7648e10b8e6067f2ad26222088a702273577f90e83e2a0253008e68fffa0c0",
+    "chromium/v8/src/execution/frames.cc": "aa10b4475a2dd5c73b7fac89a6513bf9392676081a13443fec6b716df29cc551",
+    "chromium/v8/src/ic/ic.cc": "d1aabc943d8712747e9d21a8a107da34ca25b4e025b7d98e5e6ca7557dfba8ad",
+    "chromium/v8/src/objects/script-inl.h": "055d2c16b13c79064f6cbc8189722b8a62631399a9e9c99edc1b92183a206b45",
+    "chromium/v8/src/objects/script.cc": "69eda1f66cf2863a4ffa207ddbb1ce008e257c002040d4402c4ec099315097c2",
+    "chromium/v8/src/objects/script.h": "528aa501bd7064300ce2669a22751dce51384b018597122feb5bbd42f07abf17",
+    "chromium/v8/src/objects/script.tq": "019886ea87a6b25edd16aff7e6cf4ee001a4fa68444b0347aa8141c4e2367550",
+    "chromium/v8/src/parsing/parse-info.cc": "dc7be95537d2c6d368629251705bd0c0fa5a218df2cff342c1663183aad8bd6b",
+    "chromium/v8/src/parsing/parser.cc": "c24b168c201d0beefe7e19bda6b7eb720d5b5032ab0ccfc66a7bd1cc07e3506a",
+    "chromium/v8/test/mjsunit/regress/regress-566091009.js": "bd3a59a6ed7bcd36ded202d8594a83a033863776c1daee6870f53f0d165c7926",
+    "chromium/base/metrics/persistent_memory_allocator.cc": "463c74f65b1008575aba04a76417915bd06c42d1508e8d20665e6ccd266edc75",
+    "chromium/components/metrics/persistent_system_profile.cc": "b5319949e5d9ab1af9c3f3ec954d92c838e493bcc846845b50149b26f6ae4e96",
+    "chromium/content/browser/cache_storage/cache_storage.cc": "e3a74733ef9c9dd2ae36bb9b623b5e3c26f059c3b05242bfc3a5ccd83cb3dd36",
+    "chromium/content/browser/cache_storage/cache_storage.proto": "8ec78e14ed675c54afc88eb214d532be171fe07c092fc952b71d66704602abeb",
+    "chromium/content/browser/cache_storage/cache_storage_cache.cc": "dbe8c6872e791b5687e3169b9ca6351561779111f8cf263dd61b768bec024fb1",
+    "chromium/content/browser/cache_storage/cache_storage_cache_unittest.cc": "2f6db72844ae5502b92ba1f513de9c68eeb7da629b84c2748b045d42371a58b0",
+    "chromium/content/browser/cache_storage/cache_storage_manager_unittest.cc": "d83a221ea1e6634ed5afc225fb014600fda58e3c8a7bb1b43bc9e6cb23620e7f",
+    "chromium/media/filters/hls_data_source_provider.h": "7fa8b521e838c277788aa883e1a424c8438dd07695f5011156c3c706cea1f783",
+    "chromium/media/filters/hls_data_source_provider_impl.cc": "d2d52750c12a2d1751abb08e33ce5512f124bc93290e8fd3a59dbc5327a45fcf",
+    "chromium/media/filters/hls_demuxer_status.h": "e156b69b72a57f7ce0f5f150da3738c72717262a4294adf754e639048b480a6c",
+    "chromium/media/filters/hls_manifest_demuxer_engine.cc": "6c70a11e452591177ede6614389f1fee5bc5eed33467416e552497b0a6715ac5",
+    "chromium/media/filters/hls_manifest_demuxer_engine.h": "c0bbba85a862f6a632c4a4267c9784fc63cd3da4931c49eb4df3ebaf8ef6c490",
+    "chromium/media/filters/hls_network_access_impl.cc": "e76bada341f53ed8331b1956bf8b9b2d1e38e3ccf8e23bcda7655e12c4f5bdbc",
+    "chromium/media/filters/hls_rendition_impl.cc": "6bda7d587538222bbf37af210821b625a7778400eeba37d4558c47ceb2555879",
+    "chromium/net/http/http_cache_transaction.cc": "87133ec2b3f944feba4a9cff371fa79132d5f537ec44c38562bb6fb29d797c85",
+    "chromium/net/http/http_cache_unittest.cc": "2531c140dccdfa67e0f6e2133caaba4712e89f6730cb113139fe04d11e351bc1",
+    "chromium/net/http/http_cache_writers.cc": "6a0fea391c9b547aed531b6af656fa7d94c1846201e319a99b14024298e7d45d",
+    "chromium/net/http/http_cache_writers.h": "9ce20e67204cbb80b5815f6c50a9544594f54b85ef02ed1d0b438cc7fd6d746c",
+    "chromium/net/http/partial_data.cc": "d98b6c693fef5914a745c00a9c28c389b9ca9ff8f8f665af7a411913175bd382",
+    "chromium/net/http/partial_data.h": "8b6c60d4b3f0b228508dba8bd9007c24ad59d31232b967373ca637676059291a",
+    "chromium/storage/browser/quota/quota_database.cc": "360fa00780ecae028198e2da0730eed412df4af76228224a05bb05affe618de8",
+    "chromium/storage/browser/quota/quota_database.h": "ac564c754388d30552e1c61b06cae60fe856699b86b80e1e323837fdfb6c77f8",
+    "chromium/storage/browser/quota/quota_database_unittest.cc": "2355322bb85e241354d3c42139b7b5e2934da46e59b8c65316dfeedbaaedcda3",
+    "chromium/storage/browser/quota/storage_directory.cc": "a6dd3f8e3c4c874ef11780b279c7832a004099e0fae653bc132523127bf75ceb",
+    "chromium/storage/browser/quota/storage_directory_unittest.cc": "050f94526cb8a1aa4846e9cdaec92789fb0d1aeb424f7f7067672afd751a75c9",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm": "6bdff79b6def25bf1c6c82c60e80db3b3c2c99bcdb7aeac791056e89d237da12",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h": "935ae8cc3bdd1ac6256565d8427f9b085b3ef924d6d8f6572ee2e60b37943025",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm": "d5e0e5205fe1d745483f8c87fc47d75928f7c3f7158661534516ddb4fbd7c3ff",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm": "274a8109afe83ecb20b47a721233bb3e590f0b7da6431b307caddd852e5c65e0",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h": "1699b62e30a7e002e249c0547886b04fdfe0717abf43fc39923185eaf5ac4c39",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm": "654699e33d1b06b8050eddf66f94a9163a86af29b9c890474e94c0890d788863",
+    "chromium/third_party/blink/renderer/core/dom/element.cc": "fde5545ebc96bb955da554b99b5bf3ce287cc88524f3bb4582e4d8a66d640744",
+    "chromium/third_party/blink/renderer/core/events/focus_event.cc": "b8bcb7290eff28f239d7baf28fc516fce46d22a2246829594026479ce6a28fb7",
+    "chromium/third_party/blink/renderer/core/events/mouse_event.cc": "e2638fdb88a5e586aa2802e92b7c9a5e05154cb342214ba902b64bcc70e58140",
+    "chromium/third_party/blink/renderer/core/events/mouse_event.h": "f69697b121fce777bb6a12e0c5ef7ffd993b6ebef16f15e2826316e1db6dc189",
+    "chromium/third_party/blink/renderer/core/events/pointer_event.cc": "39936efccbb782d94f66c78d527e2a40195c4dec8bfbd7eba4c70b78cfca5707",
+    "chromium/third_party/blink/renderer/core/events/ui_event.cc": "3582ce3aaf01e79331dce4077566b807014a38812a021a5f4200af238d241dc9",
+    "chromium/third_party/blink/renderer/core/events/ui_event.h": "bac8ceaf148278f7b234f65070539c789143e3624a8773b024fec5158c695cca",
+    "chromium/third_party/blink/renderer/core/execution_context/execution_context.cc": "6a68442c1e300a43e17d72c7dbba63a29fce49c6c962625042022d8be85cf44d",
+    "chromium/third_party/blink/renderer/core/execution_context/execution_context.h": "536ff1ea7bde44a0c81028222bb2d0156e37975fd13c845ab1cbf4cfeef46beb",
+    "chromium/third_party/blink/renderer/core/frame/fullscreen_controller.cc": "7d616272c9dd349d37566d1179ff9780a045f5af295b93180346583885e1b6d3",
+    "chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc": "a4cce849615b2a59258796b91f79738dccf63974345c43071dae00e58a6d66db",
+    "chromium/third_party/blink/renderer/core/highlight/highlight_registry_test.cc": "aea3ad34abcb24b445aacb805dea3a86a9a8bb68327d9edccea2370537021a05",
+    "chromium/third_party/blink/renderer/core/html/lazy_load_image_observer.cc": "5cd99711807fcdab4d2475cd91ea63cc5d8d0f1749766cbc1e88623a27b97821",
+    "chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc": "1c080369476e94b3637629f4495f3e75d9056b1170128af8f7837aac1a334a87",
+    "chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h": "1924789b08e0ff29fa488dc705988e8a87570fc56277b048080d59136ad34ec2",
+    "chromium/third_party/blink/renderer/core/page/page.cc": "a52956b0007d5e4fa7e90070cf1211a0850f54089ac96375e5b4971c28c059b6",
+    "chromium/third_party/blink/renderer/core/scheduler/dom_task_signal.cc": "e435f03ac15f0d414bbf2285ded9f6c0a2a112ea69e8d211bf8e5dfef4d20b1c",
+    "chromium/third_party/blink/renderer/platform/wtf/hash_table.h": "644b913c55f5acec757b7de143f5bae6fb0760e03f1726a9b966cbd2a4ae6bbc",
+    "chromium/third_party/blink/renderer/platform/wtf/linked_hash_set.h": "627bf7b4a1890a3ea760ca1415de75a7467b7c71cbfa03021076699ef7f0354f",
+    "chromium/third_party/blink/web_tests/external/wpt/html/dom/documents/dom-tree-accessors/nameditem-insertion-attr-mutation.html": "e6d064b4f0f8465abc01f2b94bc886896a51bf686099493c289bf16f5814a929",
+    "chromium/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html": "ac9eedc2c42aa072fb280630a976bfe5a1c7fef1b61ce89355475d9ac2c8b409",
+    "chromium/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_origin.html": "17bdd752f9fa4df3d9a7d65ce341294e9c2bb7170212127140d6acf156b3f4a2",
+    "chromium/third_party/blink/web_tests/external/wpt/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html": "ca8bfb3cb75613794748ac3d49e8bad02fa79903bd6d0b6431b87265d60b0be5",
+    "chromium/third_party/blink/web_tests/inspector-protocol/runtime/runtime-exception-thrown-nested-expected.txt": "c535a3d9eede6fbe75db07e296d096c562621e1bf7c41eeaa5791b431ae645d9",
+    "chromium/third_party/blink/web_tests/inspector-protocol/runtime/runtime-exception-thrown-nested.js": "a234ca87edf71e357488cc51e74367f5ab3d3054523d0e1976e4df76404077af",
+    "chromium/third_party/brotli/BUILD.gn": "30ea580878c52ecece3dd3fc1a230c25c64abd74b32f9d86cb52e9078e641301",
+    "chromium/third_party/brotli/OWNERS": "375fa9faad0e37c01782d60f84fbd7f2062b203514921a8055874e7211939a1f",
+    "chromium/third_party/brotli/README.chromium": "227ddaffa9d6c90b6fb33b7d141726cc655ee1ce82c1a8aa2c09717434850470",
+    "chromium/third_party/brotli/README.md": "e45155f191dab9d8999a85060a2ccb0cda94810868fcc816a0dae46d9aa04c97",
+    "chromium/third_party/brotli/common/constants.c": "630f40ca2ac787025175eaf39b9569a60aff6ddec7e5085197e4cb0d43641b0d",
+    "chromium/third_party/brotli/common/constants.h": "c9c898542360e811dc44aa9be270d21ce0d18f3ecf45310f3d9f285f3692a59e",
+    "chromium/third_party/brotli/common/context.c": "c9aa1acb35af38c90c4a38ba168885b649838236b2d57adb5e76d687bdbe252e",
+    "chromium/third_party/brotli/common/context.h": "2745ef910928a4acd58e1cb98128a0a228fa1812c61e69538c9d393d405bf047",
+    "chromium/third_party/brotli/common/dictionary.c": "0890056e4ae595efab6bbf3bf1fd244332e2cfad3adcb9f5793ee29a8f3a18c5",
+    "chromium/third_party/brotli/common/dictionary.h": "bfb4f010a2279c53a039ec6f095a12ab62c7d49ab138e385a16caf3904341b10",
+    "chromium/third_party/brotli/common/dictionary_inc.h": "55b98973df9dcb353bd78b2b573fb7338ab55d98fb5571ad93939095978768e8",
+    "chromium/third_party/brotli/common/platform.c": "fce95889e6b1d1a91c0baa2ee0f3b83a41b670a4f51a5053185ffbed6bde71fd",
+    "chromium/third_party/brotli/common/platform.h": "e7a9b84f71ffe037472729db11e81bee7092f4af5672b21d5bff20f454e84636",
+    "chromium/third_party/brotli/common/shared_dictionary.c": "0cf405b0155230e060b9e0855bb22379037362948828b98338f203be07923d0e",
+    "chromium/third_party/brotli/common/shared_dictionary_internal.h": "e9e343e5d4ddd0f87a9579aab6796dd82af08639abfda122e874a97e896c6b6a",
+    "chromium/third_party/brotli/common/static_init.h": "be55ce94cace1a6c9dd9460ae30a5b7942834fd8c1003ffdef56df0b35dbcfd7",
+    "chromium/third_party/brotli/common/transform.c": "47f229a79c3542ea57ec07145d7eaf77300a02816d95695332f9911ea19d6ab3",
+    "chromium/third_party/brotli/common/transform.h": "b79dd99d1dcc618c1a4284b74dd04adda099fc3f65f906924991a736e09c125c",
+    "chromium/third_party/brotli/common/version.h": "792d03d8feff8168edf639899f72b71a37e9cbd9f178e3be397ccef29d3346b0",
+    "chromium/third_party/brotli/dec/bit_reader.c": "6126ebebd3adbc96430c2b75ccaec02b188901f2a17960e6a4606470e71925ec",
+    "chromium/third_party/brotli/dec/bit_reader.h": "f23fbb82054c5e4405e2a262df9cf4c4756b3e0e476ac849c0dd8f741018d161",
+    "chromium/third_party/brotli/dec/decode.c": "d48bc54c60553238d50db2fcd606522efd447d33a37d6a2d5c2ea1ece22067c3",
+    "chromium/third_party/brotli/dec/huffman.c": "b7c973c2918c6765c4eb534c3ae314055d535b6d1fafb021cee5f7eae170aae6",
+    "chromium/third_party/brotli/dec/huffman.h": "09f3a1f7608b09df131342c9759f4a63c19b0e784bda5e474ec01eb72699079d",
+    "chromium/third_party/brotli/dec/prefix.c": "0a31304f440f7bb2017d52b83ae35cb428cbc5ac2fc172c8eec2fea449c2f7cd",
+    "chromium/third_party/brotli/dec/prefix.h": "fe1f3630f78a0ed3f79146a52d8e480c12d130ccfe9781f03d0edc581c3b9e83",
+    "chromium/third_party/brotli/dec/prefix_inc.h": "e1ade26b7b1e1e56b1a91af20ef93f81ef7a4ed83e0543fd6d9eb29f5c6d2983",
+    "chromium/third_party/brotli/dec/state.c": "66a7c3d9c01cda374d33d3693ba45d059ff00b12114a8844ee4f2519ba2af14e",
+    "chromium/third_party/brotli/dec/state.h": "8937c3799c177eacfaf3c0dba8da8c2558f435d6baffa2d787aec3212eaca041",
+    "chromium/third_party/brotli/dec/static_init.c": "a4a308e394fe05a124d919977b3f457a06363615a882dce058f329edcf7dc851",
+    "chromium/third_party/brotli/dec/static_init.h": "a4f13d0e5c770ad92fb2d6b8d4a8f93bfe70b1e97352306636a1119a6f44f270",
+    "chromium/third_party/brotli/enc/backward_references.c": "4c59bbd520d4a2cfce5c0971e90533fbc6d202af5d3ed50b451b13cc15f98e6f",
+    "chromium/third_party/brotli/enc/backward_references.h": "ab3af6c955add46840b8e920ae2daf5afb971b7c9ad05ad0720bdfc9aabc298b",
+    "chromium/third_party/brotli/enc/backward_references_hq.c": "6cfa50eaae8e0e56627c72d61c71c818dcae377bdb6f382abd74831fd0cc39b2",
+    "chromium/third_party/brotli/enc/backward_references_hq.h": "6ffa64b045c878600aa694f92b301cf6ff854e0e79959aeb9e124864789e210d",
+    "chromium/third_party/brotli/enc/bit_cost.c": "544c6af87753f9e540873c2b7984d73297a53576fc0b352b34121687be2f08e4",
+    "chromium/third_party/brotli/enc/bit_cost.h": "1336cd6c28117921ad0275a39188d17ee91eb96e8b6e362c940df488ab8068a1",
+    "chromium/third_party/brotli/enc/bit_cost_inc.h": "71a2c3736f0039df51ba6b38741356fdbd0792d4f1068adfdaecf0df84f04329",
+    "chromium/third_party/brotli/enc/block_splitter.c": "34699e570f752cf0bd2643cb8d6a6b17e79add6856bdaf0b6007927fe509c5b1",
+    "chromium/third_party/brotli/enc/block_splitter.h": "f43db7ef733e5c87dd1fe9cef2465e02dde91d0121efae74b2c1c357ed1db267",
+    "chromium/third_party/brotli/enc/block_splitter_inc.h": "4fd9d95ac3fc08992d6fe3d9cc7855a62417326046bb0666b8ad7196abd3c944",
+    "chromium/third_party/brotli/enc/brotli_bit_stream.c": "ea95e71753a6b1b651e5315013900c5d79eb074245be750d1afc3ec5a8b19982",
+    "chromium/third_party/brotli/enc/brotli_bit_stream.h": "747101dc514e7257e06c268bac2de9696fbb36ebc1a05787b67c6a2b52a7376e",
+    "chromium/third_party/brotli/enc/cluster.c": "23d58bc8b628c9d168f8911d9304d4964e0f992f68e6d62daefe7eb837b07cb4",
+    "chromium/third_party/brotli/enc/cluster.h": "fad2c4dea68fa93cfa61fe2234421163b15e0952446c583053a34a4b70b856bc",
+    "chromium/third_party/brotli/enc/command.c": "3f72daa062889ce5e662993095da5477f47815896867476b3f7b34d3a67fbd9d",
+    "chromium/third_party/brotli/enc/command.h": "2e64e8b9ff12ae9be4c711ad25534f9c93b0fbac82f5a843ac42cc0a8168e1fb",
+    "chromium/third_party/brotli/enc/compound_dictionary.c": "4046dd0040ad51d4a550a747e5c4643d7cf801de426698e7566e8e2fc0c1c9ae",
+    "chromium/third_party/brotli/enc/compound_dictionary.h": "8a1926225d68075c58259260470fe193115748df5419c27b816f86473426cdd5",
+    "chromium/third_party/brotli/enc/compress_fragment.c": "0e14cfce93c2a461a5d6be626e9ed30340bab980ccc76f502a23d2c112c7c94f",
+    "chromium/third_party/brotli/enc/compress_fragment.h": "3b91f1b14055d1908fcfd03bdc4a7fc52371233bb1c6ff28755f5248f5726a82",
+    "chromium/third_party/brotli/enc/compress_fragment_two_pass.c": "938fc18b7a5f1e41f360a167a31a7297920160f08bff92f04d97788c3d32bfd6",
+    "chromium/third_party/brotli/enc/compress_fragment_two_pass.h": "aae9785aa1003e14b3eeccc263c4e583c48871577a92bf0662de40763c7fb73e",
+    "chromium/third_party/brotli/enc/dictionary_hash.c": "1225337a2bad9cc08d72671757682ec90ab99388f00bfa73cd469a5e6e5e9778",
+    "chromium/third_party/brotli/enc/dictionary_hash.h": "a0b125ef70ac49b0d0006aa30a8d226d5f8d1756c82c3c0d50ce08e9ecf4f4a0",
+    "chromium/third_party/brotli/enc/dictionary_hash_inc.h": "6effa6998dbb024d12766b9240beb549a8ee50fd6fdadf4a61ec8899eb9ac4d4",
+    "chromium/third_party/brotli/enc/encode.c": "b2647d12cccc3d3852f80637b04b0c4d5849254db0f3496f2e11bcad29eecc32",
+    "chromium/third_party/brotli/enc/encoder_dict.c": "2c538ce0bf35bce2f05b270a2f165793661fc7a427d91f355c2722a3dd345b11",
+    "chromium/third_party/brotli/enc/encoder_dict.h": "e300e61e3b464c7e572bf1921547949e3cb0e87f24770ff611c75ef8459f398d",
+    "chromium/third_party/brotli/enc/entropy_encode.c": "ea15125ed036547e57553a56b04ac50eb91a48424ccc5cf29d13433419fa4723",
+    "chromium/third_party/brotli/enc/entropy_encode.h": "d916681f7aa9fe1ed3ec671be2d5b0687e0ac5c67f0f69dd781084746751899e",
+    "chromium/third_party/brotli/enc/entropy_encode_static.h": "ff27cd498408d797baa4cd6750b8282c4d70100b4c000346e2a888102451debf",
+    "chromium/third_party/brotli/enc/fast_log.c": "7e08232d781a8e4a92f59869a492b0a8982cb3e3c51b2d4be808f59f8643dc88",
+    "chromium/third_party/brotli/enc/fast_log.h": "74a76746f3eb2e673411d0563ff22a22575d0be4dcb29da0a5ee2039aed6df43",
+    "chromium/third_party/brotli/enc/find_match_length.h": "d03ef29e28f89b4b74124d0315e173014cbd724dcff4d3020a9b2aad0d8e60b7",
+    "chromium/third_party/brotli/enc/hash.h": "679da462004871e6bbee52649e29b4f7a5615dd9099d5f0b0e8e09ce8b5213f8",
+    "chromium/third_party/brotli/enc/hash_base.h": "e51ef6971fe4ab11a58eb524013999645b595779b4519dc6c10af4c333a48d9b",
+    "chromium/third_party/brotli/enc/hash_forgetful_chain_inc.h": "3dacf20306b199076c8cd244efd1e03e6623e378d3ea2a0ff05932628e76c407",
+    "chromium/third_party/brotli/enc/hash_longest_match64_inc.h": "fc3e40fc5bbb8e7bc31fb63ca46a390e80d269375ccbd86883c0da67c993f667",
+    "chromium/third_party/brotli/enc/hash_longest_match64_simd_inc.h": "2648f19083bacf378bc57bc15ab05274be879891cc0e2e4238f6c3c5401b13ae",
+    "chromium/third_party/brotli/enc/hash_longest_match_inc.h": "fbb64fc2765277c829bc846a20253c1622f163117ecc05c86c1428154fd64ade",
+    "chromium/third_party/brotli/enc/hash_longest_match_quickly_inc.h": "7c18eac6a53c13d8ed32d9e5824fe1d2e08234fe32ad09bddaaf2168d6e4f22b",
+    "chromium/third_party/brotli/enc/hash_longest_match_simd_inc.h": "012c4465103a797296629d8e5afb871b0cd61be74d325279c58b460efd5bb4cc",
+    "chromium/third_party/brotli/enc/histogram.c": "cf8cbd4310f9b41a718ca200bfd8f7c07159729e51a5aeda1f2f809a954260bf",
+    "chromium/third_party/brotli/enc/histogram.h": "12a8632ca3b98350bd9aa38a439a21bf63378bcd867ba43076a5bdebf0fb03b6",
+    "chromium/third_party/brotli/enc/literal_cost.c": "70b9efae900d89ba610087113bea9225debbae5db21825a9bad0051c1ea5451b",
+    "chromium/third_party/brotli/enc/literal_cost.h": "3504da473324e0d2be76c69b5e9d1ce7d97409ff5920bd3928a05c3de2a47009",
+    "chromium/third_party/brotli/enc/matching_tag_mask.h": "3106496cc6baa84f6dab86395002b2638ba64926de7858cd6943afd8b6c7d162",
+    "chromium/third_party/brotli/enc/memory.c": "a491c8110e9e68db26c10e008abfc69c07d6756f2b9c1f56611295aad7a817d2",
+    "chromium/third_party/brotli/enc/memory.h": "01ee4983c81f1b935841d4e2ebe2588cf590ea66dcce493b61c7430da8baaec5",
+    "chromium/third_party/brotli/enc/metablock.c": "8217f29edd2366110cb235e2e3e7e714ba89c256701bfd0b9bb001e83a7b9391",
+    "chromium/third_party/brotli/enc/metablock.h": "f200f4660b5c3670fdde8ed7300bcd7efefdb355e3132bd3b610e3b795061196",
+    "chromium/third_party/brotli/enc/metablock_inc.h": "e68583ed633b96aacfae43c4e7810ebebc09af4414cddc49506fcb2069cbe343",
+    "chromium/third_party/brotli/enc/params.h": "55f3508a6d8019192a43110b62d9284277e19b9d301cebe7bed27855952d1b25",
+    "chromium/third_party/brotli/enc/prefix.h": "706a1973c2229d03eb350dcc2e6909a94175eb8581a9f890d9bda45fcc0f544d",
+    "chromium/third_party/brotli/enc/quality.h": "b6dfb3e8433dfbb97693aa02f551870c7739e7645fcf6d9322631e02ea09c35d",
+    "chromium/third_party/brotli/enc/ringbuffer.h": "f67876b441464cd931fb7db0c84d05fc7ac570c47ca9872751ae9c7c7c4a2455",
+    "chromium/third_party/brotli/enc/state.h": "c7996820e3f166650e2fb9187c0f94a8a5e21bf353dbdd1c783f22e428904f9e",
+    "chromium/third_party/brotli/enc/static_dict.c": "9810eb7f9ab63a5720bb4a7fd089f3cbe787b10875129f1d1ed1021bc2416724",
+    "chromium/third_party/brotli/enc/static_dict.h": "4362117cf788185ead13cd181a0d7db437a05a2cdc619646f93ff3721d53ca3c",
+    "chromium/third_party/brotli/enc/static_dict_lut.c": "c06f693a31fe244858d0ec8268387657800ef42c768571be9e96fef26951d988",
+    "chromium/third_party/brotli/enc/static_dict_lut.h": "be10d9c9481e915424ea79e29c2e18f5dac9cb4e18a5fb07eeb7a7fb9b1637b2",
+    "chromium/third_party/brotli/enc/static_dict_lut_inc.h": "561574bed6ff61709e20a196b611825f239aa79cd1c54c96b96757162edcd3d4",
+    "chromium/third_party/brotli/enc/static_init.c": "c62f0f3c81ea6bd198e5dff2f804e78a94ac10bf78cf5c1dbb72b28ab5a0cddd",
+    "chromium/third_party/brotli/enc/static_init.h": "f853f6739633044ac6acc27e0ba074b315e230a4f99aac46a98b53880af24441",
+    "chromium/third_party/brotli/enc/static_init_lazy.cc": "4da8a10a27a032d9f347d989e8c271d5ac949091741543880ec7b4ced5e80696",
+    "chromium/third_party/brotli/enc/utf8_util.c": "15c394fe3284863e026511f8ba62dfe75148f286f59e2a8fd2f744bc00c8cda9",
+    "chromium/third_party/brotli/enc/utf8_util.h": "915db224b31b09c311f77776dc5c1a83c73101780349c653551493059212f795",
+    "chromium/third_party/brotli/enc/write_bits.h": "b2af9a0a4da30b47981cc63d29eefb27a85c86e257d7e2c120b7f6ac1efdb060",
+    "chromium/third_party/brotli/include/brotli/decode.h": "e2f5fdc3ae41e6b7e8986538e421ae79c095541bacf32f2bbfccf8e056405444",
+    "chromium/third_party/brotli/include/brotli/encode.h": "f1842e38da557efac517a35f1b27d288d464a723ef50316d3d20fe03f6046c06",
+    "chromium/third_party/brotli/include/brotli/port.h": "72b484d7a2561f3a9ad35ebd0d4f97f7a2d9863b619782ada5b083a4b6f40df5",
+    "chromium/third_party/brotli/include/brotli/shared_dictionary.h": "86230f0aaf533044d85d92f84b5aec8b7e4e231d4b64b098604083e7866e8097",
+    "chromium/third_party/brotli/include/brotli/types.h": "ebbd136dc411cc8167636d6f54b66ad0c234dc18989265c37a28c242eaae2efd",
+    "chromium/third_party/brotli/tools/brotli.c": "cb6c8ca6668d324d50cd085fc3ddb3f202afe34fb562b5b583c0d7b0cceccd0c",
+    "chromium/third_party/brotli/tools/brotli.md": "bcba808fa9fcf028d70e57b0f8ca6bde0fbd65e89620e0ca46447959fd51974d",
+    "chromium/third_party/skia/gn/sksl_tests.gni": "6c88fba9ec95f096f1088cfc7db15f2c0b9571caa0919a3bb3b682e8e743a929",
+    "chromium/third_party/skia/resources/sksl/BUILD.bazel": "cab8dbce9cd844ad089d054945bb1e6e2bf55277081fcc06d46c828638f2d8a3",
+    "chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl": "7de7f61be0b874b077f9b48e2a2e9c57d15fd360845b562687c0edad94c9af87",
+    "chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts": "404f5cf361433242ccc7a2bf63353b1411117ddd198b362982c716de95790a6f",
+    "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLCaps.cpp": "3eb0789a6b3fd53dcbb1455e066a6ad433ff71b393702d7d3678e95e952079dd",
+    "chromium/third_party/skia/src/sksl/SkSLParser.cpp": "687a842bc1300f66a8bd525e6bd6677087e599b83edfc281990d7d4c76db7661",
+    "chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp": "515b90915ee4ec8e74df277eb03270e4618904df332d91624860d81b90ede3a1",
+    "chromium/tools/metrics/histograms/enums.xml": "064f3930b9413eb16c090bbc76ba921ab19db0a10ee29ff4a87a18db9cda61db",
+    "chromium/v8/include/cppgc/heap-consistency.h": "96442dd6631f811b6b5ecbf22c6d06414517aaa3434f70a7692d22942984a31b",
+    "chromium/v8/src/compiler/turboshaft/pipelines.cc": "9f03933708488030908dc7d27b432e1ce805ac16b9ab7e7ece60b993c909eae7",
+    "chromium/v8/src/heap/cppgc/marker.h": "130d94bb15985faa25ed4a7a404db3b02e2a8a190cf1c14fa50782140830c514",
+    "chromium/v8/src/maglev/maglev-compiler.cc": "a5e43241873888762adcb55c9a2b2873b68eec92cd6eeda2bfdea9ea84ccaafd",
+    "chromium/v8/test/mjsunit/turboshaft/regress-574660146.js": "dca3b188041911a2f5190495ddad15ed221a8aa18d7c67de0e520970ceb18e21"
+  },
+  "patchDirectory": "vendor/qtwebengine-security/2026-10-30-vendor-followup",
+  "upstream": [
+    {
+      "commit": "d25137d496e6a0d23ca81b18f31b2cd3ea8957d4",
+      "name": "01-d25137d496e6a0d23ca81b18f31b2cd3ea8957d4.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/d25137d496e6a0d23ca81b18f31b2cd3ea8957d4.patch",
+      "sha256": "1689337372b00e5bfd9e805d4d105b82d02ef09a0acd7af54fee14301e2777fe",
+      "size": 4575
+    },
+    {
+      "commit": "bacbece0fe336d920a0300b4ee3f500ca5ba3d1f",
+      "name": "02-bacbece0fe336d920a0300b4ee3f500ca5ba3d1f.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/bacbece0fe336d920a0300b4ee3f500ca5ba3d1f.patch",
+      "sha256": "2c78e28699462423039654177b37994aeefde79f6c0bd732d3603d3c7d37d9ce",
+      "size": 7361
+    },
+    {
+      "commit": "1e049885b62ce071198c024a7288cdd0447ed323",
+      "name": "03-1e049885b62ce071198c024a7288cdd0447ed323.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/1e049885b62ce071198c024a7288cdd0447ed323.patch",
+      "sha256": "41116644fec92576f46698983ea8473f983e288d45543f3eb57c69cfd18015ef",
+      "size": 7445
+    },
+    {
+      "commit": "bcf1f349e39ee0dce3f2e1c9816129983ca51773",
+      "name": "04-bcf1f349e39ee0dce3f2e1c9816129983ca51773.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/bcf1f349e39ee0dce3f2e1c9816129983ca51773.patch",
+      "sha256": "077da29be336ec7bef7faf681b8d0e589525aa952a74db4751bfaed867b12eab",
+      "size": 2235
+    },
+    {
+      "commit": "c74d9c01341da5f9eddc0a1432dfbd8f8b1190f9",
+      "name": "05-c74d9c01341da5f9eddc0a1432dfbd8f8b1190f9.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/c74d9c01341da5f9eddc0a1432dfbd8f8b1190f9.patch",
+      "sha256": "17985c64f7dd096f4037d42ad7c8be55bbad0343f2a04ec547a75d6fd05047a3",
+      "size": 2932
+    },
+    {
+      "commit": "50be714f06fa3546bb28361253e56d8b42896b27",
+      "name": "06-50be714f06fa3546bb28361253e56d8b42896b27.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/50be714f06fa3546bb28361253e56d8b42896b27.patch",
+      "sha256": "3fe2f13aefa1ef293cb3c9efd48c9384b00f0850045e7fbffb35cf8b06286ce1",
+      "size": 18640
+    },
+    {
+      "commit": "b13533748bcd7ad942ab7eab5300a48091be6c98",
+      "name": "07-b13533748bcd7ad942ab7eab5300a48091be6c98.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/b13533748bcd7ad942ab7eab5300a48091be6c98.patch",
+      "sha256": "79dc4f1049cda2d0adb4b5a0816e90f62c210e1573f33ea2d5b53769931644ed",
+      "size": 11499
+    },
+    {
+      "commit": "29e2ea9eb6e6eda1254d79933118760d2b2f9790",
+      "name": "08-29e2ea9eb6e6eda1254d79933118760d2b2f9790.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/29e2ea9eb6e6eda1254d79933118760d2b2f9790.patch",
+      "sha256": "3e075d5a14c4812f83e9948bac7d794dc5519d698cea8620b7e222f0df6394e2",
+      "size": 30509
+    },
+    {
+      "commit": "06b6a67618618edc192a8fe4de566f61fce58103",
+      "name": "09-06b6a67618618edc192a8fe4de566f61fce58103.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/06b6a67618618edc192a8fe4de566f61fce58103.patch",
+      "sha256": "5aa0a14b1fdd4953c338e01ce7014d25449c8a96c58822d2f83e21b9a423ff50",
+      "size": 34415
+    },
+    {
+      "commit": "143c8166f966f54c69c27fad9e6261b0c5b02b10",
+      "name": "10-143c8166f966f54c69c27fad9e6261b0c5b02b10.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/143c8166f966f54c69c27fad9e6261b0c5b02b10.patch",
+      "sha256": "27f9fcbdb20be4d1cc41dd5fc7f2f6d09b483b186f55d50a34912a8b30768f40",
+      "size": 11383
+    },
+    {
+      "commit": "f188096f048c5cbddd052b59745627e59dd249c5",
+      "name": "11-f188096f048c5cbddd052b59745627e59dd249c5.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/f188096f048c5cbddd052b59745627e59dd249c5.patch",
+      "sha256": "7757bab2e3e751ab455e1424229a47a9f38e42b7f7002e135af0f7a08e98cbec",
+      "size": 7151
+    },
+    {
+      "commit": "b4ef8f7138121ca0d4a1ff788a273ebc75c2c3f7",
+      "name": "12-b4ef8f7138121ca0d4a1ff788a273ebc75c2c3f7.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/b4ef8f7138121ca0d4a1ff788a273ebc75c2c3f7.patch",
+      "sha256": "19829f93ad7077955fc3104c16f60d9d13bf6d71879e93b6055ea09d70008161",
+      "size": 2689
+    },
+    {
+      "commit": "7f36c49d30de45ee5518bcb2cf7ec52d4f970d40",
+      "name": "13-7f36c49d30de45ee5518bcb2cf7ec52d4f970d40.patch",
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/7f36c49d30de45ee5518bcb2cf7ec52d4f970d40.patch",
+      "sha256": "e3005931c7412508ade3e46ba6e2110b5dd58e4882a2df6132c081ad99676558",
+      "size": 2249
+    }
+  ],
+  "adapter": {
+    "name": "qt140-vendor-followup.patch",
+    "sha256": "8518f60482e006d3c2e49b907f00f00f81220dd2ce9bdba456bc5866e308835c",
+    "size": 99187
+  },
+  "files": [
+    {
+      "path": "chromium/content/browser/loader/navigation_early_hints_manager.cc",
+      "before": {
+        "sha256": "38ab13511ad5ea6ce614b8d5ca0a592f34e63cb8751c3b49eb85ca33d5958271",
+        "size": 24404
+      },
+      "after": {
+        "sha256": "905d9ec7994ba218b9dcde382797b3ef46d364e5fa600699c6cce69bae617cac",
+        "size": 24430
+      }
+    },
+    {
+      "path": "chromium/content/browser/loader/navigation_early_hints_manager.h",
+      "before": {
+        "sha256": "5193c9776a5975d2c41b3d013f4881695b180a79ce18e2504f7c2a0025b7930d",
+        "size": 8170
+      },
+      "after": {
+        "sha256": "0b9ae21c43fc42f5de109f37131ca5b90005c57d8a23252a3bcb5833e74cf103",
+        "size": 8279
+      }
+    },
+    {
+      "path": "chromium/content/browser/renderer_host/navigation_controller_impl.cc",
+      "before": {
+        "sha256": "efbd91894e699b7f322b81234e540c923fed103525a4c5819173921ac7f51767",
+        "size": 234563
+      },
+      "after": {
+        "sha256": "752a1b4c2d01ab0a727660bd4eebe86eb8b6839c63bb1e8c7ccec34fba0a08c3",
+        "size": 234613
+      }
+    },
+    {
+      "path": "chromium/content/browser/renderer_host/navigation_entry_impl.cc",
+      "before": {
+        "sha256": "d0fb2b7ec1151eae5ad28ec77dca91427792415f4297af269c70e68e2dc197cd",
+        "size": 53215
+      },
+      "after": {
+        "sha256": "1e29f121146f87145100fbbc1c7509d73f69fdd85edf954d70d3d13024403bad",
+        "size": 53263
+      }
+    },
+    {
+      "path": "chromium/content/browser/renderer_host/navigation_request.cc",
+      "before": {
+        "sha256": "85c9c19b389e680f615d414afe8d8497adec97c6d5712c6ec3a1caa4b76dccc8",
+        "size": 535711
+      },
+      "after": {
+        "sha256": "04535002b5724ee0334efb4af43983fe8805ed851a1c149140e8fd1f66190193",
+        "size": 535747
+      }
+    },
+    {
+      "path": "chromium/content/renderer/render_frame_impl.cc",
+      "before": {
+        "sha256": "42e86dcefa589098422e05f8f6e7e7ca2aa81d2520c2e1b85b7bb12d83126d8a",
+        "size": 304135
+      },
+      "after": {
+        "sha256": "eca843af6018bed8d3a0cefb31afca35c986d2beeee26a78d2ff5ccf4680ada8",
+        "size": 304461
+      }
+    },
+    {
+      "path": "chromium/media/filters/ffmpeg_glue.cc",
+      "before": {
+        "sha256": "c40861af68a24800a6de1bcea8f2087f95a967fdc6db69cb436c1a306f291114",
+        "size": 10497
+      },
+      "after": {
+        "sha256": "d6e2273efa96fe12dc12cf264bc499abc41fca8f63675b4c61781d0691105879",
+        "size": 10498
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp",
+      "before": {
+        "sha256": "2721dfdf115229552ab2045193d3afa2677e5d7deab27504f26ca2ade24b772d",
+        "size": 185313
+      },
+      "after": {
+        "sha256": "15a4a611bacd381324f5935137832e338c43d2e4710aba06317ce58e7a498408",
+        "size": 185488
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/public/mojom/navigation/navigation_params.mojom",
+      "before": {
+        "sha256": "c9626a3a07e84a5f84e1c18117ac0c5fbdd689cfb89793786223ab2fa4848b22",
+        "size": 33225
+      },
+      "after": {
+        "sha256": "098f6d5046ed1179ce7f1687379c784bf215210f09ec46d4e184aa49924b529a",
+        "size": 33444
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/public/web/web_navigation_params.h",
+      "before": {
+        "sha256": "2d8e0a2470afed965a5f296113cb0a4862e74be14eb49be2d8209e7b5f673ed5",
+        "size": 28688
+      },
+      "after": {
+        "sha256": "e605b712e72e44db1a3f444146c23c064e5274106f7c180026734e937e726a82",
+        "size": 28926
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/bindings/generated_in_core.gni",
+      "before": {
+        "sha256": "52564a203d89cb0802bc1787bea1c6d6b7a563a8ac759f61876238e304d59e46",
+        "size": 191416
+      },
+      "after": {
+        "sha256": "ca6f4777eb2cf84cc9d8ca73fef51ca66dd9eed783c863b9c9122dbd37ac0708",
+        "size": 191923
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/bindings/idl_in_core.gni",
+      "before": {
+        "sha256": "683f6c5ffacb48e60fe8ece5a4261dfa5853a9220e0c6171bcc90d48646113d9",
+        "size": 60290
+      },
+      "after": {
+        "sha256": "a8128757571d86555e188254f27ab26b9209c7dc159e7b06d7c1a56aa4624338",
+        "size": 60420
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/clipboard/data_transfer.cc",
+      "before": {
+        "sha256": "3e57a3304774c9d6938a9394c27962a3723c6259ba9738fd5b97212a41559d58",
+        "size": 24082
+      },
+      "after": {
+        "sha256": "8d07b4ecce085b0e10ae2e357889603bd8f8b3924e3c96037827aecbf3fd33f5",
+        "size": 24083
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/css/style_image_cache.cc",
+      "before": {
+        "sha256": "e7772e8e3f15071717700e08c6001bbd7766ffe14dac6025229db7c3278860d0",
+        "size": 1322
+      },
+      "after": {
+        "sha256": "a31d2a27eb3f3c1adf12f20a812cab90f2ff1848d00ec0a0451585acc13a2975",
+        "size": 1524
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/exported/web_searchable_form_data.cc",
+      "before": {
+        "sha256": "eee5841669fd3e6acec51901dab821d480cfcae6707ece9d188ce253666fe310",
+        "size": 10868
+      },
+      "after": {
+        "sha256": "d6e1e5b2affb9e0f232eb31f0c4735030c6d99005127cf25598c1491fbebfecc",
+        "size": 10910
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/canvas/image_element_base.cc",
+      "before": {
+        "sha256": "c34d3257e2b3b079ae051c69a76531b1e8dc1e64e414b79283fd28e97e86034a",
+        "size": 9108
+      },
+      "after": {
+        "sha256": "040e8fdef9e43b1534c568b7b7688047dea43f25f0caaddeae1d435c8d8a9329",
+        "size": 9109
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/forms/html_form_element.cc",
+      "before": {
+        "sha256": "b1703d3b34670644aca2f11e967a4a84bddd43b9085384d53ab09d1a7ea8a27a",
+        "size": 47246
+      },
+      "after": {
+        "sha256": "31fc652546bfcc80b0bc7487d9de27cb70e6e54d7500522ed8cda2417423610d",
+        "size": 47449
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/forms/image_input_type.cc",
+      "before": {
+        "sha256": "c9bea4b0cc27f592513266f9b3474c84ebee2edef921ff8839ac89a0a2c2d53d",
+        "size": 9475
+      },
+      "after": {
+        "sha256": "c217eebb5f95ab43bbacdb3576bdba657ae994872c039001daca58fa55d4ce09",
+        "size": 9543
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/media/html_video_element.cc",
+      "before": {
+        "sha256": "c58b960623bb6ca6e32abea212d2f8daeb9021d36e83874f05635102b4532b18",
+        "size": 32642
+      },
+      "after": {
+        "sha256": "957918e4da4a0b914a42391894c8dbb168d61b3d66a3d765d2f287191d429e3f",
+        "size": 32702
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/layout/layout_image_resource.cc",
+      "before": {
+        "sha256": "1e2178aa6d05f20c0cbef023bfa6ffe3845baed890947d99948bcaf4181f78a6",
+        "size": 7695
+      },
+      "after": {
+        "sha256": "0a7930c6d24a09e7f05b1c2b6a0f4658a3187f97a5edb212a96fb3371660fbeb",
+        "size": 7696
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/document_loader.cc",
+      "before": {
+        "sha256": "30ce189a465247c5e252e0febe19eec3650ac8fecc67cdef01917e55baf0be67",
+        "size": 171609
+      },
+      "after": {
+        "sha256": "3a33ec150c5efd297cf724711c08bbccb871d60d9f73a74f060ab88720ae4b2e",
+        "size": 171827
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/preload_helper.cc",
+      "before": {
+        "sha256": "7f029224dfee59d7a6c6d4962f389245aafbc65fc6ef6671d01190fbe119b440",
+        "size": 46296
+      },
+      "after": {
+        "sha256": "7f029224dfee59d7a6c6d4962f389245aafbc65fc6ef6671d01190fbe119b440",
+        "size": 46296
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/preload_helper.h",
+      "before": {
+        "sha256": "59c6341cf47dbd72c2de454676a912c469eb290f7533cefde02435a5963ea51f",
+        "size": 4279
+      },
+      "after": {
+        "sha256": "6dd09911a6ae625c652cc9debd784073667f1baab175f826baaf8a7fcfd09d66",
+        "size": 4280
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/image_resource.cc",
+      "before": {
+        "sha256": "ea7af909728db74f5cab24ba23bda7b99ed81d4d22de9fdaeeaf59c56418c167",
+        "size": 27184
+      },
+      "after": {
+        "sha256": "08d493d180357816d46d98774b99741a650cf46df4aed03034c2da614ae80e12",
+        "size": 27196
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/image_resource.h",
+      "before": {
+        "sha256": "dff174b18083ea54b74efd6ac0416f3d3ef0f6ceb1b854e4da74bd3e080eac49",
+        "size": 6795
+      },
+      "after": {
+        "sha256": "a2706165550e73f466be7453b035bf8ccbb6cead845b928ce1764040a2fc7b2a",
+        "size": 6796
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.cc",
+      "before": {
+        "sha256": "bd56861406e9f608cfdf5e5a162864496488ddb6efae4ef740e8391f2fbc663c",
+        "size": 24427
+      },
+      "after": {
+        "sha256": "34719f3e26195123cd3b6bd00e15d3bb3b55273e8263d0eb70d9490371541bba",
+        "size": 24437
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.h",
+      "before": {
+        "sha256": "51a96f85b88960908d698ae6c4a6e354931aa1f71411d08a9b47d8166772e3ac",
+        "size": 12081
+      },
+      "after": {
+        "sha256": "25df995aca156ac8919770fbc3509c35fbdbe27ef50db1e28c9461e1417a7190",
+        "size": 12091
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/image_resource_info.h",
+      "before": {
+        "sha256": "6f9937e8bb223e8e5f48b40fd0bafe582e32abf2c36f0baf464c418a01fbd236",
+        "size": 2755
+      },
+      "after": {
+        "sha256": "c1fe8ba901edf29c3a637b3823b48de95e3d0dd9f815734e00e7807bb8d189c0",
+        "size": 2756
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/loader/resource/video_timing.h",
+      "before": {
+        "sha256": "1b347c3cf97f03aeb1c922b889dd00f062d983aa04a27775407d40a13ea8e7c6",
+        "size": 3509
+      },
+      "after": {
+        "sha256": "1de1af937516e1045416aedcce56e76db48a522fd3949a40b8d2e5a1d996a6a0",
+        "size": 3728
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/paint/timing/paint_timing_record.cc",
+      "before": {
+        "sha256": "a244fd72056e2402e581a756c2ddddce98ecbab9684442d4ff35675f1d06062e",
+        "size": 4272
+      },
+      "after": {
+        "sha256": "deaaf6c8e3c63442fe254c3886d66c7cd5cd45e49780a2d270d3c790d263f660",
+        "size": 4385
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/paint/timing/paint_timing_record.h",
+      "before": {
+        "sha256": "64fa7d06cec840dac92a2553cc31efc27b269bfb3554b9aaf5542abc65b8d479",
+        "size": 6654
+      },
+      "after": {
+        "sha256": "de75577b8157997a6257c72f774a57053c816df02c5123cab70c991df6be0b78",
+        "size": 6755
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/style/style_fetched_image.cc",
+      "before": {
+        "sha256": "025e2daaef1ba9ed2c8b49b6f12b512e4c9f1dce39be2eff0f3137b5d68a7e54",
+        "size": 10402
+      },
+      "after": {
+        "sha256": "b7a1b5aeffbb29ffc6efb63bd53525353bd8b8a177b1cbf09201654fece019a7",
+        "size": 10404
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/svg/svg_fe_image_element.cc",
+      "before": {
+        "sha256": "6434c0b5d70d0a32ce05f5712ed3a043aef7eacd79d6243774513d0f7f52b67d",
+        "size": 7367
+      },
+      "after": {
+        "sha256": "c06d86ab6469e6ce485140dd4a0bf2e3c730bf8c86301744ed296184ee4c5b76",
+        "size": 7368
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/build.gni",
+      "before": {
+        "sha256": "2f8e33cc1dbbc4a997d0d72e74cfcdafd4d8e658ed72a79e90bf3aea9fa0643b",
+        "size": 4164
+      },
+      "after": {
+        "sha256": "ba2160805ffa2c9482c73eeb68976ae97ea6623dd2988209c406e2f954b07ace",
+        "size": 4254
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/performance.cc",
+      "before": {
+        "sha256": "4e7deacb7209e2e61b929696bd1be1c4e0656f1239f05b9d30bfe58f83aa1f35",
+        "size": 57758
+      },
+      "after": {
+        "sha256": "9affcb9ee75d63fa7419c2ba015069922af9f4c87f546864ea3069d835e0ad30",
+        "size": 57829
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/performance.h",
+      "before": {
+        "sha256": "2c26a306e9d9bfac95612b4a7a7072aa05d1cef30be8fca290fd6c06230afde5",
+        "size": 19254
+      },
+      "after": {
+        "sha256": "39f6b167ca78f561d3483ac634d0f6f5ac0f7e2e74e61b54afd1cba69bec5fb7",
+        "size": 19323
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/performance.idl",
+      "before": {
+        "sha256": "d43fccaeb59db0a6c86319463afdc905d32d4f6c2c8bc0ae56993889d6f7516d",
+        "size": 4699
+      },
+      "after": {
+        "sha256": "142b7a03275b52d49a4596ed4a1a5379794e2f41cd8c39bd1efec842e43ba7df",
+        "size": 4891
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/preload_data.cc",
+      "before": null,
+      "after": {
+        "sha256": "86c14462a6bd6c0efcd5845c1fcb4be734baeb9f5b2b39414cb005b4497f6217",
+        "size": 1771
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/preload_data.h",
+      "before": null,
+      "after": {
+        "sha256": "0ea6e12428c0d0be8d1f0c32b9f6ccd130f440968d28ee76725947e1a080841f",
+        "size": 1722
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/preload_data.idl",
+      "before": null,
+      "after": {
+        "sha256": "ab33452b5a45e474e887b637636bf36da3e1ad6e7f1a4f283c5e96cce5c5f353",
+        "size": 887
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/speculation_data.cc",
+      "before": null,
+      "after": {
+        "sha256": "5b7ec443b13b2901b9a1f6efec2c7b8ecb96341e2774ab4f82816e3ca4816ade",
+        "size": 492
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/speculation_data.h",
+      "before": null,
+      "after": {
+        "sha256": "035f80340352415d5c14c712ff12acd3fb064ea67dfc30df49e6640692253c40",
+        "size": 1215
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/speculation_data.idl",
+      "before": null,
+      "after": {
+        "sha256": "f2b52f9872fa2a26d73791d14f41ac6796d7e98bcc21af983114d6fadc2b97dd",
+        "size": 361
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/window_performance.cc",
+      "before": {
+        "sha256": "a72f9f2801f2a46e53ed357b207f5e490f508b622680948b5b48f24f29b92b44",
+        "size": 67399
+      },
+      "after": {
+        "sha256": "bea690d9f989b0300b2601af37c871ebd4b37e0851f613dc28d81d5c4f636aca",
+        "size": 68500
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/timing/window_performance.h",
+      "before": {
+        "sha256": "2464b138c027d4fa348c9239f7b04608a2522f38c839e5a824b7af3e29d407ff",
+        "size": 13912
+      },
+      "after": {
+        "sha256": "49e1e2963757ddc7f76d3a5b68316f36a2c160b321c70abc5c12848a7188c3fa",
+        "size": 13959
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/imagecapture/image_capture.cc",
+      "before": {
+        "sha256": "6d95e302e2cd9191a1cccdf723e7e6e60f05bd8350ecbe2a6fd7fdfa35fe0aa3",
+        "size": 130360
+      },
+      "after": {
+        "sha256": "bb3eea55f08dc834477e10763a0b6d4d832088fb0eb333419982b0b00b8f2c61",
+        "size": 130364
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/imagecapture/image_capture.h",
+      "before": {
+        "sha256": "9f8882c7caaa8255b763c87afaf0c73c90036d694fdcc77f02ab4b5ebfed8641",
+        "size": 8514
+      },
+      "after": {
+        "sha256": "44eff7206f0b72984cb7bb7463341ad4947d6f28af84d38ebdec9b2a8b552b10",
+        "size": 8533
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc",
+      "before": {
+        "sha256": "ec2549d566b144a35cdbf623fc02421ea0d6ab1badc0e3237b29a6b45591c1b1",
+        "size": 15888
+      },
+      "after": {
+        "sha256": "d59deb91e0706dbbc3f69e6349a5fd560876593f103a5141d05befff4c2c4d54",
+        "size": 16605
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h",
+      "before": {
+        "sha256": "aeafb3c98505ecac6609825018286bd15585becdff9d14f5996a8bf12a838ad2",
+        "size": 5129
+      },
+      "after": {
+        "sha256": "151d7c59093281f75fecb1bcb520ee5a897d3a2ccfae6075e8a0a744ed453cc9",
+        "size": 2710
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h",
+      "before": {
+        "sha256": "21a6ed3dcb97cc2b7181cca7e0cc2680741f4e71fcc487ac0bb618ac9eaa5422",
+        "size": 1109
+      },
+      "after": {
+        "sha256": "635f825f53bfb399e308dba1737f4e4ed1e4a841cfcb632c8a6ad8d540a50a03",
+        "size": 1560
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc",
+      "before": {
+        "sha256": "9ba97a314fde16713c317e77bd3980a98c8ae91bb3f5861629d58e5f54fb96de",
+        "size": 4839
+      },
+      "after": {
+        "sha256": "29fa09e198128ddd33c22313ac2cf85626cdbe4bad8d5891bf40e81e612c9617",
+        "size": 4887
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h",
+      "before": {
+        "sha256": "437181a760d801c54971e61af08ddbb1afdd41024430c0e724f296c1e786e8b8",
+        "size": 10051
+      },
+      "after": {
+        "sha256": "60d13c209de3b93cdbcb6c36a961f4837fa5d228bae16d0a3d99b5253300340e",
+        "size": 10260
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/media_timing.h",
+      "before": {
+        "sha256": "e44ba004c653f51e0390b0de8107990d097321d04788215401b311ce2824f867",
+        "size": 2842
+      },
+      "after": {
+        "sha256": "ed4ccdebcfa0141cfdd0c8d0717113c8229029a3315f5ee7a37c834c7421b44d",
+        "size": 3004
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/resource.cc",
+      "before": {
+        "sha256": "6c7f014841f41413ac5953d8ec9d53e3b0573239a1d3066a34953545d563badb",
+        "size": 46429
+      },
+      "after": {
+        "sha256": "454b83e80fd1a087718010012e201fce94e2dc79fb714ae9011b170c1aab521d",
+        "size": 47179
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/resource.h",
+      "before": {
+        "sha256": "bcabc7f7884893f01914d818b62b5f5254e62a141bd8a6fd2bd1896ea1fefcaa",
+        "size": 25610
+      },
+      "after": {
+        "sha256": "bb062bf4b21c4b1baaa87e9e1001e08abc6ed56dd45656db8e7758afb77ee97c",
+        "size": 25804
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc",
+      "before": {
+        "sha256": "207409f88f62c0cb748bd365cb3b5a4f6ec56ae47b0fd3dc7c2ebb54fff86cc7",
+        "size": 140766
+      },
+      "after": {
+        "sha256": "1334f9e08ed9992c45059cfa1bda08aa021674d424a8a1d2f169a1150065d4c8",
+        "size": 143607
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h",
+      "before": {
+        "sha256": "9b9ac37317d0c45a5aa128cd945c1cae0ee862a109f676926c5d6818bf91c096",
+        "size": 34066
+      },
+      "after": {
+        "sha256": "4f3b09c1ec727441b14628f9312ba61cc37666d06c4e9842f064b1245a155fc4",
+        "size": 34743
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5",
+      "before": {
+        "sha256": "02cf084e0e9d9158cc1989ba877288b5a07d6b623688ad1537ab6966b717bc9c",
+        "size": 178511
+      },
+      "after": {
+        "sha256": "f46fb064b2a997051d14414ea7263c26f0e126f4e5df6102c663c17952e029d3",
+        "size": 178711
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h",
+      "before": {
+        "sha256": "7aa29b61d2802083ecf4f8b874541e77a6159ec489601d0a43b4830607ce3193",
+        "size": 4506
+      },
+      "after": {
+        "sha256": "4a18d7f696742109f603ea39be3e802c9464f2510c10999b2a1b0fa2437422e8",
+        "size": 4957
+      }
+    },
+    {
+      "path": "chromium/third_party/icu/README.chromium",
+      "before": {
+        "sha256": "df6adc46edeeaafdc98f8658f66938c664ce9ea0771a838dac58e5362462324e",
+        "size": 12345
+      },
+      "after": {
+        "sha256": "f9fceb0af677f4085bc1cd245f7af0a990773a8dd7382db627eae14251578ff4",
+        "size": 12555
+      }
+    },
+    {
+      "path": "chromium/third_party/icu/source/common/charstr.cpp",
+      "before": {
+        "sha256": "d38c520622924b8e9b99d33e95e43f2378e37da22a99103c76938d0d583b856d",
+        "size": 8286
+      },
+      "after": {
+        "sha256": "ff004eb26d1f7ece287ae25d2192faced4d58319324467cae5a3d3516494c576",
+        "size": 10146
+      }
+    },
+    {
+      "path": "chromium/third_party/libaom/source/libaom/av1/encoder/nonrd_pickmode.c",
+      "before": {
+        "sha256": "9461a202e5e3ee235e7d4708743be40a9159b19798fe4b92bfe84b92a15d3525",
+        "size": 160180
+      },
+      "after": {
+        "sha256": "6c440eaf9f3e6117e349559002f6f131a52d71c4e822bbce28bbc99930179f40",
+        "size": 161178
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/map-updater.cc",
+      "before": {
+        "sha256": "f9fa47198baa1f79366b31609e6b817213953f60abae7765a2995b71c30d18b1",
+        "size": 56410
+      },
+      "after": {
+        "sha256": "694429b7be6eeac9612db0ce90498e373e7924f390e6b859b0a0e179ec02e5fe",
+        "size": 56442
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/transitions-inl.h",
+      "before": {
+        "sha256": "29c8f50533042386b129046dba1fa1309442e67e015bf671a7585552a9659896",
+        "size": 21390
+      },
+      "after": {
+        "sha256": "89b840acd9cd9267e34ede395a2c4555d9636ca1315455cd15c35d158b2cbba3",
+        "size": 21733
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/transitions.cc",
+      "before": {
+        "sha256": "67e72d5b5a8f75f19f2998b87983ac710a84958efe573133b661b319f0f6efc7",
+        "size": 32706
+      },
+      "after": {
+        "sha256": "8d23dd3d39dbcb728f024c5ee4c702cf12e6a80fa4fcdb30cf761d4cfbb9693a",
+        "size": 32420
+      }
+    },
+    {
+      "path": "chromium/v8/src/objects/transitions.h",
+      "before": {
+        "sha256": "fd95292d4cde607ea9b9a942c79ddbd5ab4070ada73889a474d504a94c271579",
+        "size": 20578
+      },
+      "after": {
+        "sha256": "2adcf52230e8511c6051487942307f6b56aa53220d55b9cf8c7382e16a352abe",
+        "size": 20679
+      }
+    }
+  ],
+  "coverage": "All13 ordered official Qt exports are retained. The aggregate adapter has the same final bytes on all66 original-union paths;65 change and preload_helper.cc returns to its exact preimage. Runtime/security acceptance is separate from source application."
+}

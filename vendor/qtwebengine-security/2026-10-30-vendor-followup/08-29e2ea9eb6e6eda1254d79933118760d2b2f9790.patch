@@ -1,0 +1,658 @@
+From 29e2ea9eb6e6eda1254d79933118760d2b2f9790 Mon Sep 17 00:00:00 2001
+From: Yoav Weiss <yoavweiss@chromium.org>
+Date: Fri, 17 Apr 2026 13:00:21 -0700
+Subject: [PATCH] [Backport] Dependency for CVE-2026-118353 (1/4)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/7715319:
+Add performance.speculations.preloads for speculation measurement
+
+Expose preload measurement data on the Performance object.
+This provides a live API that can be queried at any time, not just
+during page unload.
+
+The "used" attribute contains a coarsened timestamp indicating when the
+resource was used.
+
+The "crossorigin" and "as" attributes contain the relevant attributes
+of the fetched resource.
+
+Co-Authored-By: AI (Claude Opus 4.6 via Pi) <noreply@pi.dev>
+
+Change-Id: I6693be2f65d2fb83d5fc1137168d75b22a438917
+Bug: 481590676
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7715319
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Yoav Weiss (@Shopify) <yoavweiss@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1616799}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784935
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/bindings/generated_in_core.gni   |  6 +++
+ .../blink/renderer/bindings/idl_in_core.gni   |  2 +
+ .../renderer/core/loader/preload_helper.cc    | 28 ++++++++++
+ .../renderer/core/loader/preload_helper.h     |  6 +++
+ .../blink/renderer/core/timing/build.gni      |  4 ++
+ .../blink/renderer/core/timing/performance.cc |  4 ++
+ .../blink/renderer/core/timing/performance.h  |  2 +
+ .../renderer/core/timing/performance.idl      |  4 ++
+ .../renderer/core/timing/preload_data.cc      | 54 +++++++++++++++++++
+ .../blink/renderer/core/timing/preload_data.h | 48 +++++++++++++++++
+ .../renderer/core/timing/preload_data.idl     | 24 +++++++++
+ .../renderer/core/timing/speculation_data.cc  | 17 ++++++
+ .../renderer/core/timing/speculation_data.h   | 34 ++++++++++++
+ .../renderer/core/timing/speculation_data.idl | 13 +++++
+ .../core/timing/window_performance.cc         | 23 ++++++++
+ .../renderer/core/timing/window_performance.h |  1 +
+ .../platform/loader/fetch/fetch_parameters.cc |  1 +
+ .../platform/loader/fetch/fetch_parameters.h  |  8 +++
+ .../platform/loader/fetch/resource_fetcher.cc | 22 ++++++++
+ .../platform/loader/fetch/resource_fetcher.h  | 19 +++++++
+ .../platform/runtime_enabled_features.json5   |  6 +++
+ 21 files changed, 326 insertions(+)
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/preload_data.cc
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/preload_data.h
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/preload_data.idl
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/speculation_data.cc
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/speculation_data.h
+ create mode 100644 chromium/third_party/blink/renderer/core/timing/speculation_data.idl
+
+diff --git a/chromium/third_party/blink/renderer/bindings/generated_in_core.gni b/chromium/third_party/blink/renderer/bindings/generated_in_core.gni
+index 2136871e8a1c..59cce1304c94 100644
+--- a/chromium/third_party/blink/renderer/bindings/generated_in_core.gni
++++ b/chromium/third_party/blink/renderer/bindings/generated_in_core.gni
+@@ -557,6 +557,8 @@ generated_enumeration_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation_or_auto.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation_or_auto.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_math_operator.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_math_operator.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_numeric_base_type.cc",
+@@ -1342,6 +1344,10 @@ generated_interface_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_popup_controller.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_transition_event.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_transition_event.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preload_data.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preload_data.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_speculation_data.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_speculation_data.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_part.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_part.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_patch_event.cc",
+diff --git a/chromium/third_party/blink/renderer/bindings/idl_in_core.gni b/chromium/third_party/blink/renderer/bindings/idl_in_core.gni
+index 975a74da2699..69124a1533c7 100644
+--- a/chromium/third_party/blink/renderer/bindings/idl_in_core.gni
++++ b/chromium/third_party/blink/renderer/bindings/idl_in_core.gni
+@@ -765,8 +765,10 @@ static_idl_files_in_core = [
+   "//third_party/blink/renderer/core/timing/profiler_init_options.idl",
+   "//third_party/blink/renderer/core/timing/profiler_sample.idl",
+   "//third_party/blink/renderer/core/timing/profiler_stack.idl",
++  "//third_party/blink/renderer/core/timing/preload_data.idl",
+   "//third_party/blink/renderer/core/timing/profiler_trace.idl",
+   "//third_party/blink/renderer/core/timing/soft_navigation_entry.idl",
++  "//third_party/blink/renderer/core/timing/speculation_data.idl",
+   "//third_party/blink/renderer/core/timing/task_attribution_timing.idl",
+   "//third_party/blink/renderer/core/timing/visibility_state_entry.idl",
+   "//third_party/blink/renderer/core/timing/window_performance.idl",
+diff --git a/chromium/third_party/blink/renderer/core/loader/preload_helper.cc b/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
+index 3edd3a3fcfb2..afc6aa4d7e51 100644
+--- a/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
++++ b/chromium/third_party/blink/renderer/core/loader/preload_helper.cc
+@@ -390,6 +390,34 @@ std::optional<ResourceType> PreloadHelper::GetResourceTypeFromAsAttribute(
+   return std::nullopt;
+ }
+ 
++// https://html.spec.whatwg.org/C/#preload-destination
++String PreloadHelper::GetAsAttributeFromResourceType(ResourceType type) {
++  switch (type) {
++    case ResourceType::kImage:
++      return "image";
++    case ResourceType::kScript:
++      return "script";
++    case ResourceType::kCSSStyleSheet:
++      return "style";
++    case ResourceType::kTextTrack:
++      return "track";
++    case ResourceType::kFont:
++      return "font";
++    case ResourceType::kRaw:
++      return "fetch";
++    case ResourceType::kAudio:
++    case ResourceType::kVideo:
++    case ResourceType::kManifest:
++    case ResourceType::kSpeculationRules:
++    case ResourceType::kDictionary:
++    case ResourceType::kSVGDocument:
++    case ResourceType::kXSLStyleSheet:
++    case ResourceType::kLinkPrefetch:
++    case ResourceType::kMock:
++      NOTREACHED();
++  }
++}
++
+ // |base_url| is used in Link HTTP Header based preloads to resolve relative
+ // URLs in srcset, which should be based on the resource's URL, not the
+ // document's base URL. If |base_url| is a null URL, relative URLs are resolved
+diff --git a/chromium/third_party/blink/renderer/core/loader/preload_helper.h b/chromium/third_party/blink/renderer/core/loader/preload_helper.h
+index 07723d369868..8439c590a0f0 100644
+--- a/chromium/third_party/blink/renderer/core/loader/preload_helper.h
++++ b/chromium/third_party/blink/renderer/core/loader/preload_helper.h
+@@ -103,6 +103,12 @@ class PreloadHelper final {
+ 
+   static std::optional<ResourceType> GetResourceTypeFromAsAttribute(
+       const String& as);
++
++  // Returns the "as" attribute value string for a given ResourceType.
++  // Only supports types returned by GetResourceTypeFromAsAttribute();
++  // crashes with NOTREACHED() for unsupported types.
++  // https://html.spec.whatwg.org/C/#preload-destination
++  static String GetAsAttributeFromResourceType(ResourceType type);
+ };
+ 
+ }  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/timing/build.gni b/chromium/third_party/blink/renderer/core/timing/build.gni
+index b7fa56749dae..084911ffdeee 100644
+--- a/chromium/third_party/blink/renderer/core/timing/build.gni
++++ b/chromium/third_party/blink/renderer/core/timing/build.gni
+@@ -72,6 +72,8 @@ blink_core_sources_timing = [
+   "performance_server_timing.h",
+   "performance_timing.cc",
+   "performance_timing.h",
++  "preload_data.cc",
++  "preload_data.h",
+   "performance_timing_confidence.cc",
+   "performance_timing_confidence.h",
+   "performance_timing_for_reporting.h",
+@@ -88,6 +90,8 @@ blink_core_sources_timing = [
+   "responsiveness_metrics.h",
+   "render_blocking_metrics_reporter.cc",
+   "render_blocking_metrics_reporter.h",
++  "speculation_data.cc",
++  "speculation_data.h",
+   "soft_navigation_context.cc",
+   "soft_navigation_context.h",
+   "soft_navigation_heuristics.cc",
+diff --git a/chromium/third_party/blink/renderer/core/timing/performance.cc b/chromium/third_party/blink/renderer/core/timing/performance.cc
+index 434b6977d896..b82c8442bcd0 100644
+--- a/chromium/third_party/blink/renderer/core/timing/performance.cc
++++ b/chromium/third_party/blink/renderer/core/timing/performance.cc
+@@ -329,6 +329,10 @@ MemoryInfo* Performance::memory(ScriptState*) const {
+   return nullptr;
+ }
+ 
++SpeculationData* Performance::getSpeculations() {
++  return nullptr;
++}
++
+ EventCounts* Performance::eventCounts() {
+   return nullptr;
+ }
+diff --git a/chromium/third_party/blink/renderer/core/timing/performance.h b/chromium/third_party/blink/renderer/core/timing/performance.h
+index 7d8c99ea1c26..c3e3009b8e07 100644
+--- a/chromium/third_party/blink/renderer/core/timing/performance.h
++++ b/chromium/third_party/blink/renderer/core/timing/performance.h
+@@ -87,6 +87,7 @@ class PerformanceTiming;
+ class ScriptState;
+ class ScriptValue;
+ class SoftNavigationEntry;
++class SpeculationData;
+ class UserTiming;
+ class V8ObjectBuilder;
+ class V8UnionDoubleOrString;
+@@ -120,6 +121,7 @@ class CORE_EXPORT Performance : public EventTarget {
+       ScriptState*,
+       ExceptionState& exception_state) const;
+   virtual EventCounts* eventCounts();
++  virtual SpeculationData* getSpeculations();
+   virtual std::uint64_t interactionCount() const = 0;
+   virtual void PopulateContainerTimingEntries() {}
+ 
+diff --git a/chromium/third_party/blink/renderer/core/timing/performance.idl b/chromium/third_party/blink/renderer/core/timing/performance.idl
+index 11c4cec19026..03adad834aaf 100644
+--- a/chromium/third_party/blink/renderer/core/timing/performance.idl
++++ b/chromium/third_party/blink/renderer/core/timing/performance.idl
+@@ -76,5 +76,9 @@ interface Performance : EventTarget {
+ 
+     [Exposed=Window, RuntimeEnabled=UserDefinedEntryPointTiming] Function bind(Function innerFunction, optional any thisArg, any... args);
+ 
++    // Speculation Measurement
++    // https://github.com/yoavweiss/speculative_load_measurement
++    [Exposed=Window, RuntimeEnabled=SpeculationMeasurement] SpeculationData getSpeculations();
++
+     [CallWith=ScriptState, ImplementedAs=toJSONForBinding] object toJSON();
+ };
+diff --git a/chromium/third_party/blink/renderer/core/timing/preload_data.cc b/chromium/third_party/blink/renderer/core/timing/preload_data.cc
+new file mode 100644
+index 000000000000..548300f37534
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/preload_data.cc
+@@ -0,0 +1,54 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/timing/preload_data.h"
++
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/loader/preload_helper.h"
++#include "third_party/blink/renderer/core/timing/dom_window_performance.h"
++#include "third_party/blink/renderer/platform/bindings/script_state.h"
++
++namespace blink {
++
++PreloadData::PreloadData(const KURL& url,
++                         ResourceType resource_type,
++                         CrossOriginAttributeValue crossorigin,
++                         std::optional<base::TimeTicks> used_time)
++    : url_(url),
++      resource_type_(resource_type),
++      crossorigin_(crossorigin),
++      used_time_(used_time) {}
++
++String PreloadData::as() const {
++  return PreloadHelper::GetAsAttributeFromResourceType(resource_type_);
++}
++
++V8CrossOriginMode PreloadData::crossorigin() const {
++  switch (crossorigin_) {
++    case kCrossOriginAttributeNotSet:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kNone);
++    case kCrossOriginAttributeAnonymous:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kAnonymous);
++    case kCrossOriginAttributeUseCredentials:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kUseCredentials);
++  }
++}
++
++std::optional<double> PreloadData::used(ScriptState* script_state) const {
++  if (!used_time_.has_value()) {
++    return std::nullopt;
++  }
++  auto* window = LocalDOMWindow::From(script_state);
++  if (!window) {
++    return std::nullopt;
++  }
++  return DOMWindowPerformance::performance(*window)
++      ->MonotonicTimeToDOMHighResTimeStamp(used_time_.value());
++}
++
++void PreloadData::Trace(Visitor* visitor) const {
++  ScriptWrappable::Trace(visitor);
++}
++
++}  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/timing/preload_data.h b/chromium/third_party/blink/renderer/core/timing/preload_data.h
+new file mode 100644
+index 000000000000..70f957164496
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/preload_data.h
+@@ -0,0 +1,48 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
++
++#include <optional>
++
++#include "base/time/time.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
++#include "third_party/blink/renderer/core/core_export.h"
++#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
++#include "third_party/blink/renderer/platform/loader/fetch/resource.h"
++#include "third_party/blink/renderer/platform/weborigin/kurl.h"
++
++namespace blink {
++
++class ScriptState;
++
++// https://github.com/WICG/speculative_load_measurement
++class PreloadData final : public ScriptWrappable {
++  DEFINE_WRAPPERTYPEINFO();
++
++ public:
++  PreloadData(const KURL& url,
++              ResourceType resource_type,
++              CrossOriginAttributeValue crossorigin,
++              std::optional<base::TimeTicks> used_time);
++
++  String url() const { return url_.GetString(); }
++  String as() const;
++  V8CrossOriginMode crossorigin() const;
++  std::optional<double> used(ScriptState*) const;
++
++  void Trace(Visitor*) const override;
++
++ private:
++  const KURL url_;
++  const ResourceType resource_type_;
++  const CrossOriginAttributeValue crossorigin_;
++  const std::optional<base::TimeTicks> used_time_;
++};
++
++}  // namespace blink
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
+diff --git a/chromium/third_party/blink/renderer/core/timing/preload_data.idl b/chromium/third_party/blink/renderer/core/timing/preload_data.idl
+new file mode 100644
+index 000000000000..99d284b2bf9d
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/preload_data.idl
+@@ -0,0 +1,24 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// https://github.com/yoavweiss/speculative_load_measurement
++
++// Represents the crossorigin attribute state for preloads.
++// "none" means no crossorigin attribute was set (no-cors mode).
++// "anonymous" means crossorigin="" or crossorigin="anonymous" (CORS with
++// same-origin credentials).
++// "use-credentials" means crossorigin="use-credentials" (CORS with included
++// credentials).
++enum CrossOriginMode { "none", "anonymous", "use-credentials" };
++
++[
++    RuntimeEnabled=SpeculationMeasurement,
++    Exposed=Window
++]
++interface PreloadData {
++    readonly attribute USVString url;
++    readonly attribute DOMString as;
++    readonly attribute CrossOriginMode crossorigin;
++    [CallWith=ScriptState] readonly attribute DOMHighResTimeStamp? used;
++};
+diff --git a/chromium/third_party/blink/renderer/core/timing/speculation_data.cc b/chromium/third_party/blink/renderer/core/timing/speculation_data.cc
+new file mode 100644
+index 000000000000..76321e717766
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/speculation_data.cc
+@@ -0,0 +1,17 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/timing/speculation_data.h"
++
++namespace blink {
++
++SpeculationData::SpeculationData(HeapVector<Member<PreloadData>> preloads)
++    : preloads_(std::move(preloads)) {}
++
++void SpeculationData::Trace(Visitor* visitor) const {
++  visitor->Trace(preloads_);
++  ScriptWrappable::Trace(visitor);
++}
++
++}  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/timing/speculation_data.h b/chromium/third_party/blink/renderer/core/timing/speculation_data.h
+new file mode 100644
+index 000000000000..0267f50a31b0
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/speculation_data.h
+@@ -0,0 +1,34 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
++
++#include "third_party/blink/renderer/core/core_export.h"
++#include "third_party/blink/renderer/core/timing/preload_data.h"
++#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
++#include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/member.h"
++
++namespace blink {
++
++// https://github.com/WICG/speculative_load_measurement
++class SpeculationData final : public ScriptWrappable {
++  DEFINE_WRAPPERTYPEINFO();
++
++ public:
++  explicit SpeculationData(HeapVector<Member<PreloadData>> preloads);
++
++  const HeapVector<Member<PreloadData>>& preloads() const { return preloads_; }
++
++  void Trace(Visitor* visitor) const override;
++
++ private:
++  HeapVector<Member<PreloadData>> preloads_;
++};
++
++}  // namespace blink
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
+diff --git a/chromium/third_party/blink/renderer/core/timing/speculation_data.idl b/chromium/third_party/blink/renderer/core/timing/speculation_data.idl
+new file mode 100644
+index 000000000000..8008e863b336
+--- /dev/null
++++ b/chromium/third_party/blink/renderer/core/timing/speculation_data.idl
+@@ -0,0 +1,13 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// https://github.com/yoavweiss/speculative_load_measurement
++
++[
++    RuntimeEnabled=SpeculationMeasurement,
++    Exposed=Window
++]
++interface SpeculationData {
++    readonly attribute FrozenArray<PreloadData> preloads;
++};
+diff --git a/chromium/third_party/blink/renderer/core/timing/window_performance.cc b/chromium/third_party/blink/renderer/core/timing/window_performance.cc
+index 91b342beb857..a0b07e83d4a2 100644
+--- a/chromium/third_party/blink/renderer/core/timing/window_performance.cc
++++ b/chromium/third_party/blink/renderer/core/timing/window_performance.cc
+@@ -90,14 +90,17 @@
+ #include "third_party/blink/renderer/core/timing/performance_paint_timing.h"
+ #include "third_party/blink/renderer/core/timing/performance_timing.h"
+ #include "third_party/blink/renderer/core/timing/performance_timing_for_reporting.h"
++#include "third_party/blink/renderer/core/timing/preload_data.h"
+ #include "third_party/blink/renderer/core/timing/responsiveness_metrics.h"
+ #include "third_party/blink/renderer/core/timing/soft_navigation_entry.h"
++#include "third_party/blink/renderer/core/timing/speculation_data.h"
+ #include "third_party/blink/renderer/core/timing/visibility_state_entry.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_deque.h"
+ #include "third_party/blink/renderer/platform/heap/forward.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
++#include "third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/thread_scheduler.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -1497,6 +1500,26 @@ EventCounts* WindowPerformance::eventCounts() {
+   return event_counts_.Get();
+ }
+ 
++SpeculationData* WindowPerformance::getSpeculations() {
++  LocalDOMWindow* window = DomWindow();
++  if (!window || !window->document() || !window->document()->Fetcher()) {
++    return MakeGarbageCollected<SpeculationData>(
++        HeapVector<Member<PreloadData>>());
++  }
++
++  HeapVector<Member<PreloadData>> preloads;
++  const auto& preload_records =
++      window->document()->Fetcher()->GetPreloadRecords();
++  for (const auto& [url, info] : preload_records) {
++    preloads.push_back(MakeGarbageCollected<PreloadData>(
++        url, info.resource_type,
++        info.crossorigin.value_or(kCrossOriginAttributeNotSet),
++        info.used_time));
++  }
++
++  return MakeGarbageCollected<SpeculationData>(std::move(preloads));
++}
++
+ uint64_t WindowPerformance::interactionCount() const {
+   return responsiveness_metrics_->GetInteractionCount();
+ }
+diff --git a/chromium/third_party/blink/renderer/core/timing/window_performance.h b/chromium/third_party/blink/renderer/core/timing/window_performance.h
+index b7e8df8d88eb..f4a685bd90b8 100644
+--- a/chromium/third_party/blink/renderer/core/timing/window_performance.h
++++ b/chromium/third_party/blink/renderer/core/timing/window_performance.h
+@@ -85,6 +85,7 @@ class CORE_EXPORT WindowPerformance final : public Performance,
+   MemoryInfo* memory(ScriptState*) const override;
+ 
+   EventCounts* eventCounts() override;
++  SpeculationData* getSpeculations() override;
+   uint64_t interactionCount() const override;
+ 
+   void PopulateContainerTimingEntries() override;
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
+index c6de63f0c31f..93f2935130da 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
+@@ -54,6 +54,7 @@ FetchParameters::~FetchParameters() = default;
+ void FetchParameters::SetCrossOriginAccessControl(
+     const SecurityOrigin* origin,
+     CrossOriginAttributeValue cross_origin) {
++  cross_origin_attribute_value_ = cross_origin;
+   switch (cross_origin) {
+     case kCrossOriginAttributeNotSet:
+       NOTREACHED();
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+index 47abb14aaeaa..c9ca1f02f05e 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+@@ -136,6 +136,11 @@ class PLATFORM_EXPORT FetchParameters {
+     options_.initiator_info.is_link_preload = is_link_preload;
+   }
+ 
++  std::optional<CrossOriginAttributeValue> GetCrossOriginAttributeValue()
++      const {
++    return cross_origin_attribute_value_;
++  }
++
+   bool IsStaleRevalidation() const { return is_stale_revalidation_; }
+   void SetStaleRevalidation(bool is_stale_revalidation) {
+     is_stale_revalidation_ = is_stale_revalidation;
+@@ -238,6 +243,9 @@ class PLATFORM_EXPORT FetchParameters {
+   ImageRequestBehavior image_request_behavior_ = ImageRequestBehavior::kNone;
+   mojom::blink::ScriptType script_type_ = mojom::blink::ScriptType::kClassic;
+   bool is_stale_revalidation_ = false;
++  // Stored for the SpeculationMeasurement API, which reports the crossorigin
++  // attribute value of <link rel=preload> elements.
++  std::optional<CrossOriginAttributeValue> cross_origin_attribute_value_;
+   bool is_from_origin_dirty_style_sheet_ = false;
+   RenderBlockingBehavior render_blocking_behavior_ =
+       RenderBlockingBehavior::kUnset;
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+index 762c3b4013ce..e7db861b1a45 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+@@ -1806,6 +1806,14 @@ Resource* ResourceFetcher::MatchPreload(
+   resource->MatchPreload(params);
+   preloads_.erase(it);
+   matched_preloads_.push_back(resource);
++
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++    auto record_it = preload_records_.find(resource->Url());
++    if (record_it != preload_records_.end()) {
++      record_it->value.used_time = base::TimeTicks::Now();
++    }
++  }
++
+   return resource;
+ }
+ 
+@@ -1891,6 +1899,20 @@ void ResourceFetcher::InsertAsPreloadIfNecessary(Resource* resource,
+   if (preloaded_urls_for_test_) {
+     preloaded_urls_for_test_->insert(resource->Url().GetString());
+   }
++
++  // Only track <link rel=preload> in `preload_records_` for the
++  // SpeculationMeasurement API. Speculative preloads from the HTML parser
++  // are not developer-initiated and should not be reported.
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled() &&
++      params.IsLinkPreload()) {
++    const KURL& url = resource->Url();
++    if (!preload_records_.Contains(url)) {
++      PreloadInfo info;
++      info.resource_type = resource->GetType();
++      info.crossorigin = params.GetCrossOriginAttributeValue();
++      preload_records_.insert(url, std::move(info));
++    }
++  }
+ }
+ 
+ bool ResourceFetcher::IsImageResourceDisallowedToBeReused(
+diff --git a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+index 94be7cf83a61..48aecb1e050a 100644
+--- a/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
++++ b/chromium/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+@@ -33,6 +33,7 @@
+ #include <utility>
+ 
+ #include "base/task/single_thread_task_runner.h"
++#include "base/time/time.h"
+ #include "base/unguessable_token.h"
+ #include "services/metrics/public/cpp/mojo_ukm_recorder.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -46,6 +47,7 @@
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/heap/prefinalizer.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/loader_freeze_mode.h"
+@@ -257,6 +259,19 @@ class PLATFORM_EXPORT ResourceFetcher
+   void ScheduleWarnUnusedPreloads(
+       base::OnceCallback<void(Vector<KURL> unused_preloads)> callback);
+ 
++  // Information about a <link rel=preload> for the SpeculationMeasurement API.
++  struct PreloadInfo {
++    ResourceType resource_type;
++    std::optional<CrossOriginAttributeValue> crossorigin;
++    // Timestamp when the preload was matched/used, or nullopt if unused.
++    std::optional<base::TimeTicks> used_time;
++  };
++
++  // Returns a map from URL to PreloadInfo for all <link rel=preload> preloads.
++  const HashMap<KURL, PreloadInfo>& GetPreloadRecords() const {
++    return preload_records_;
++  }
++
+   MHTMLArchive* Archive() const { return archive_.Get(); }
+ 
+   // Set the deferring state of each loader owned by this ResourceFetcher. This
+@@ -655,6 +670,10 @@ class PLATFORM_EXPORT ResourceFetcher
+   HeapHashMap<PreloadKey, Member<Resource>> preloads_;
+   HeapVector<Member<Resource>> matched_preloads_;
+ 
++  // Records of all preloads (used and unused) for the SpeculationMeasurement
++  // API.
++  HashMap<KURL, PreloadInfo> preload_records_;
++
+   // Keeps preloads which are deferred to start loading based on the LCPP
+   // signal of potentially unused preloads, in order to prevent subsequent
+   // resource loading to the same resource from being scheduled, and record the
+diff --git a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 7a9ce979618a..7b7c85ef31f7 100644
+--- a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5454,6 +5454,12 @@
+         "Linux": "stable",
+       },
+     },
++    {
++      // Exposes speculation measurement data (preloads, prefetches, prerenders)
++      // on performance.speculations.
++      name: "SpeculationMeasurement",
++      status: "experimental",
++    },
+     {
+       // https://chromestatus.com/feature/5077691662073856
+       // Allows an Enterprise Policy to override WebAudioBypassOutputBuffering

@@ -1,0 +1,2138 @@
+diff --git a/content/browser/loader/navigation_early_hints_manager.cc b/content/browser/loader/navigation_early_hints_manager.cc
+index 07ea9571f8c5..b2174a6f4c88 100644
+--- a/content/browser/loader/navigation_early_hints_manager.cc
++++ b/content/browser/loader/navigation_early_hints_manager.cc
+@@ -424,8 +424,9 @@ bool NavigationEarlyHintsManager::WasResourceHintsReceived() const {
+   return was_resource_hints_received_;
+ }
+ 
+-std::vector<GURL> NavigationEarlyHintsManager::TakePreloadedResourceURLs() {
+-  return std::move(preloaded_urls_);
++std::vector<network::mojom::LinkHeaderPtr>
++NavigationEarlyHintsManager::TakePreloadedResources() {
++  return std::move(preloaded_infos_);
+ }
+ 
+ bool NavigationEarlyHintsManager::HasInflightPreloads() const {
+@@ -562,7 +563,7 @@ void NavigationEarlyHintsManager::MaybePreloadHintedResource(
+   inflight_preloads_[request.url] = std::make_unique<InflightPreload>(
+       std::move(loader), std::move(loader_client));
+ 
+-  preloaded_urls_.push_back(request.url);
++  preloaded_infos_.push_back(link->Clone());
+ }
+ 
+ bool NavigationEarlyHintsManager::ShouldHandleResourceHints(
+diff --git a/content/browser/loader/navigation_early_hints_manager.h b/content/browser/loader/navigation_early_hints_manager.h
+index 4069f0362999..391568686259 100644
+--- a/content/browser/loader/navigation_early_hints_manager.h
++++ b/content/browser/loader/navigation_early_hints_manager.h
+@@ -21,6 +21,7 @@
+ #include "net/url_request/referrer_policy.h"
+ #include "services/network/public/cpp/url_loader_completion_status.h"
+ #include "services/network/public/mojom/early_hints.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom.h"
+ #include "url/gurl.h"
+ 
+@@ -114,7 +115,7 @@ class CONTENT_EXPORT NavigationEarlyHintsManager {
+   // Early Hints responses for main frame navigation.
+   bool WasResourceHintsReceived() const;
+ 
+-  std::vector<GURL> TakePreloadedResourceURLs();
++  std::vector<network::mojom::LinkHeaderPtr> TakePreloadedResources();
+ 
+   // True when there are at least one inflight preloads.
+   bool HasInflightPreloads() const;
+@@ -189,7 +190,7 @@ class CONTENT_EXPORT NavigationEarlyHintsManager {
+ 
+   PreloadedResources preloaded_resources_;
+ 
+-  std::vector<GURL> preloaded_urls_;
++  std::vector<network::mojom::LinkHeaderPtr> preloaded_infos_;
+ 
+   // Set to true when HandleEarlyHints() is called for the first time. Used to
+   // ignore following responses.
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index 5dd9644aa3a8..34306bb3a95a 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -109,6 +109,7 @@
+ #include "services/metrics/public/cpp/ukm_recorder.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom-shared.h"
+ #include "skia/ext/platform_canvas.h"
+ #include "third_party/blink/public/common/blob/blob_utils.h"
+@@ -4283,7 +4284,7 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
+           /*old_page_info=*/nullptr,
+           /*http_response_code=*/-1,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+diff --git a/content/browser/renderer_host/navigation_entry_impl.cc b/content/browser/renderer_host/navigation_entry_impl.cc
+index 58813af218ab..3aca6ecd04d9 100644
+--- a/content/browser/renderer_host/navigation_entry_impl.cc
++++ b/content/browser/renderer_host/navigation_entry_impl.cc
+@@ -36,6 +36,7 @@
+ #include "net/storage_access_api/status.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "third_party/blink/public/common/navigation/navigation_params.h"
+ #include "third_party/blink/public/common/page_state/page_state_serialization.h"
+ #include "third_party/blink/public/mojom/frame/frame.mojom.h"
+@@ -1022,7 +1023,7 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
+           false /* should_have_sticky_user_activation */,
+           nullptr /* old_page_info */, -1 /* http_response_code */,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          std::vector<GURL>() /* early_hints_preloaded_resources */,
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           base::TimeTicks() /* commit_sent */, std::string() /* srcdoc_value */,
+           false /* should_load_data_url */, ancestor_or_self_has_cspee,
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 951cf62d39ab..2ea442706d6b 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -180,6 +180,7 @@
+ #include "services/network/public/mojom/connection_change_observer_client.mojom.h"
+ #include "services/network/public/mojom/device_bound_sessions.mojom.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
++#include "services/network/public/mojom/link_header.mojom.h"
+ #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-shared.h"
+ #include "services/network/public/mojom/supports_loading_mode.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom-forward.h"
+@@ -1479,7 +1480,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+           /*should_have_sticky_user_activation=*/false,
+           /*old_page_info=*/nullptr, /*http_response_code=*/-1,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+@@ -1642,7 +1643,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+           /*should_have_sticky_user_activation=*/false,
+           /*old_page_info=*/nullptr, http_response_code,
+           blink::mojom::NavigationApiHistoryEntryArrays::New(),
+-          /*early_hints_preloaded_resources=*/std::vector<GURL>(),
++          std::vector<network::mojom::LinkHeaderPtr>(),
+           // This timestamp will be populated when the commit IPC is sent.
+           /*commit_sent=*/base::TimeTicks(), /*srcdoc_value=*/std::string(),
+           /*should_load_data_url=*/false,
+@@ -6814,7 +6815,7 @@ void NavigationRequest::CommitNavigation() {
+ 
+   if (early_hints_manager_) {
+     commit_params_->early_hints_preloaded_resources =
+-        early_hints_manager_->TakePreloadedResourceURLs();
++        early_hints_manager_->TakePreloadedResources();
+   }
+ 
+   if (response_head_) {
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index 25832df01fb1..83c6e14f1741 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -566,8 +566,16 @@ void FillNavigationParamsRequest(
+   navigation_params->force_enabled_origin_trials = base::ToVector(
+       commit_params.force_enabled_origin_trials, &WebString::FromASCII);
+ 
+-  navigation_params->early_hints_preloaded_resources = base::ToVector(
+-      commit_params.early_hints_preloaded_resources, blink::ToWebURL);
++  navigation_params->early_hints_preloaded_resources.reserve(
++      commit_params.early_hints_preloaded_resources.size());
++  for (const auto& link : commit_params.early_hints_preloaded_resources) {
++    blink::WebEarlyHintsPreloadInfo web_info;
++    web_info.url = blink::ToWebURL(link->href);
++    web_info.as = link->as;
++    web_info.cross_origin = link->cross_origin;
++    navigation_params->early_hints_preloaded_resources.push_back(
++        std::move(web_info));
++  }
+ 
+   // Pass on the `initiator_base_url` sent via the common_params for srcdoc and
+   // about:blank documents. This will be picked up in DocumentLoader.
+diff --git a/media/filters/ffmpeg_glue.cc b/media/filters/ffmpeg_glue.cc
+index b2d24f05c30e..d8a405619817 100644
+--- a/media/filters/ffmpeg_glue.cc
++++ b/media/filters/ffmpeg_glue.cc
+@@ -10,9 +10,6 @@
+ #include "media/filters/ffmpeg_glue.h"
+ 
+ #include "base/check_op.h"
+-#if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
+-#include "base/logging.h"
+-#endif
+ #include "base/metrics/histogram_functions.h"
+ #include "base/no_destructor.h"
+ #include "base/notreached.h"
+@@ -23,6 +20,10 @@
+ #include "media/base/supported_types.h"
+ #include "media/ffmpeg/ffmpeg_common.h"
+ 
++#if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
++#include "base/logging.h"
++#endif
++
+ namespace media {
+ 
+ // Internal buffer size used by AVIO for reading.
+diff --git a/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index 5f9b9fa27bb7..a7f188985fa5 100644
+--- a/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -751,12 +751,15 @@ angle::Result TextureStorage11::copySubresourceLevel(const gl::Context *context,
+     D3D11_BOX *pSrcBox = nullptr;
+     if (mRenderer->getRenderer11DeviceCaps().featureLevel <= D3D_FEATURE_LEVEL_9_3)
+     {
+-        GLsizei width  = region.width;
+-        GLsizei height = region.height;
+-        d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, nullptr);
++        GLsizei width       = region.width;
++        GLsizei height      = region.height;
++        GLsizei depth       = region.depth;
++        int unusedLevelOffset = 0;
++        d3d11::MakeValidSize(false, mFormatInfo.texFormat, index.getType(), width, height, depth,
++                             unusedLevelOffset);
+ 
+         // Keep srcbox as nullptr if we're dealing with tiny mips of compressed textures.
+-        if (width == region.width && height == region.height)
++        if (width == region.width && height == region.height && depth == region.depth)
+         {
+             // However, D3D10Level9 doesn't always perform CopySubresourceRegion correctly unless
+             // the source box is specified. This is okay, since we don't perform
+diff --git a/third_party/blink/public/mojom/navigation/navigation_params.mojom b/third_party/blink/public/mojom/navigation/navigation_params.mojom
+index f40c84646e05..6578b589cd54 100644
+--- a/third_party/blink/public/mojom/navigation/navigation_params.mojom
++++ b/third_party/blink/public/mojom/navigation/navigation_params.mojom
+@@ -10,6 +10,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
+ import "mojo/public/mojom/base/values.mojom";
+ import "services/network/public/mojom/content_security_policy.mojom";
+ import "services/network/public/mojom/fetch_api.mojom";
++import "services/network/public/mojom/link_header.mojom";
+ import "services/network/public/mojom/source_location.mojom";
+ import "services/network/public/mojom/storage_access_api.mojom";
+ import "services/network/public/mojom/trust_tokens.mojom";
+@@ -547,7 +548,9 @@ struct CommitNavigationParams {
+   // window.navigation API.
+   NavigationApiHistoryEntryArrays navigation_api_history_entry_arrays;
+ 
+-  array<url.mojom.Url> early_hints_preloaded_resources;
++  // Resources preloaded by Early Hints responses, represented as LinkHeader
++  // structs containing the parsed href, as, and crossorigin attributes.
++  array<network.mojom.LinkHeader> early_hints_preloaded_resources;
+ 
+   // The time the commit was sent from the browser.
+   mojo_base.mojom.TimeTicks commit_sent;
+diff --git a/third_party/blink/public/web/web_navigation_params.h b/third_party/blink/public/web/web_navigation_params.h
+index 291d175f2812..2ec381ba6c6a 100644
+--- a/third_party/blink/public/web/web_navigation_params.h
++++ b/third_party/blink/public/web/web_navigation_params.h
+@@ -65,6 +65,15 @@ class TickClock;
+ 
+ namespace blink {
+ 
++// Information about a resource preloaded by an Early Hints response.
++struct BLINK_EXPORT WebEarlyHintsPreloadInfo {
++  WebURL url;
++  network::mojom::LinkAsAttribute as =
++      network::mojom::LinkAsAttribute::kUnspecified;
++  network::mojom::CrossOriginAttribute cross_origin =
++      network::mojom::CrossOriginAttribute::kUnspecified;
++};
++
+ class WebDocumentLoader;
+ class WebServiceWorkerNetworkProvider;
+ 
+@@ -495,11 +504,10 @@ struct BLINK_EXPORT WebNavigationParams {
+   std::vector<WebHistoryItem> navigation_api_forward_entries;
+   WebHistoryItem navigation_api_previous_entry;
+ 
+-  // List of URLs which are preloaded by HTTP Early Hints.
+-  // TODO(https://crbug.com/1317936): Pass information more than URL such as
+-  // request destination so that ResourceFetcher can provide more useful
+-  // console messages when Early Hints preloaded resources are not used.
+-  std::vector<WebURL> early_hints_preloaded_resources;
++  // List of resources preloaded by HTTP Early Hints, including URL and
++  // request attributes (destination from "as", credentials mode from
++  // "crossorigin").
++  std::vector<WebEarlyHintsPreloadInfo> early_hints_preloaded_resources;
+ 
+   // If this is a navigation to fenced frame from an interest group auction,
+   // contains URNs mapped to the ad components returned by the winning bid.
+diff --git a/third_party/blink/renderer/bindings/generated_in_core.gni b/third_party/blink/renderer/bindings/generated_in_core.gni
+index 2136871e8a1c..59cce1304c94 100644
+--- a/third_party/blink/renderer/bindings/generated_in_core.gni
++++ b/third_party/blink/renderer/bindings/generated_in_core.gni
+@@ -557,6 +557,8 @@ generated_enumeration_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation_or_auto.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_composite_operation_or_auto.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_math_operator.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_math_operator.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_css_numeric_base_type.cc",
+@@ -1342,6 +1344,10 @@ generated_interface_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_popup_controller.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_transition_event.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_page_transition_event.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preload_data.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preload_data.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_speculation_data.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_speculation_data.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_part.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_part.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_patch_event.cc",
+diff --git a/third_party/blink/renderer/bindings/idl_in_core.gni b/third_party/blink/renderer/bindings/idl_in_core.gni
+index 975a74da2699..69124a1533c7 100644
+--- a/third_party/blink/renderer/bindings/idl_in_core.gni
++++ b/third_party/blink/renderer/bindings/idl_in_core.gni
+@@ -765,8 +765,10 @@ static_idl_files_in_core = [
+   "//third_party/blink/renderer/core/timing/profiler_init_options.idl",
+   "//third_party/blink/renderer/core/timing/profiler_sample.idl",
+   "//third_party/blink/renderer/core/timing/profiler_stack.idl",
++  "//third_party/blink/renderer/core/timing/preload_data.idl",
+   "//third_party/blink/renderer/core/timing/profiler_trace.idl",
+   "//third_party/blink/renderer/core/timing/soft_navigation_entry.idl",
++  "//third_party/blink/renderer/core/timing/speculation_data.idl",
+   "//third_party/blink/renderer/core/timing/task_attribution_timing.idl",
+   "//third_party/blink/renderer/core/timing/visibility_state_entry.idl",
+   "//third_party/blink/renderer/core/timing/window_performance.idl",
+diff --git a/third_party/blink/renderer/core/clipboard/data_transfer.cc b/third_party/blink/renderer/core/clipboard/data_transfer.cc
+index 455478c44b88..b83bd2970c2d 100644
+--- a/third_party/blink/renderer/core/clipboard/data_transfer.cc
++++ b/third_party/blink/renderer/core/clipboard/data_transfer.cc
+@@ -495,7 +495,7 @@ static void WriteImageToDataObject(DataObject* data_object,
+     return;
+ 
+   data_object->AddFileSharedBuffer(
+-      image_buffer, cached_image->IsAccessAllowed(), image_url,
++      image_buffer, cached_image->IsCorsSameOrigin(), image_url,
+       image->FilenameExtension(),
+       cached_image->GetResponse().HttpHeaderFields().Get(
+           http_names::kContentDisposition));
+diff --git a/third_party/blink/renderer/core/css/style_image_cache.cc b/third_party/blink/renderer/core/css/style_image_cache.cc
+index 43ced3ebb68b..6e9e03560c19 100644
+--- a/third_party/blink/renderer/core/css/style_image_cache.cc
++++ b/third_party/blink/renderer/core/css/style_image_cache.cc
+@@ -12,10 +12,15 @@ namespace blink {
+ 
+ namespace {
+ 
+-bool CanReuseImageContent(const ImageResourceContent& image_content) {
++bool CanReuseImageContent(const ImageResourceContent& image_content,
++                          FetchParameters& params) {
+   if (image_content.ErrorOccurred()) {
+     return false;
+   }
++  if (params.GetCrossOriginAttributeValue() != kCrossOriginAttributeNotSet &&
++      !image_content.IsCorsSameOrigin()) {
++    return false;
++  }
+   return true;
+ }
+ 
+@@ -31,7 +36,7 @@ ImageResourceContent* StyleImageCache::CacheImageContent(
+   auto& image_content =
+       fetched_image_map_.insert(url_without_fragment.GetString(), nullptr)
+           .stored_value->value;
+-  if (!image_content || !CanReuseImageContent(*image_content)) {
++  if (!image_content || !CanReuseImageContent(*image_content, params)) {
+     image_content = ImageResourceContent::Fetch(params, fetcher);
+   }
+   return image_content.Get();
+diff --git a/third_party/blink/renderer/core/exported/web_searchable_form_data.cc b/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+index 6c040767f20d..b81f17721883 100644
+--- a/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
++++ b/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+@@ -187,7 +187,8 @@ bool BuildSearchString(const HTMLFormElement& form,
+                        const TextEncoding& encoding,
+                        const HTMLInputElement* text_element) {
+   bool is_element_found = false;
+-  for (ListedElement* item : form.ListedElements()) {
++  ListedElement::List elements(form.ListedElements());
++  for (ListedElement* item : elements) {
+     auto* control = DynamicTo<HTMLFormControlElement>(item);
+     if (!control)
+       continue;
+diff --git a/third_party/blink/renderer/core/html/canvas/image_element_base.cc b/third_party/blink/renderer/core/html/canvas/image_element_base.cc
+index 6ea2fc49b078..31d92f577baa 100644
+--- a/third_party/blink/renderer/core/html/canvas/image_element_base.cc
++++ b/third_party/blink/renderer/core/html/canvas/image_element_base.cc
+@@ -96,7 +96,7 @@ scoped_refptr<Image> ImageElementBase::GetSourceImageForCanvas(
+ }
+ 
+ bool ImageElementBase::WouldTaintOrigin() const {
+-  return CachedImage() && !CachedImage()->IsAccessAllowed();
++  return CachedImage() && !CachedImage()->IsCorsSameOrigin();
+ }
+ 
+ gfx::SizeF ImageElementBase::ElementSize(
+diff --git a/third_party/blink/renderer/core/html/forms/html_form_element.cc b/third_party/blink/renderer/core/html/forms/html_form_element.cc
+index 033d3b8ed033..83bfe5cea2d6 100644
+--- a/third_party/blink/renderer/core/html/forms/html_form_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_form_element.cc
+@@ -594,6 +594,7 @@ void HTMLFormElement::ScheduleFormSubmission(
+       target_frame->ScheduleFormSubmission(scheduler, form_submission);
+ }
+ 
++// https://html.spec.whatwg.org/multipage/#constructing-the-form-data-set
+ FormData* HTMLFormElement::ConstructEntryList(
+     HTMLFormControlElement* submit_button,
+     const TextEncoding& encoding) {
+@@ -604,7 +605,10 @@ FormData* HTMLFormElement::ConstructEntryList(
+   base::AutoReset<bool> entry_list_scope(&is_constructing_entry_list_, true);
+   if (submit_button)
+     submit_button->SetActivatedSubmit(true);
+-  for (ListedElement* control : ListedElements()) {
++  // Copy the element list because |AppendToFormData()| can update DOM
++  // structure.
++  ListedElement::List elements(ListedElements());
++  for (ListedElement* control : elements) {
+     DCHECK(control);
+     HTMLElement& element = control->ToHTMLElement();
+     if (!element.IsDisabledFormControl())
+diff --git a/third_party/blink/renderer/core/html/forms/image_input_type.cc b/third_party/blink/renderer/core/html/forms/image_input_type.cc
+index e744258f0a55..e43b14538f00 100644
+--- a/third_party/blink/renderer/core/html/forms/image_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/image_input_type.cc
+@@ -248,6 +248,9 @@ void ImageInputType::EnsurePrimaryContent() {
+   if (!HasCreatedShadowSubtree()) {
+     return;
+   }
++  if (GetElement().GetDocument().InStyleRecalc()) {
++    return;
++  }
+   if (ShadowRoot* root = GetElement().UserAgentShadowRoot())
+     root->RemoveChildren();
+   CreateShadowSubtree();
+diff --git a/third_party/blink/renderer/core/html/media/html_video_element.cc b/third_party/blink/renderer/core/html/media/html_video_element.cc
+index 320df9a8f972..c14ce5ceb59a 100644
+--- a/third_party/blink/renderer/core/html/media/html_video_element.cc
++++ b/third_party/blink/renderer/core/html/media/html_video_element.cc
+@@ -467,6 +467,7 @@ void HTMLVideoElement::OnFirstFrame(base::TimeTicks frame_time,
+     video_timing->SetIsSufficientContentLoadedForPaint();
+     video_timing->SetUrl(currentSrc());
+     video_timing->SetContentSizeForEntropy(bytes_to_first_frame);
++    video_timing->SetIsCorsSameOrigin(!WouldTaintOrigin());
+     video_timing->SetTimingAllowPassed(
+         GetWebMediaPlayer()->PassedTimingAllowOriginCheck());
+ 
+diff --git a/third_party/blink/renderer/core/layout/layout_image_resource.cc b/third_party/blink/renderer/core/layout/layout_image_resource.cc
+index 8ce06093a34e..63b20a087bc7 100644
+--- a/third_party/blink/renderer/core/layout/layout_image_resource.cc
++++ b/third_party/blink/renderer/core/layout/layout_image_resource.cc
+@@ -182,7 +182,7 @@ void LayoutImageResource::UseBrokenImage() {
+ }
+ 
+ bool LayoutImageResource::IsAccessAllowed() const {
+-  return !cached_image_ || cached_image_->IsAccessAllowed();
++  return !cached_image_ || cached_image_->IsCorsSameOrigin();
+ }
+ 
+ scoped_refptr<Image> LayoutImageResource::GetImage(
+diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
+index cf8d354ff76d..3cc96f43ba62 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -670,8 +670,11 @@ DocumentLoader::DocumentLoader(
+   if (was_blocked_by_document_policy_)
+     ReplaceWithEmptyDocument();
+ 
+-  for (const auto& resource : params_->early_hints_preloaded_resources)
+-    early_hints_preloaded_resources_.insert(resource, EarlyHintsPreloadEntry());
++  for (const auto& resource : params_->early_hints_preloaded_resources) {
++    early_hints_preloaded_resources_.insert(
++        KURL(resource.url),
++        EarlyHintsPreloadEntry(resource.as, resource.cross_origin));
++  }
+ 
+   CHECK_EQ(IsBackForwardOrRestore(params_->frame_load_type), !!history_item_);
+ 
+@@ -763,8 +766,13 @@ DocumentLoader::CreateWebNavigationParamsToCloneDocument() {
+       CopyInitiatorOriginTrials(initiator_origin_trial_features_);
+   params->force_enabled_origin_trials =
+       CopyForceEnabledOriginTrials(force_enabled_origin_trials_);
+-  for (const auto& pair : early_hints_preloaded_resources_)
+-    params->early_hints_preloaded_resources.push_back(pair.key);
++  for (const auto& pair : early_hints_preloaded_resources_) {
++    WebEarlyHintsPreloadInfo info;
++    info.url = pair.key;
++    info.as = pair.value.as;
++    info.cross_origin = pair.value.cross_origin;
++    params->early_hints_preloaded_resources.push_back(std::move(info));
++  }
+   if (ad_auction_components_) {
+     params->ad_auction_components.emplace();
+     for (const KURL& url : *ad_auction_components_) {
+diff --git a/third_party/blink/renderer/core/loader/preload_helper.h b/third_party/blink/renderer/core/loader/preload_helper.h
+index 07723d369868..dcee210993c0 100644
+--- a/third_party/blink/renderer/core/loader/preload_helper.h
++++ b/third_party/blink/renderer/core/loader/preload_helper.h
+@@ -103,6 +103,7 @@ class PreloadHelper final {
+ 
+   static std::optional<ResourceType> GetResourceTypeFromAsAttribute(
+       const String& as);
++
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/loader/resource/image_resource.cc b/third_party/blink/renderer/core/loader/resource/image_resource.cc
+index afb20158174c..3d5bfda06a6d 100644
+--- a/third_party/blink/renderer/core/loader/resource/image_resource.cc
++++ b/third_party/blink/renderer/core/loader/resource/image_resource.cc
+@@ -204,11 +204,11 @@ class ImageResource::ImageResourceInfoImpl final
+   bool IsCacheValidator() const override {
+     return resource_->IsCacheValidator();
+   }
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin
+-          does_current_frame_has_single_security_origin) const override {
+-    return resource_->IsAccessAllowed(
+-        does_current_frame_has_single_security_origin);
++          does_current_frame_have_single_security_origin) const override {
++    return resource_->IsCorsSameOrigin(
++        does_current_frame_have_single_security_origin);
+   }
+   std::optional<ResourceError> GetResourceError() const override {
+     if (resource_->LoadFailedOrCanceled())
+@@ -640,13 +640,13 @@ void ImageResource::MultipartDataReceived(base::span<const uint8_t> bytes) {
+   Resource::AppendData(base::as_chars(bytes));
+ }
+ 
+-bool ImageResource::IsAccessAllowed(
++bool ImageResource::IsCorsSameOrigin(
+     ImageResourceInfo::DoesCurrentFrameHaveSingleSecurityOrigin
+-        does_current_frame_has_single_security_origin) const {
+-  if (does_current_frame_has_single_security_origin !=
+-      ImageResourceInfo::kHasSingleSecurityOrigin)
++        does_current_frame_have_single_security_origin) const {
++  if (does_current_frame_have_single_security_origin !=
++      ImageResourceInfo::kHasSingleSecurityOrigin) {
+     return false;
+-
++  }
+   return GetResponse().IsCorsSameOrigin();
+ }
+ 
+diff --git a/third_party/blink/renderer/core/loader/resource/image_resource.h b/third_party/blink/renderer/core/loader/resource/image_resource.h
+index ed3902b7548d..31bf1e99947c 100644
+--- a/third_party/blink/renderer/core/loader/resource/image_resource.h
++++ b/third_party/blink/renderer/core/loader/resource/image_resource.h
+@@ -136,7 +136,7 @@ class CORE_EXPORT ImageResource final
+ 
+   // Only for ImageResourceInfoImpl.
+   void DecodeError(bool all_data_received);
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       ImageResourceInfo::DoesCurrentFrameHaveSingleSecurityOrigin) const;
+ 
+   bool HasClientsOrObservers() const override;
+diff --git a/third_party/blink/renderer/core/loader/resource/image_resource_content.cc b/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
+index 2b63c16d1842..fe8bc5fd29b6 100644
+--- a/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
++++ b/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
+@@ -52,7 +52,7 @@ class NullImageResourceInfo final
+   base::TimeTicks DiscoveryTime() const override { return base::TimeTicks(); }
+   const ResourceResponse& GetResponse() const override { return response_; }
+   bool IsCacheValidator() const override { return false; }
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin) const override {
+     return true;
+   }
+@@ -312,8 +312,9 @@ gfx::Size ImageResourceContent::IntrinsicSize(
+ 
+ RespectImageOrientationEnum ImageResourceContent::ForceOrientationIfNecessary(
+     RespectImageOrientationEnum default_orientation) const {
+-  if (image_ && image_->IsBitmapImage() && !IsAccessAllowed())
++  if (image_ && image_->IsBitmapImage() && !IsCorsSameOrigin()) {
+     return kRespectImageOrientation;
++  }
+   return default_orientation;
+ }
+ 
+@@ -619,8 +620,8 @@ void ImageResourceContent::Changed(const blink::Image* image) {
+   NotifyObservers(kDoNotNotifyFinish, CanDeferInvalidation::kYes);
+ }
+ 
+-bool ImageResourceContent::IsAccessAllowed() const {
+-  return info_->IsAccessAllowed(
++bool ImageResourceContent::IsCorsSameOrigin() const {
++  return info_->IsCorsSameOrigin(
+       GetImage()->HasSingleSecurityOrigin()
+           ? ImageResourceInfo::kHasSingleSecurityOrigin
+           : ImageResourceInfo::kHasMultipleSecurityOrigin);
+diff --git a/third_party/blink/renderer/core/loader/resource/image_resource_content.h b/third_party/blink/renderer/core/loader/resource/image_resource_content.h
+index 6cd18cbd032e..defded2d60cc 100644
+--- a/third_party/blink/renderer/core/loader/resource/image_resource_content.h
++++ b/third_party/blink/renderer/core/loader/resource/image_resource_content.h
+@@ -142,7 +142,7 @@ class CORE_EXPORT ImageResourceContent final
+   base::TimeTicks LoadStart() const override;
+   base::TimeTicks LoadEnd() const override;
+   AtomicString MediaType() const override;
+-  bool IsAccessAllowed() const;
++  bool IsCorsSameOrigin() const override;
+   const ResourceResponse& GetResponse() const;
+   std::optional<ResourceError> GetResourceError() const;
+ 
+diff --git a/third_party/blink/renderer/core/loader/resource/image_resource_info.h b/third_party/blink/renderer/core/loader/resource/image_resource_info.h
+index bb95174b8e6b..1ec1852cf9c6 100644
+--- a/third_party/blink/renderer/core/loader/resource/image_resource_info.h
++++ b/third_party/blink/renderer/core/loader/resource/image_resource_info.h
+@@ -40,7 +40,7 @@ class CORE_EXPORT ImageResourceInfo : public GarbageCollectedMixin {
+     kHasMultipleSecurityOrigin,
+     kHasSingleSecurityOrigin
+   };
+-  virtual bool IsAccessAllowed(
++  virtual bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin) const = 0;
+   virtual std::optional<ResourceError> GetResourceError() const = 0;
+ 
+diff --git a/third_party/blink/renderer/core/loader/resource/video_timing.h b/third_party/blink/renderer/core/loader/resource/video_timing.h
+index bb7d83d1786d..cd470825b25f 100644
+--- a/third_party/blink/renderer/core/loader/resource/video_timing.h
++++ b/third_party/blink/renderer/core/loader/resource/video_timing.h
+@@ -47,6 +47,11 @@ class VideoTiming final : public GarbageCollected<VideoTiming>,
+   }
+   bool TimingAllowPassed() const override { return timing_allow_passed_; }
+ 
++  void SetIsCorsSameOrigin(bool is_cors_same_origin) {
++    is_cors_same_origin_ = is_cors_same_origin;
++  }
++  bool IsCorsSameOrigin() const override { return is_cors_same_origin_; }
++
+   uint64_t ContentSizeForEntropy() const override {
+     // We don't do anything clever here to try to isolate the encoded size of
+     // just the first frame; if we're calling this, then at least enough data
+@@ -79,6 +84,7 @@ class VideoTiming final : public GarbageCollected<VideoTiming>,
+  private:
+   KURL url_;
+   bool is_loaded_ = false;
++  bool is_cors_same_origin_ = false;
+   base::TimeTicks first_frame_time_;
+   bool timing_allow_passed_ = false;
+   size_t content_size_ = 0;
+diff --git a/third_party/blink/renderer/core/paint/timing/paint_timing_record.cc b/third_party/blink/renderer/core/paint/timing/paint_timing_record.cc
+index 472ecf6e6478..770d25e67c06 100644
+--- a/third_party/blink/renderer/core/paint/timing/paint_timing_record.cc
++++ b/third_party/blink/renderer/core/paint/timing/paint_timing_record.cc
+@@ -78,6 +78,8 @@ ImageRecord::ImageRecord(Node* node,
+                         root_visual_rect,
+                         soft_navigation_context),
+       media_timing_(new_media_timing),
++      is_cors_same_origin_(new_media_timing &&
++                           new_media_timing->IsCorsSameOrigin()),
+       hash_(hash) {
+   CHECK_GT(RecordedSize(), 0u);
+ }
+diff --git a/third_party/blink/renderer/core/paint/timing/paint_timing_record.h b/third_party/blink/renderer/core/paint/timing/paint_timing_record.h
+index d67e39023849..c82811c620f5 100644
+--- a/third_party/blink/renderer/core/paint/timing/paint_timing_record.h
++++ b/third_party/blink/renderer/core/paint/timing/paint_timing_record.h
+@@ -158,12 +158,15 @@ class CORE_EXPORT ImageRecord final : public PaintTimingRecord {
+   MediaRecordIdHash Hash() const { return hash_; }
+   const MediaTiming* GetMediaTiming() const { return media_timing_; }
+ 
++  bool IsCorsSameOrigin() const { return is_cors_same_origin_; }
++
+  private:
+   const WeakMember<const MediaTiming> media_timing_;
+   const MediaRecordIdHash hash_;
+   base::TimeTicks load_time_;
+   base::TimeTicks first_animated_frame_time_;
+   bool is_first_animated_frame_paint_timing_queued_ = false;
++  const bool is_cors_same_origin_;
+   bool is_loaded_ = false;
+   // A non-style image, or a style image that comes from an origin-clean style.
+   // Images that come from origin-dirty styles should have some limitations on
+diff --git a/third_party/blink/renderer/core/style/style_fetched_image.cc b/third_party/blink/renderer/core/style/style_fetched_image.cc
+index 19a3e2b8cd4e..40f527e84a49 100644
+--- a/third_party/blink/renderer/core/style/style_fetched_image.cc
++++ b/third_party/blink/renderer/core/style/style_fetched_image.cc
+@@ -124,7 +124,7 @@ bool StyleFetchedImage::ErrorOccurred() const {
+ 
+ bool StyleFetchedImage::IsAccessAllowed(String& failing_url) const {
+   DCHECK(image_->IsLoaded());
+-  if (image_->IsAccessAllowed()) {
++  if (image_->IsCorsSameOrigin()) {
+     return true;
+   }
+   failing_url = image_->Url().ElidedString();
+@@ -274,7 +274,7 @@ RespectImageOrientationEnum StyleFetchedImage::ForceOrientationIfNecessary(
+   }
+   // Cross-origin images must always respect orientation to prevent
+   // potentially private data leakage.
+-  if (!image_->IsAccessAllowed()) {
++  if (!image_->IsCorsSameOrigin()) {
+     return kRespectImageOrientation;
+   }
+   return default_orientation;
+diff --git a/third_party/blink/renderer/core/svg/svg_fe_image_element.cc b/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
+index 8cb60a948a1b..c778498d4bde 100644
+--- a/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
+@@ -179,7 +179,7 @@ FilterEffect* SVGFEImageElement::Build(SVGFilterBuilder*, Filter* filter) {
+ 
+ bool SVGFEImageElement::TaintsOrigin() const {
+   // We always consider a 'href' that references a local element as tainting.
+-  return !cached_image_ || !cached_image_->IsAccessAllowed();
++  return !cached_image_ || !cached_image_->IsCorsSameOrigin();
+ }
+ 
+ SVGAnimatedPropertyBase* SVGFEImageElement::PropertyFromAttribute(
+diff --git a/third_party/blink/renderer/core/timing/build.gni b/third_party/blink/renderer/core/timing/build.gni
+index b7fa56749dae..084911ffdeee 100644
+--- a/third_party/blink/renderer/core/timing/build.gni
++++ b/third_party/blink/renderer/core/timing/build.gni
+@@ -72,6 +72,8 @@ blink_core_sources_timing = [
+   "performance_server_timing.h",
+   "performance_timing.cc",
+   "performance_timing.h",
++  "preload_data.cc",
++  "preload_data.h",
+   "performance_timing_confidence.cc",
+   "performance_timing_confidence.h",
+   "performance_timing_for_reporting.h",
+@@ -88,6 +90,8 @@ blink_core_sources_timing = [
+   "responsiveness_metrics.h",
+   "render_blocking_metrics_reporter.cc",
+   "render_blocking_metrics_reporter.h",
++  "speculation_data.cc",
++  "speculation_data.h",
+   "soft_navigation_context.cc",
+   "soft_navigation_context.h",
+   "soft_navigation_heuristics.cc",
+diff --git a/third_party/blink/renderer/core/timing/performance.cc b/third_party/blink/renderer/core/timing/performance.cc
+index 434b6977d896..b82c8442bcd0 100644
+--- a/third_party/blink/renderer/core/timing/performance.cc
++++ b/third_party/blink/renderer/core/timing/performance.cc
+@@ -329,6 +329,10 @@ MemoryInfo* Performance::memory(ScriptState*) const {
+   return nullptr;
+ }
+ 
++SpeculationData* Performance::getSpeculations() {
++  return nullptr;
++}
++
+ EventCounts* Performance::eventCounts() {
+   return nullptr;
+ }
+diff --git a/third_party/blink/renderer/core/timing/performance.h b/third_party/blink/renderer/core/timing/performance.h
+index 7d8c99ea1c26..c3e3009b8e07 100644
+--- a/third_party/blink/renderer/core/timing/performance.h
++++ b/third_party/blink/renderer/core/timing/performance.h
+@@ -87,6 +87,7 @@ class PerformanceTiming;
+ class ScriptState;
+ class ScriptValue;
+ class SoftNavigationEntry;
++class SpeculationData;
+ class UserTiming;
+ class V8ObjectBuilder;
+ class V8UnionDoubleOrString;
+@@ -120,6 +121,7 @@ class CORE_EXPORT Performance : public EventTarget {
+       ScriptState*,
+       ExceptionState& exception_state) const;
+   virtual EventCounts* eventCounts();
++  virtual SpeculationData* getSpeculations();
+   virtual std::uint64_t interactionCount() const = 0;
+   virtual void PopulateContainerTimingEntries() {}
+ 
+diff --git a/third_party/blink/renderer/core/timing/performance.idl b/third_party/blink/renderer/core/timing/performance.idl
+index 11c4cec19026..03adad834aaf 100644
+--- a/third_party/blink/renderer/core/timing/performance.idl
++++ b/third_party/blink/renderer/core/timing/performance.idl
+@@ -76,5 +76,9 @@ interface Performance : EventTarget {
+ 
+     [Exposed=Window, RuntimeEnabled=UserDefinedEntryPointTiming] Function bind(Function innerFunction, optional any thisArg, any... args);
+ 
++    // Speculation Measurement
++    // https://github.com/yoavweiss/speculative_load_measurement
++    [Exposed=Window, RuntimeEnabled=SpeculationMeasurement] SpeculationData getSpeculations();
++
+     [CallWith=ScriptState, ImplementedAs=toJSONForBinding] object toJSON();
+ };
+diff --git a/third_party/blink/renderer/core/timing/preload_data.cc b/third_party/blink/renderer/core/timing/preload_data.cc
+new file mode 100644
+index 000000000000..e89f75c442ff
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/preload_data.cc
+@@ -0,0 +1,48 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/timing/preload_data.h"
++
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/timing/dom_window_performance.h"
++#include "third_party/blink/renderer/core/timing/window_performance.h"
++#include "third_party/blink/renderer/platform/bindings/script_state.h"
++
++namespace blink {
++
++PreloadData::PreloadData(const KURL& url,
++                         const String& as,
++                         CrossOriginAttributeValue crossorigin,
++                         std::optional<base::TimeTicks> used_time)
++    : url_(url), as_(as), crossorigin_(crossorigin), used_time_(used_time) {}
++
++V8CrossOriginMode PreloadData::crossorigin() const {
++  switch (crossorigin_) {
++    case kCrossOriginAttributeNotSet:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kNone);
++    case kCrossOriginAttributeAnonymous:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kAnonymous);
++    case kCrossOriginAttributeUseCredentials:
++      return V8CrossOriginMode(V8CrossOriginMode::Enum::kUseCredentials);
++  }
++}
++
++std::optional<double> PreloadData::used(ScriptState* script_state) const {
++  if (!used_time_.has_value()) {
++    return std::nullopt;
++  }
++  auto* window = LocalDOMWindow::From(script_state);
++  if (!window) {
++    return std::nullopt;
++  }
++  return DOMWindowPerformance::performance(*window)
++      ->MonotonicTimeToDOMHighResTimeStamp(used_time_.value());
++}
++
++void PreloadData::Trace(Visitor* visitor) const {
++  ScriptWrappable::Trace(visitor);
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/timing/preload_data.h b/third_party/blink/renderer/core/timing/preload_data.h
+new file mode 100644
+index 000000000000..341b6a42db59
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/preload_data.h
+@@ -0,0 +1,50 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
++
++#include <optional>
++
++#include "base/time/time.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
++#include "third_party/blink/renderer/core/core_export.h"
++#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
++#include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++
++namespace blink {
++
++class ScriptState;
++
++// https://github.com/WICG/speculative_load_measurement
++class PreloadData final : public ScriptWrappable {
++  DEFINE_WRAPPERTYPEINFO();
++
++ public:
++  PreloadData(const KURL& url,
++              const String& as,
++              CrossOriginAttributeValue crossorigin,
++              std::optional<base::TimeTicks> used_time);
++
++  String url() const { return url_.GetString(); }
++  const String& as() const { return as_; }
++  V8CrossOriginMode crossorigin() const;
++  std::optional<double> used(ScriptState* script_state) const;
++
++  void Trace(Visitor*) const override;
++
++ private:
++  const KURL url_;
++  const String as_;
++  const CrossOriginAttributeValue crossorigin_;
++  // Monotonic time when the preload was used, or nullopt if unused.
++  // Converted to a coarsened DOMHighResTimeStamp on access.
++  const std::optional<base::TimeTicks> used_time_;
++};
++
++}  // namespace blink
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_PRELOAD_DATA_H_
+diff --git a/third_party/blink/renderer/core/timing/preload_data.idl b/third_party/blink/renderer/core/timing/preload_data.idl
+new file mode 100644
+index 000000000000..99d284b2bf9d
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/preload_data.idl
+@@ -0,0 +1,24 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// https://github.com/yoavweiss/speculative_load_measurement
++
++// Represents the crossorigin attribute state for preloads.
++// "none" means no crossorigin attribute was set (no-cors mode).
++// "anonymous" means crossorigin="" or crossorigin="anonymous" (CORS with
++// same-origin credentials).
++// "use-credentials" means crossorigin="use-credentials" (CORS with included
++// credentials).
++enum CrossOriginMode { "none", "anonymous", "use-credentials" };
++
++[
++    RuntimeEnabled=SpeculationMeasurement,
++    Exposed=Window
++]
++interface PreloadData {
++    readonly attribute USVString url;
++    readonly attribute DOMString as;
++    readonly attribute CrossOriginMode crossorigin;
++    [CallWith=ScriptState] readonly attribute DOMHighResTimeStamp? used;
++};
+diff --git a/third_party/blink/renderer/core/timing/speculation_data.cc b/third_party/blink/renderer/core/timing/speculation_data.cc
+new file mode 100644
+index 000000000000..76321e717766
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/speculation_data.cc
+@@ -0,0 +1,17 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/timing/speculation_data.h"
++
++namespace blink {
++
++SpeculationData::SpeculationData(HeapVector<Member<PreloadData>> preloads)
++    : preloads_(std::move(preloads)) {}
++
++void SpeculationData::Trace(Visitor* visitor) const {
++  visitor->Trace(preloads_);
++  ScriptWrappable::Trace(visitor);
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/timing/speculation_data.h b/third_party/blink/renderer/core/timing/speculation_data.h
+new file mode 100644
+index 000000000000..0267f50a31b0
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/speculation_data.h
+@@ -0,0 +1,34 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
++
++#include "third_party/blink/renderer/core/core_export.h"
++#include "third_party/blink/renderer/core/timing/preload_data.h"
++#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
++#include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/member.h"
++
++namespace blink {
++
++// https://github.com/WICG/speculative_load_measurement
++class SpeculationData final : public ScriptWrappable {
++  DEFINE_WRAPPERTYPEINFO();
++
++ public:
++  explicit SpeculationData(HeapVector<Member<PreloadData>> preloads);
++
++  const HeapVector<Member<PreloadData>>& preloads() const { return preloads_; }
++
++  void Trace(Visitor* visitor) const override;
++
++ private:
++  HeapVector<Member<PreloadData>> preloads_;
++};
++
++}  // namespace blink
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_TIMING_SPECULATION_DATA_H_
+diff --git a/third_party/blink/renderer/core/timing/speculation_data.idl b/third_party/blink/renderer/core/timing/speculation_data.idl
+new file mode 100644
+index 000000000000..8008e863b336
+--- /dev/null
++++ b/third_party/blink/renderer/core/timing/speculation_data.idl
+@@ -0,0 +1,13 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// https://github.com/yoavweiss/speculative_load_measurement
++
++[
++    RuntimeEnabled=SpeculationMeasurement,
++    Exposed=Window
++]
++interface SpeculationData {
++    readonly attribute FrozenArray<PreloadData> preloads;
++};
+diff --git a/third_party/blink/renderer/core/timing/window_performance.cc b/third_party/blink/renderer/core/timing/window_performance.cc
+index 91b342beb857..d25900db2371 100644
+--- a/third_party/blink/renderer/core/timing/window_performance.cc
++++ b/third_party/blink/renderer/core/timing/window_performance.cc
+@@ -90,14 +90,20 @@
+ #include "third_party/blink/renderer/core/timing/performance_paint_timing.h"
+ #include "third_party/blink/renderer/core/timing/performance_timing.h"
+ #include "third_party/blink/renderer/core/timing/performance_timing_for_reporting.h"
++#include "third_party/blink/renderer/core/timing/preload_data.h"
+ #include "third_party/blink/renderer/core/timing/responsiveness_metrics.h"
+ #include "third_party/blink/renderer/core/timing/soft_navigation_entry.h"
++#include "third_party/blink/renderer/core/timing/speculation_data.h"
+ #include "third_party/blink/renderer/core/timing/visibility_state_entry.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_cross_origin_mode.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_deque.h"
+ #include "third_party/blink/renderer/platform/heap/forward.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
++#include "third_party/blink/renderer/platform/loader/fetch/resource.h"
++#include "third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/thread_scheduler.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -1497,6 +1503,24 @@ EventCounts* WindowPerformance::eventCounts() {
+   return event_counts_.Get();
+ }
+ 
++SpeculationData* WindowPerformance::getSpeculations() {
++  LocalDOMWindow* window = DomWindow();
++  if (!window || !window->document() || !window->document()->Fetcher()) {
++    return MakeGarbageCollected<SpeculationData>(
++        HeapVector<Member<PreloadData>>());
++  }
++
++  HeapVector<Member<PreloadData>> preloads;
++  const auto& preload_records =
++      window->document()->Fetcher()->GetPreloadRecords();
++  for (const auto& [url, info] : preload_records) {
++    preloads.push_back(MakeGarbageCollected<PreloadData>(
++        url, info.as, info.crossorigin, info.used_time));
++  }
++
++  return MakeGarbageCollected<SpeculationData>(std::move(preloads));
++}
++
+ uint64_t WindowPerformance::interactionCount() const {
+   return responsiveness_metrics_->GetInteractionCount();
+ }
+diff --git a/third_party/blink/renderer/core/timing/window_performance.h b/third_party/blink/renderer/core/timing/window_performance.h
+index b7e8df8d88eb..f4a685bd90b8 100644
+--- a/third_party/blink/renderer/core/timing/window_performance.h
++++ b/third_party/blink/renderer/core/timing/window_performance.h
+@@ -85,6 +85,7 @@ class CORE_EXPORT WindowPerformance final : public Performance,
+   MemoryInfo* memory(ScriptState*) const override;
+ 
+   EventCounts* eventCounts() override;
++  SpeculationData* getSpeculations() override;
+   uint64_t interactionCount() const override;
+ 
+   void PopulateContainerTimingEntries() override;
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture.cc b/third_party/blink/renderer/modules/imagecapture/image_capture.cc
+index 7f71201fc782..2fa82d6928ec 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture.cc
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture.cc
+@@ -1673,7 +1673,7 @@ ScriptPromise<ImageBitmap> ImageCapture::grabFrame(ScriptState* script_state) {
+ 
+   // Create |m_frameGrabber| the first time.
+   if (!frame_grabber_) {
+-    frame_grabber_ = std::make_unique<ImageCaptureFrameGrabber>();
++    frame_grabber_ = base::MakeRefCounted<ImageCaptureFrameGrabber>();
+   }
+ 
+   if (!frame_grabber_) {
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture.h b/third_party/blink/renderer/modules/imagecapture/image_capture.h
+index 37767db4f282..880eed9526ae 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture.h
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture.h
+@@ -5,9 +5,9 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_MODULES_IMAGECAPTURE_IMAGE_CAPTURE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_IMAGECAPTURE_IMAGE_CAPTURE_H_
+ 
+-#include <memory>
+ #include <optional>
+ 
++#include "base/memory/scoped_refptr.h"
+ #include "base/time/time.h"
+ #include "media/capture/mojom/image_capture.mojom-blink.h"
+ #include "third_party/blink/public/mojom/permissions/permission.mojom-blink.h"
+@@ -176,7 +176,7 @@ class MODULES_EXPORT ImageCapture final
+       MediaTrackConstraintSetType) const;
+ 
+   Member<MediaStreamTrack> stream_track_;
+-  std::unique_ptr<ImageCaptureFrameGrabber> frame_grabber_;
++  scoped_refptr<ImageCaptureFrameGrabber> frame_grabber_;
+   HeapMojoRemote<media::mojom::blink::ImageCapture> service_;
+ 
+   // Whether the user has granted permission for the user to control camera PTZ.
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+index 9aa85c8fa5bb..27089ed389a3 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+@@ -5,7 +5,6 @@
+ #include "third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h"
+ 
+ #include "base/compiler_specific.h"
+-#include "base/synchronization/lock.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/thread_annotations.h"
+@@ -20,6 +19,7 @@
+ #include "third_party/blink/renderer/core/imagebitmap/image_bitmap.h"
+ #include "third_party/blink/renderer/platform/graphics/unaccelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/graphics/video_frame_image_util.h"
++#include "third_party/blink/renderer/platform/heap/cross_thread_handle.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_component.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_source.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cancellable_task.h"
+@@ -39,29 +39,59 @@ namespace blink {
+ // that have ScopedPromiseResolver parameters across threads.
+ //
+ // [1] third_party/blink/renderer/platform/wtf/cross_thread_copier.h.
+-template <typename T>
+-struct CrossThreadCopier<ScopedPromiseResolver<T>>
+-    : public CrossThreadCopierPassThrough<ScopedPromiseResolver<T>> {
+-  STATIC_ONLY(CrossThreadCopier);
+-  using Type = ScopedPromiseResolver<T>;
+-  static Type Copy(Type value) { return value; }
+-};
+-
+-// Ref-counted class to receive a single VideoFrame on IO thread, convert it and
+-// send it to |task_runner|, where this class is created and destroyed.
+-class ImageCaptureFrameGrabber::SingleShotFrameHandler
+-    : public ThreadSafeRefCounted<SingleShotFrameHandler> {
++template <>
++struct CrossThreadCopier<ImageCaptureFrameGrabber::ScopedPromiseResolver>
++    : public CrossThreadCopierByValuePassThrough<
++          ImageCaptureFrameGrabber::ScopedPromiseResolver> {};
++
++// Helper that ensures `resolver` is always rejected on `task_runner` if it is
++// not consumed.
++class ImageCaptureFrameGrabber::ScopedPromiseResolver {
+  public:
+-  using SkImageDeliverCB = WTF::CrossThreadOnceFunction<void(sk_sp<SkImage>)>;
++  ScopedPromiseResolver(ScriptPromiseResolver<ImageBitmap>* resolver,
++                        scoped_refptr<base::SingleThreadTaskRunner> task_runner)
++      : resolver_(MakeUnwrappingCrossThreadHandle(resolver)),
++        task_runner_(std::move(task_runner)) {}
++
++  ~ScopedPromiseResolver() {
++    if (task_runner_) {
++      using PromiseType = ScriptPromiseResolver<ImageBitmap>;
++      PostCrossThreadTask(
++          *task_runner_, FROM_HERE,
++          CrossThreadBindOnce(
++              static_cast<void (PromiseType::*)()>(&PromiseType::Reject),
++              std::move(resolver_)));
++    }
++  }
+ 
+-  explicit SingleShotFrameHandler(
+-      SkImageDeliverCB deliver_cb,
+-      scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+-      : deliver_cb_(std::move(deliver_cb)),
+-        task_runner_(std::move(task_runner)) {
+-    DCHECK(deliver_cb_);
++  ScopedPromiseResolver(ScopedPromiseResolver&& other) = default;
++  ScopedPromiseResolver(const ScopedPromiseResolver& other) = delete;
++
++  // `resolver_` has a deleted move assignment operator.
++  ScopedPromiseResolver& operator=(ScopedPromiseResolver&& other) = delete;
++  ScopedPromiseResolver& operator=(const ScopedPromiseResolver& other) = delete;
++
++  UnwrappingCrossThreadHandle<ScriptPromiseResolver<ImageBitmap>>
++  TakeResolver() && {
++    task_runner_ = nullptr;
++    return std::move(resolver_);
+   }
+ 
++ private:
++  UnwrappingCrossThreadHandle<ScriptPromiseResolver<ImageBitmap>> resolver_;
++  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++ };
++
++// Helper class that receives a single VideoFrame on the IO thread.
++class ImageCaptureFrameGrabber::SingleShotFrameHandler {
++  public:
++  explicit SingleShotFrameHandler(
++      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++      base::WeakPtr<ImageCaptureFrameGrabber> frame_grabber,
++      ScopedPromiseResolver resolver)
++      : task_runner_(std::move(task_runner)),
++        frame_grabber_(std::move(frame_grabber)),
++        resolver_(std::move(resolver)) {}
+   SingleShotFrameHandler(const SingleShotFrameHandler&) = delete;
+   SingleShotFrameHandler& operator=(const SingleShotFrameHandler&) = delete;
+ 
+@@ -69,51 +99,37 @@ class ImageCaptureFrameGrabber::SingleShotFrameHandler
+ 
+   // Receives a |frame| and converts its pixels into a SkImage via an internal
+   // PaintSurface and SkPixmap. Alpha channel, if any, is copied.
+-  void OnVideoFrameOnIOThread(
+-      scoped_refptr<media::VideoFrame> frame,
+-      base::TimeTicks current_time);
++  void OnVideoFrameOnIOThread(scoped_refptr<media::VideoFrame> frame,
++                              base::TimeTicks current_time);
+ 
+  private:
+-  friend class ThreadSafeRefCounted<SingleShotFrameHandler>;
+-
+-  // Converts the media::VideoFrame into a SkImage on the |task_runner|.
+-  void ConvertAndDeliverFrame(SkImageDeliverCB callback,
+-                              scoped_refptr<media::VideoFrame> frame);
+-
+-  base::Lock lock_;
+-  // Null once the initial frame has been queued for delivery.
+-  SkImageDeliverCB deliver_cb_ GUARDED_BY(lock_);
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++  base::WeakPtr<ImageCaptureFrameGrabber> frame_grabber_;
++  ScopedPromiseResolver resolver_;
+ };
+ 
+ ImageCaptureFrameGrabber::SingleShotFrameHandler::~SingleShotFrameHandler() {
+-  base::AutoLock locker(lock_);
+-  if (deliver_cb_) {
+-    // Reject the promise if no frame was received.
+-    // Post to `task_runner_` to ensure the promise is always rejected on the
+-    // main thread.
+-    PostCrossThreadTask(*task_runner_, FROM_HERE,
+-                        CrossThreadBindOnce(std::move(deliver_cb_), nullptr));
+-  }
++  // ~ScopedPromiseResolver will reject if still needed.
+ }
+ 
+ void ImageCaptureFrameGrabber::SingleShotFrameHandler::OnVideoFrameOnIOThread(
+     scoped_refptr<media::VideoFrame> frame,
+     base::TimeTicks /*current_time*/) {
+-  base::AutoLock locker(lock_);
+-  if (!deliver_cb_)
++  if (!task_runner_) {
+     return;
++  }
+ 
+   PostCrossThreadTask(
+-      *task_runner_, FROM_HERE,
+-      CrossThreadBindOnce(&SingleShotFrameHandler::ConvertAndDeliverFrame,
+-                          base::WrapRefCounted(this), std::move(deliver_cb_),
+-                          std::move(frame)));
++      *std::exchange(task_runner_, nullptr), FROM_HERE,
++      CrossThreadBindOnce(&ImageCaptureFrameGrabber::OnVideoFrame,
++                          std::move(frame_grabber_),
++                          base::RetainedRef(std::move(frame)),
++                          std::move(resolver_).TakeResolver()));
+ }
+ 
+-void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+-    SkImageDeliverCB callback,
+-    scoped_refptr<media::VideoFrame> frame) {
++// TODO(dcheng): Move this to the unnamed namespace. Left here for now to
++// simplify reviewing.
++static sk_sp<SkImage> ConvertFrame(media::VideoFrame* frame) {
+   media::VideoRotation rotation = media::VIDEO_ROTATION_0;
+   if (frame->metadata().transformation) {
+     rotation = frame->metadata().transformation->rotation;
+@@ -146,15 +162,13 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     cc::PaintFlags paint_flags;
+     DrawVideoFrameIntoCanvas(std::move(frame), &canvas, paint_flags,
+                              /*ignore_video_transformation=*/false);
+-    std::move(callback).Run(surface->makeImageSnapshot());
+-    return;
++    return surface->makeImageSnapshot();
+   }
+ 
+   SkPixmap pixmap;
+   if (!skia::GetWritablePixels(surface->getCanvas(), &pixmap)) {
+     DLOG(ERROR) << "Error trying to map SkSurface's pixels";
+-    std::move(callback).Run(sk_sp<SkImage>());
+-    return;
++    return nullptr;
+   }
+ 
+ #if SK_PMCOLOR_BYTE_ORDER(R, G, B, A)
+@@ -177,8 +191,7 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     auto scoped_mapping = frame->MapGMBOrSharedImage();
+     if (!scoped_mapping) {
+       DLOG(ERROR) << "Failed to get the mapped memory.";
+-      std::move(callback).Run(sk_sp<SkImage>());
+-      return;
++      return nullptr;
+     }
+ 
+     // NV12 is the only supported pixel format at the moment.
+@@ -289,7 +302,7 @@ void ImageCaptureFrameGrabber::SingleShotFrameHandler::ConvertAndDeliverFrame(
+     }
+   }
+ 
+-  std::move(callback).Run(surface->makeImageSnapshot());
++  return surface->makeImageSnapshot();
+ }
+ 
+ ImageCaptureFrameGrabber::~ImageCaptureFrameGrabber() {
+@@ -313,15 +326,7 @@ void ImageCaptureFrameGrabber::GrabFrame(
+     return;
+   }
+ 
+-  ScopedPromiseResolver<ImageBitmap> scoped_resolver(
+-      resolver,
+-      base::BindPostTask(
+-          task_runner,
+-          WTF::BindOnce(
+-              [](Persistent<ScriptPromiseResolver<ImageBitmap>> resolver) {
+-                resolver->Reject();
+-              })));
+-
++  ScopedPromiseResolver scoped_resolver(resolver, task_runner);
+   // A SingleShotFrameHandler is bound and given to the Track to guarantee that
+   // only one VideoFrame is converted and delivered to OnSkImage(), otherwise
+   // SKImages might be sent to resolved |callbacks| while DisconnectFromTrack()
+@@ -341,29 +346,35 @@ void ImageCaptureFrameGrabber::GrabFrame(
+       WebMediaStreamTrack(component),
+       ConvertToBaseRepeatingCallback(CrossThreadBindRepeating(
+           &SingleShotFrameHandler::OnVideoFrameOnIOThread,
+-          base::MakeRefCounted<SingleShotFrameHandler>(
+-              CrossThreadBindOnce(&ImageCaptureFrameGrabber::OnSkImage,
+-                                  weak_factory_.GetWeakPtr(),
+-                                  std::move(scoped_resolver)),
+-              std::move(task_runner)))),
++          std::make_unique<SingleShotFrameHandler>(
++              std::move(task_runner), weak_factory_.GetWeakPtr(),
++              std::move(scoped_resolver)))),
+       MediaStreamVideoSink::IsSecure::kNo,
+       MediaStreamVideoSink::UsesAlpha::kDefault);
+ }
+ 
+-void ImageCaptureFrameGrabber::OnSkImage(
+-    ScopedPromiseResolver<ImageBitmap> resolver,
+-    sk_sp<SkImage> image) {
++void ImageCaptureFrameGrabber::OnVideoFrame(
++    media::VideoFrame* frame,
++    ScriptPromiseResolver<ImageBitmap>* resolver) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  // Hold a reference across `OnVideoFrame()` (`WeakPtr` only checks validity at
++  // callback entry). Creating or accessing the GPU context below can
++  // synchronously flush pending GPU channel callbacks, which may allocate on
++  // the Oilpan heap and trigger lazy sweeping of an unreachable `ImageCapture`
++  // owner (`~ImageCapture()`), dropping `ImageCapture::frame_grabber_`.
++  scoped_refptr<ImageCaptureFrameGrabber> keep_alive(this);
++
++  sk_sp<SkImage> image = ConvertFrame(frame);
+ 
+   timeout_task_handle_.Cancel();
+   MediaStreamVideoSink::DisconnectFromTrack();
+   frame_grab_in_progress_ = false;
+ 
+   if (image) {
+-    resolver.TakeResolver()->Resolve(MakeGarbageCollected<ImageBitmap>(
++    resolver->Resolve(MakeGarbageCollected<ImageBitmap>(
+         UnacceleratedStaticBitmapImage::Create(std::move(image))));
+   } else {
+-    resolver.TakeResolver()->Reject();
++    resolver->Reject();
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+index bb1a45af2e13..233c6b8f0a86 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+@@ -7,7 +7,6 @@
+ 
+ #include <memory>
+ 
+-#include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/threading/thread_checker.h"
+@@ -16,6 +15,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cancellable_task.h"
+ #include "third_party/skia/include/core/SkRefCnt.h"
++#include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+ 
+ class SkImage;
+ 
+@@ -24,100 +24,36 @@ namespace blink {
+ class ImageBitmap;
+ class MediaStreamComponent;
+ 
+-// A ScopedPromiseResolver is a move-only wrapper for ScriptPromiseResolver that
+-// assures the promise is always settled. This is particularly useful when
+-// you are passing callbacks binding the resolver through code which may
+-// silently drop them.
+-//
+-// Example usage:
+-//
+-//   void RespondWithSuccess(ScopedPromiseResolver<Foo> resolver) {
+-//     resolver.TakeResolver()->Resolve(Foo("everything is great"));
+-//   }
+-//
+-//   void OnCallbacksDropped(Persistent<PromiseResolver<Foo>> resolver) {
+-//     // Ownership of the promise resolver is passed to this function if
+-//     // ScopedPromiseResolver::TakeResolver isn't called before the
+-//     // ScopedPromiseResolver is destroyed.
+-//     resolver->Reject(FooError("everything is terrible"));
+-//   }
+-//
+-//   // Blink client implementation
+-//   void FooClientImpl::doMagic(PromiseResolver<Foo>* resolver) {
+-//     ScopedPromiseResolver scoped_resolver(resolver,
+-//         WTF::BindOnce(&OnCallbacksDropped));
+-//
+-//     // Call to some lower-level service which may never run the callback we
+-//     // give it.
+-//     foo_service_->DoMagic(WTF::BindOnce(&RespondWithSuccess,
+-//                                          std::move(scoped_resolver)));
+-//   }
+-//
+-// If the bound RespondWithSuccess callback actually runs, TakeResolver() will
+-// relinquish ownership of the resolver.
+-//
+-// If the bound RespondWithSuccess callback is instead destroyed first,
+-// the ScopedPromiseResolver destructor will invoke OnCallbacksDropped,
+-// executing our desired default behavior.
+-template <typename ResolveType>
+-class ScopedPromiseResolver {
+- public:
+-  using DestructionCallback = base::OnceCallback<void(
+-      Persistent<ScriptPromiseResolver<ResolveType>> resolver)>;
+-
+-  ScopedPromiseResolver(ScriptPromiseResolver<ResolveType>* resolver,
+-                        DestructionCallback destruction_callback)
+-      : resolver_(resolver),
+-        destruction_callback_(std::move(destruction_callback)) {}
+-
+-  ~ScopedPromiseResolver() {
+-    if (destruction_callback_ && resolver_) {
+-      std::move(destruction_callback_).Run(resolver_);
+-    }
+-  }
+-
+-  ScopedPromiseResolver(ScopedPromiseResolver&& other) = default;
+-  ScopedPromiseResolver(const ScopedPromiseResolver& other) = delete;
+-
+-  ScopedPromiseResolver& operator=(ScopedPromiseResolver&& other) = default;
+-  ScopedPromiseResolver& operator=(const ScopedPromiseResolver& other) = delete;
+-
+-  ScriptPromiseResolver<ResolveType>* TakeResolver() {
+-    ScriptPromiseResolver<ResolveType>* result = resolver_;
+-    resolver_ = nullptr;
+-    return result;
+-  }
+-
+- private:
+-  Persistent<ScriptPromiseResolver<ResolveType>> resolver_;
+-  DestructionCallback destruction_callback_;
+-};
+-
+ // This class grabs Video Frames from a given Media Stream Video Track, binding
+ // a method of an ephemeral SingleShotFrameHandler every time grabFrame() is
+ // called. This method receives an incoming media::VideoFrame on a background
+ // thread and converts it into the appropriate SkBitmap which is sent back to
+ // OnSkBitmap(). This class is single threaded throughout.
+-class ImageCaptureFrameGrabber final : public MediaStreamVideoSink {
++class ImageCaptureFrameGrabber final
++    : public RefCounted<ImageCaptureFrameGrabber>,
++      public MediaStreamVideoSink {
+  public:
++  // Helper class to ensure an ImageBitmap promise is always resolved.
++  class ScopedPromiseResolver;
++
+   ImageCaptureFrameGrabber() = default;
+ 
+   ImageCaptureFrameGrabber(const ImageCaptureFrameGrabber&) = delete;
+   ImageCaptureFrameGrabber& operator=(const ImageCaptureFrameGrabber&) = delete;
+ 
+-  ~ImageCaptureFrameGrabber() override;
+-
+   void GrabFrame(MediaStreamComponent* component,
+                  ScriptPromiseResolver<ImageBitmap>* resolver,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+                  base::TimeDelta timeout);
+ 
+  private:
++  friend class RefCounted<ImageCaptureFrameGrabber>;
++  ~ImageCaptureFrameGrabber() override;
+   // Internal class to receive, convert and forward one frame.
+   class SingleShotFrameHandler;
+ 
+-  void OnSkImage(ScopedPromiseResolver<ImageBitmap> resolver,
+-                 sk_sp<SkImage> image);
++  void OnVideoFrame(media::VideoFrame* frame,
++                    ScriptPromiseResolver<ImageBitmap>* resolver);
+   void OnTimeout();
+ 
+   // Flag to indicate that there is a frame grabbing in progress.
+diff --git a/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h b/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
+index 35300c7342e0..b0317802a816 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
++++ b/third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h
+@@ -5,13 +5,13 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_LOADER_FETCH_EARLY_HINTS_PRELOAD_ENTRY_H_
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_LOADER_FETCH_EARLY_HINTS_PRELOAD_ENTRY_H_
+ 
++#include "services/network/public/mojom/link_header.mojom-blink-forward.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ 
+ namespace blink {
+ 
+-// Represents a resource preloaded by an Early Hints ressponse.
+-// TODO(https://crbug.com/1317936): Add more fields such as request destination.
++// Represents a resource preloaded by an Early Hints response.
+ struct PLATFORM_EXPORT EarlyHintsPreloadEntry {
+   enum class State {
+     // The resource is not used by the document yet.
+@@ -24,8 +24,17 @@ struct PLATFORM_EXPORT EarlyHintsPreloadEntry {
+   DISALLOW_NEW();
+ 
+   EarlyHintsPreloadEntry() = default;
++  EarlyHintsPreloadEntry(network::mojom::LinkAsAttribute as,
++                         network::mojom::CrossOriginAttribute cross_origin)
++      : as(as), cross_origin(cross_origin) {}
+ 
+   State state = State::kUnused;
++  // The "as" attribute value.
++  network::mojom::LinkAsAttribute as =
++      network::mojom::LinkAsAttribute::kUnspecified;
++  // The "crossorigin" attribute value.
++  network::mojom::CrossOriginAttribute cross_origin =
++      network::mojom::CrossOriginAttribute::kUnspecified;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc b/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
+index c6de63f0c31f..93f2935130da 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.cc
+@@ -54,6 +54,7 @@ FetchParameters::~FetchParameters() = default;
+ void FetchParameters::SetCrossOriginAccessControl(
+     const SecurityOrigin* origin,
+     CrossOriginAttributeValue cross_origin) {
++  cross_origin_attribute_value_ = cross_origin;
+   switch (cross_origin) {
+     case kCrossOriginAttributeNotSet:
+       NOTREACHED();
+diff --git a/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h b/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+index 47abb14aaeaa..8199865594a8 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
++++ b/third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h
+@@ -136,6 +136,10 @@ class PLATFORM_EXPORT FetchParameters {
+     options_.initiator_info.is_link_preload = is_link_preload;
+   }
+ 
++  CrossOriginAttributeValue GetCrossOriginAttributeValue() const {
++    return cross_origin_attribute_value_;
++  }
++
+   bool IsStaleRevalidation() const { return is_stale_revalidation_; }
+   void SetStaleRevalidation(bool is_stale_revalidation) {
+     is_stale_revalidation_ = is_stale_revalidation;
+@@ -238,6 +242,8 @@ class PLATFORM_EXPORT FetchParameters {
+   ImageRequestBehavior image_request_behavior_ = ImageRequestBehavior::kNone;
+   mojom::blink::ScriptType script_type_ = mojom::blink::ScriptType::kClassic;
+   bool is_stale_revalidation_ = false;
++  CrossOriginAttributeValue cross_origin_attribute_value_ =
++      kCrossOriginAttributeNotSet;
+   bool is_from_origin_dirty_style_sheet_ = false;
+   RenderBlockingBehavior render_blocking_behavior_ =
+       RenderBlockingBehavior::kUnset;
+diff --git a/third_party/blink/renderer/platform/loader/fetch/media_timing.h b/third_party/blink/renderer/platform/loader/fetch/media_timing.h
+index bf9852e3395d..9004cbead8d8 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/media_timing.h
++++ b/third_party/blink/renderer/platform/loader/fetch/media_timing.h
+@@ -33,6 +33,10 @@ class MediaTiming : public GarbageCollectedMixin {
+   // by its cross-origin embedder.
+   virtual bool TimingAllowPassed() const = 0;
+ 
++  // True if the resource is CORS-same-origin (i.e. its response is not
++  // opaque and does not taint the origin).
++  virtual bool IsCorsSameOrigin() const = 0;
++
+   // Returns the number of bytes of data used to represent the image (or to
+   // represent enough of the content that it can be displayed on screen.) This
+   // is used to approximate the entropy of the image so that very-low-entropy
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource.cc b/third_party/blink/renderer/platform/loader/fetch/resource.cc
+index 5dd0bf6e292d..e76f34989828 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource.cc
+@@ -71,6 +71,33 @@
+ 
+ namespace blink {
+ 
++String GetAsAttributeFromResourceType(ResourceType type) {
++  switch (type) {
++    case ResourceType::kImage:
++      return "image";
++    case ResourceType::kScript:
++      return "script";
++    case ResourceType::kCSSStyleSheet:
++      return "style";
++    case ResourceType::kTextTrack:
++      return "track";
++    case ResourceType::kFont:
++      return "font";
++    case ResourceType::kRaw:
++    case ResourceType::kMock:
++      return "fetch";
++    case ResourceType::kAudio:
++    case ResourceType::kVideo:
++    case ResourceType::kManifest:
++    case ResourceType::kSpeculationRules:
++    case ResourceType::kDictionary:
++    case ResourceType::kSVGDocument:
++    case ResourceType::kXSLStyleSheet:
++    case ResourceType::kLinkPrefetch:
++      NOTREACHED();
++  }
++}
++
+ namespace {
+ 
+ void NotifyFinishObservers(
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource.h b/third_party/blink/renderer/platform/loader/fetch/resource.h
+index aff5dc8a11a2..6e42bcb51d56 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource.h
++++ b/third_party/blink/renderer/platform/loader/fetch/resource.h
+@@ -102,6 +102,10 @@ enum class ResourceType : uint8_t {
+   kMaxValue = kDictionary
+ };
+ 
++// Returns the "as" attribute value string for a given ResourceType.
++// https://html.spec.whatwg.org/C/#preload-destination
++PLATFORM_EXPORT String GetAsAttributeFromResourceType(ResourceType);
++
+ // A resource that is held in the cache. Classes who want to use this object
+ // should derive from ResourceClient, to get the function calls in case the
+ // requested data has arrived. This class also does the actual communication
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+index 762c3b4013ce..8fb11eeb24a6 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+@@ -47,6 +47,7 @@
+ #include "base/unguessable_token.h"
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/cpp/request_mode.h"
++#include "services/network/public/mojom/link_header.mojom-blink.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom-blink.h"
+ #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -115,6 +116,34 @@ constexpr uint32_t ResourceFetcher::kKeepaliveInflightBytesQuota;
+ 
+ namespace {
+ 
++String LinkAsAttributeToString(network::mojom::LinkAsAttribute as) {
++  switch (as) {
++    case network::mojom::LinkAsAttribute::kImage:
++      return "image";
++    case network::mojom::LinkAsAttribute::kScript:
++      return "script";
++    case network::mojom::LinkAsAttribute::kStyleSheet:
++      return "style";
++    case network::mojom::LinkAsAttribute::kFont:
++      return "font";
++    case network::mojom::LinkAsAttribute::kFetch:
++    case network::mojom::LinkAsAttribute::kUnspecified:
++      return "fetch";
++  }
++}
++
++CrossOriginAttributeValue CrossOriginAttributeToBlink(
++    network::mojom::CrossOriginAttribute attr) {
++  switch (attr) {
++    case network::mojom::CrossOriginAttribute::kAnonymous:
++      return kCrossOriginAttributeAnonymous;
++    case network::mojom::CrossOriginAttribute::kUseCredentials:
++      return kCrossOriginAttributeUseCredentials;
++    case network::mojom::CrossOriginAttribute::kUnspecified:
++      return kCrossOriginAttributeNotSet;
++  }
++}
++
+ constexpr base::TimeDelta kKeepaliveLoadersTimeout = base::Seconds(30);
+ 
+ // Timeout for link preloads to be used after window.onload
+@@ -1806,6 +1835,14 @@ Resource* ResourceFetcher::MatchPreload(
+   resource->MatchPreload(params);
+   preloads_.erase(it);
+   matched_preloads_.push_back(resource);
++
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++    auto record_it = preload_records_.find(resource->Url());
++    if (record_it != preload_records_.end()) {
++      record_it->value.used_time = base::TimeTicks::Now();
++    }
++  }
++
+   return resource;
+ }
+ 
+@@ -1891,6 +1928,20 @@ void ResourceFetcher::InsertAsPreloadIfNecessary(Resource* resource,
+   if (preloaded_urls_for_test_) {
+     preloaded_urls_for_test_->insert(resource->Url().GetString());
+   }
++
++  // Only track <link rel=preload> in `preload_records_` for the
++  // SpeculationMeasurement API. Speculative preloads from the HTML parser
++  // are not developer-initiated and should not be reported.
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled() &&
++      params.IsLinkPreload()) {
++    const KURL& url = resource->Url();
++    if (!preload_records_.Contains(url)) {
++      PreloadInfo info;
++      info.as = GetAsAttributeFromResourceType(resource->GetType());
++      info.crossorigin = params.GetCrossOriginAttributeValue();
++      preload_records_.insert(url, std::move(info));
++    }
++  }
+ }
+ 
+ bool ResourceFetcher::IsImageResourceDisallowedToBeReused(
+@@ -2288,6 +2339,22 @@ void ResourceFetcher::ClearPreloads(ClearPreloadsPolicy policy) {
+   matched_preloads_.clear();
+ }
+ 
++void ResourceFetcher::SetEarlyHintsPreloadedResources(
++    HashMap<KURL, EarlyHintsPreloadEntry> resources) {
++  // Also record early hints preloads for the SpeculationMeasurement API.
++  if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++    for (const auto& [url, entry] : resources) {
++      if (!preload_records_.Contains(url)) {
++        PreloadInfo info;
++        info.as = LinkAsAttributeToString(entry.as);
++        info.crossorigin = CrossOriginAttributeToBlink(entry.cross_origin);
++        preload_records_.insert(url, std::move(info));
++      }
++    }
++  }
++  unused_early_hints_preloaded_resources_ = std::move(resources);
++}
++
+ void ResourceFetcher::ScheduleWarnUnusedPreloads(
+     base::OnceCallback<void(Vector<KURL> unused_preloads)> callback) {
+   // If preloads_ is not empty here, it's full of link
+@@ -3190,6 +3257,13 @@ void ResourceFetcher::MarkEarlyHintConsumedIfNeeded(
+   auto iter = unused_early_hints_preloaded_resources_.find(initial_url);
+   if (iter != unused_early_hints_preloaded_resources_.end()) {
+     unused_early_hints_preloaded_resources_.erase(iter);
++    // Mark as used in preload_records_ for the SpeculationMeasurement API.
++    if (RuntimeEnabledFeatures::SpeculationMeasurementEnabled()) {
++      auto record_it = preload_records_.find(initial_url);
++      if (record_it != preload_records_.end()) {
++        record_it->value.used_time = base::TimeTicks::Now();
++      }
++    }
+     // The network service may not reuse the response fetched by the early hints
+     // due to cache control policies.
+     if (!response.NetworkAccessed() &&
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+index 94be7cf83a61..dea9568682b1 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h
+@@ -33,6 +33,7 @@
+ #include <utility>
+ 
+ #include "base/task/single_thread_task_runner.h"
++#include "base/time/time.h"
+ #include "base/unguessable_token.h"
+ #include "services/metrics/public/cpp/mojo_ukm_recorder.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -46,6 +47,7 @@
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/heap/prefinalizer.h"
++#include "third_party/blink/renderer/platform/loader/fetch/cross_origin_attribute_value.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/early_hints_preload_entry.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/fetch_parameters.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/loader_freeze_mode.h"
+@@ -257,6 +259,19 @@ class PLATFORM_EXPORT ResourceFetcher
+   void ScheduleWarnUnusedPreloads(
+       base::OnceCallback<void(Vector<KURL> unused_preloads)> callback);
+ 
++  // Information about a <link rel=preload> for the SpeculationMeasurement API.
++  struct PreloadInfo {
++    String as;
++    CrossOriginAttributeValue crossorigin = kCrossOriginAttributeNotSet;
++    // Timestamp when the preload was matched/used, or nullopt if unused.
++    std::optional<base::TimeTicks> used_time;
++  };
++
++  // Returns a map from URL to PreloadInfo for all <link rel=preload> preloads.
++  const HashMap<KURL, PreloadInfo>& GetPreloadRecords() const {
++    return preload_records_;
++  }
++
+   MHTMLArchive* Archive() const { return archive_.Get(); }
+ 
+   // Set the deferring state of each loader owned by this ResourceFetcher. This
+@@ -365,9 +380,7 @@ class PLATFORM_EXPORT ResourceFetcher
+   }
+ 
+   void SetEarlyHintsPreloadedResources(
+-      HashMap<KURL, EarlyHintsPreloadEntry> resources) {
+-    unused_early_hints_preloaded_resources_ = std::move(resources);
+-  }
++      HashMap<KURL, EarlyHintsPreloadEntry> resources);
+ 
+   // Access the UKMRecorder.
+   ukm::MojoUkmRecorder* UkmRecorder();
+@@ -655,6 +668,10 @@ class PLATFORM_EXPORT ResourceFetcher
+   HeapHashMap<PreloadKey, Member<Resource>> preloads_;
+   HeapVector<Member<Resource>> matched_preloads_;
+ 
++  // Records of all preloads (used and unused) for the SpeculationMeasurement
++  // API.
++  HashMap<KURL, PreloadInfo> preload_records_;
++
+   // Keeps preloads which are deferred to start loading based on the LCPP
+   // signal of potentially unused preloads, in order to prevent subsequent
+   // resource loading to the same resource from being scheduled, and record the
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 7a9ce979618a..7b7c85ef31f7 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5454,6 +5454,12 @@
+         "Linux": "stable",
+       },
+     },
++    {
++      // Exposes speculation measurement data (preloads, prefetches, prerenders)
++      // on performance.speculations.
++      name: "SpeculationMeasurement",
++      status: "experimental",
++    },
+     {
+       // https://chromestatus.com/feature/5077691662073856
+       // Allows an Enterprise Policy to override WebAudioBypassOutputBuffering
+diff --git a/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h b/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+index 517f09655fff..cb826b421a79 100644
+--- a/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
++++ b/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+@@ -61,6 +61,16 @@ struct CrossThreadCopier<scoped_refptr<T>> {
+   static scoped_refptr<T> Copy(scoped_refptr<T> pointer) { return pointer; }
+ };
+ 
++template <typename T>
++struct CrossThreadCopier<base::internal::RetainedRefWrapper<T>>
++    : public CrossThreadCopierByValuePassThrough<
++          base::internal::RetainedRefWrapper<T>> {
++  STATIC_ONLY(CrossThreadCopier);
++  static_assert(IsSubclassOfTemplate<T, base::RefCountedThreadSafe>::value,
++                "scoped_refptr<T> can be passed across threads only if T is "
++                "ThreadSafeRefCounted or base::RefCountedThreadSafe.");
++};
++
+ template <typename T>
+ struct CrossThreadCopier<base::FileErrorOr<T>>
+     : public CrossThreadCopierPassThrough<base::FileErrorOr<T>> {
+diff --git a/third_party/icu/README.chromium b/third_party/icu/README.chromium
+index ff138b53a603..d7f5f391c74c 100644
+--- a/third_party/icu/README.chromium
++++ b/third_party/icu/README.chromium
+@@ -304,3 +304,9 @@ D. Local Modifications
+     patches/unnecessary_virtual_specifier.patch
+   - https://issues.chromium.org/issues/403236787
+   - https://patch-diff.githubusercontent.com/raw/unicode-org/icu/pull/3489.diff
++
++19. Fix signed int32_t overflow in CharString.
++  - patches/charstr.patch
++  - https://unicode-org.atlassian.net/browse/ICU-23537
++  - https://github.com/unicode-org/icu/pull/4243
++  - https://crbug.com/565133743
+diff --git a/third_party/icu/source/common/charstr.cpp b/third_party/icu/source/common/charstr.cpp
+index f76cc8a4dc90..7dac67f01528 100644
+--- a/third_party/icu/source/common/charstr.cpp
++++ b/third_party/icu/source/common/charstr.cpp
+@@ -21,6 +21,7 @@
+ #include "charstr.h"
+ #include "cmemory.h"
+ #include "cstring.h"
++#include "putilimp.h"
+ #include "uinvchar.h"
+ #include "ustr_imp.h"
+ 
+@@ -102,7 +103,15 @@ CharString &CharString::truncate(int32_t newLength) {
+ }
+ 
+ CharString &CharString::append(char c, UErrorCode &errorCode) {
+-    if(ensureCapacity(len+2, 0, errorCode)) {
++    if(U_FAILURE(errorCode)) {
++        return *this;
++    }
++    int32_t newCapacity;
++    if (uprv_add32_overflow(len, 2, &newCapacity)) {
++        errorCode = U_ILLEGAL_ARGUMENT_ERROR;
++        return *this;
++    }
++    if(ensureCapacity(newCapacity, 0, errorCode)) {
+         buffer[len++]=c;
+         buffer[len]=0;
+     }
+@@ -129,15 +138,21 @@ CharString &CharString::append(const char *s, int32_t sLength, UErrorCode &error
+             } else {
+                 buffer[len+=sLength]=0;
+             }
+-        } else if(buffer.getAlias()<=s && s<(buffer.getAlias()+len) &&
+-                  sLength>=(buffer.getCapacity()-len)
+-        ) {
+-            // (Part of) this string is appended to itself which requires reallocation,
+-            // so we have to make a copy of the substring and append that.
+-            return append(CharString(s, sLength, errorCode), errorCode);
+-        } else if(ensureCapacity(len+sLength+1, 0, errorCode)) {
+-            uprv_memcpy(buffer.getAlias()+len, s, sLength);
+-            buffer[len+=sLength]=0;
++        } else {
++            int32_t newCapacity;
++            if(uprv_add32_overflow(len, sLength, &newCapacity) ||
++               uprv_add32_overflow(newCapacity, 1, &newCapacity)) {
++                errorCode=U_ILLEGAL_ARGUMENT_ERROR;
++            } else if(buffer.getAlias()<=s && s<(buffer.getAlias()+len) &&
++                      newCapacity>buffer.getCapacity()
++            ) {
++                // (Part of) this string is appended to itself which requires reallocation,
++                // so we have to make a copy of the substring and append that.
++                return append(CharString(s, sLength, errorCode), errorCode);
++            } else if(ensureCapacity(newCapacity, 0, errorCode)) {
++                uprv_memcpy(buffer.getAlias()+len, s, sLength);
++                buffer[len+=sLength]=0;
++            }
+         }
+     }
+     return *this;
+@@ -183,12 +198,30 @@ char *CharString::getAppendBuffer(int32_t minCapacity,
+         resultCapacity=0;
+         return nullptr;
+     }
++    if(minCapacity<0 || desiredCapacityHint<0) {
++        errorCode=U_ILLEGAL_ARGUMENT_ERROR;
++        resultCapacity=0;
++        return nullptr;
++    }
+     int32_t appendCapacity=buffer.getCapacity()-len-1;  // -1 for NUL
+     if(appendCapacity>=minCapacity) {
+         resultCapacity=appendCapacity;
+         return buffer.getAlias()+len;
+     }
+-    if(ensureCapacity(len+minCapacity+1, len+desiredCapacityHint+1, errorCode)) {
++    int32_t newCapacity;
++    if(uprv_add32_overflow(len, minCapacity, &newCapacity) ||
++       uprv_add32_overflow(newCapacity, 1, &newCapacity)) {
++        errorCode=U_ILLEGAL_ARGUMENT_ERROR;
++        resultCapacity=0;
++        return nullptr;
++    }
++    int32_t newDesiredCapacity = 0;
++    if(desiredCapacityHint > 0 &&
++       (uprv_add32_overflow(len, desiredCapacityHint, &newDesiredCapacity) ||
++        uprv_add32_overflow(newDesiredCapacity, 1, &newDesiredCapacity))) {
++        newDesiredCapacity = 0;
++    }
++    if(ensureCapacity(newCapacity, newDesiredCapacity, errorCode)) {
+         resultCapacity=buffer.getCapacity()-len-1;
+         return buffer.getAlias()+len;
+     }
+@@ -204,11 +237,21 @@ CharString &CharString::appendInvariantChars(const char16_t* uchars, int32_t uch
+     if(U_FAILURE(errorCode)) {
+         return *this;
+     }
++    if(ucharsLen < 0 || (uchars == nullptr && ucharsLen != 0)) {
++        errorCode = U_ILLEGAL_ARGUMENT_ERROR;
++        return *this;
++    }
+     if (!uprv_isInvariantUString(uchars, ucharsLen)) {
+         errorCode = U_INVARIANT_CONVERSION_ERROR;
+         return *this;
+     }
+-    if(ensureCapacity(len+ucharsLen+1, 0, errorCode)) {
++    int32_t newCapacity;
++    if (uprv_add32_overflow(len, ucharsLen, &newCapacity) ||
++        uprv_add32_overflow(newCapacity, 1, &newCapacity)) {
++        errorCode = U_ILLEGAL_ARGUMENT_ERROR;
++        return *this;
++    }
++    if(ensureCapacity(newCapacity, 0, errorCode)) {
+         u_UCharsToChars(uchars, buffer.getAlias()+len, ucharsLen);
+         len += ucharsLen;
+         buffer[len] = 0;
+@@ -222,9 +265,17 @@ UBool CharString::ensureCapacity(int32_t capacity,
+     if(U_FAILURE(errorCode)) {
+         return false;
+     }
++    if(capacity<0) {
++        errorCode=U_ILLEGAL_ARGUMENT_ERROR;
++        return false;
++    }
+     if(capacity>buffer.getCapacity()) {
+         if(desiredCapacityHint==0) {
+-            desiredCapacityHint=capacity+buffer.getCapacity();
++            // Default growth heuristic. If it overflows, skip the extra headroom
++            // and allocate exactly the requested capacity, which is still valid.
++            if(uprv_add32_overflow(capacity, buffer.getCapacity(), &desiredCapacityHint)) {
++                desiredCapacityHint=0;
++            }
+         }
+         if( (desiredCapacityHint<=capacity || buffer.resize(desiredCapacityHint, len+1)==nullptr) &&
+             buffer.resize(capacity, len+1)==nullptr
+diff --git a/third_party/libaom/source/libaom/av1/encoder/nonrd_pickmode.c b/third_party/libaom/source/libaom/av1/encoder/nonrd_pickmode.c
+index 57cae24ba50f..e420f13fe891 100644
+--- a/third_party/libaom/source/libaom/av1/encoder/nonrd_pickmode.c
++++ b/third_party/libaom/source/libaom/av1/encoder/nonrd_pickmode.c
+@@ -2744,6 +2744,24 @@ static AOM_FORCE_INLINE bool handle_inter_mode_nonrd(
+     }
+   }
+ 
++  if (this_mode == NEWMV &&
++      (force_mv_inter_layer || (x->sb_me_block && ref_frame == LAST_FRAME))) {
++    // When NEWMV reuses the superblock ME vector (x->sb_me_mv, searched
++    // relative to (0, 0)) or an inter-layer SVC motion vector, search_new_mv()
++    // is bypassed. Clamp the motion vector to the valid subpel search range
++    // relative to the block's reference MV predictor (ref_mv) so that the MV
++    // delta stays within [MV_LOW, MV_UPP], skip NEWMV if the clamped vector
++    // equals ref_mv, and compute its MV bit cost.
++    const int_mv ref_mv = av1_get_ref_mv(x, 0);
++    SubpelMvLimits mv_limits;
++    av1_set_subpel_mv_search_range(&mv_limits, &x->mv_limits, &ref_mv.as_mv);
++    clamp_mv(&this_mv->as_mv, &mv_limits);
++    if (this_mv->as_int == ref_mv.as_int) return true;
++    rate_mv = av1_mv_bit_cost(&this_mv->as_mv, &ref_mv.as_mv,
++                              x->mv_costs->nmv_joint_cost,
++                              x->mv_costs->mv_cost_stack, MV_COST_WEIGHT);
++  }
++
+   // Check the current motion vector is same as that of previously evaluated
+   // motion vectors.
+   for (PREDICTION_MODE inter_mv_mode = NEARESTMV; inter_mv_mode <= NEWMV;
+diff --git a/v8/src/objects/map-updater.cc b/v8/src/objects/map-updater.cc
+index ca8f3df2f4aa..7b2f3dc61166 100644
+--- a/v8/src/objects/map-updater.cc
++++ b/v8/src/objects/map-updater.cc
+@@ -371,8 +371,9 @@ std::optional<Tagged<Map>> MapUpdater::TryUpdateNoLock(Isolate* isolate,
+ 
+   if (v8_flags.move_prototype_transitions_first &&
+       root_map->prototype() != old_map->prototype()) {
+-    auto maybe_transition = TransitionsAccessor::GetPrototypeTransition(
+-        isolate, root_map, old_map->prototype());
++    auto maybe_transition =
++        TransitionsAccessor(isolate, root_map, IsConcurrent(cmode))
++            .GetPrototypeTransition(old_map->prototype());
+     if (!maybe_transition) {
+       return {};
+     }
+diff --git a/v8/src/objects/transitions-inl.h b/v8/src/objects/transitions-inl.h
+index 4ebece1bed8d..8e27c8e2bde9 100644
+--- a/v8/src/objects/transitions-inl.h
++++ b/v8/src/objects/transitions-inl.h
+@@ -408,6 +408,13 @@ MaybeHandle<Map> TransitionsAccessor::SearchSpecial(Isolate* isolate,
+   return MaybeHandle<Map>(result, isolate);
+ }
+ 
++std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
++    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++  // This helper is supposed to be used only from the main thread.
++  DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
++  return TransitionsAccessor(isolate, map).GetPrototypeTransition(prototype);
++}
++
+ int TransitionArray::number_of_transitions() const {
+   if (length() < kFirstIndex) return 0;
+   return get(kTransitionLengthIndex).ToSmi().value();
+diff --git a/v8/src/objects/transitions.cc b/v8/src/objects/transitions.cc
+index ded48b68737d..0c0d4228aa28 100644
+--- a/v8/src/objects/transitions.cc
++++ b/v8/src/objects/transitions.cc
+@@ -414,8 +414,8 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+ 
+   const int header = TransitionArray::kProtoTransitionHeaderSize;
+ 
+-  DirectHandle<WeakFixedArray> cache(GetPrototypeTransitions(isolate, *map),
+-                                     isolate);
++  DirectHandle<WeakFixedArray> cache(
++      TransitionsAccessor(isolate, *map).GetPrototypeTransitions(), isolate);
+   int capacity = cache->length() - header;
+   int transitions = TransitionArray::NumberOfPrototypeTransitions(*cache) + 1;
+ 
+@@ -455,11 +455,13 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+   return true;
+ }
+ 
+-// static
+ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+-    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++    Tagged<Object> prototype) {
+   DisallowGarbageCollection no_gc;
+-  Tagged<WeakFixedArray> cache = GetPrototypeTransitions(isolate, map);
++  if (encoding() != kFullTransitionArray) return {};
++  base::MutexGuardIf guard(isolate_->full_transition_array_access(),
++                           concurrent_access_);
++  Tagged<WeakFixedArray> cache = GetPrototypeTransitions();
+   int length = TransitionArray::NumberOfPrototypeTransitions(cache);
+   for (int i = 0; i < length; i++) {
+     Tagged<MaybeObject> target =
+@@ -476,20 +478,11 @@ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+   return {};
+ }
+ 
+-// static
+-Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions(
+-    Isolate* isolate, Tagged<Map> map) {
+-  Tagged<MaybeObject> raw_transitions =
+-      map->raw_transitions(isolate, kAcquireLoad);
+-  if (GetEncoding(isolate, raw_transitions) != kFullTransitionArray) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
+-  }
+-  Tagged<TransitionArray> transition_array =
+-      GetTransitionArray(isolate, raw_transitions);
+-  if (!transition_array->HasPrototypeTransitions()) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
++Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions() {
++  if (!HasPrototypeTransitions()) {
++    return ReadOnlyRoots(isolate_).empty_weak_fixed_array();
+   }
+-  return transition_array->GetPrototypeTransitions();
++  return transitions()->GetPrototypeTransitions();
+ }
+ 
+ // static
+diff --git a/v8/src/objects/transitions.h b/v8/src/objects/transitions.h
+index 04857762c78d..7520750618f8 100644
+--- a/v8/src/objects/transitions.h
++++ b/v8/src/objects/transitions.h
+@@ -189,8 +189,13 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static bool PutPrototypeTransition(Isolate* isolate, DirectHandle<Map>,
+                                      DirectHandle<Object> prototype,
+                                      DirectHandle<Map> target_map);
+-  static std::optional<Tagged<Map>> GetPrototypeTransition(
++
++  std::optional<Tagged<Map>> GetPrototypeTransition(Tagged<Object> prototype);
++  // Convenient helper for calling from the main thread, for other cases
++  // use the instance method above.
++  static inline std::optional<Tagged<Map>> GetPrototypeTransition(
+       Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype);
++
+   bool HasPrototypeTransitions();
+ 
+   // During the first-time Map::Update and Map::TryUpdate, the migration target
+@@ -270,8 +275,7 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static void SetPrototypeTransitions(
+       Isolate* isolate, DirectHandle<Map> map,
+       DirectHandle<WeakFixedArray> proto_transitions);
+-  static Tagged<WeakFixedArray> GetPrototypeTransitions(Isolate* isolate,
+-                                                        Tagged<Map> map);
++  Tagged<WeakFixedArray> GetPrototypeTransitions();
+ 
+   static void InsertHelper(Isolate* isolate, DirectHandle<Map> map,
+                            DirectHandle<Name> name, DirectHandle<Map> target,

@@ -1,0 +1,102 @@
+From 7dadb2c65469c360f14c28984f3d8a9eaea565f8 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Thu, 15 Oct 2026 18:11:33 -0700
+Subject: [PATCH] [Backport] CVE-2026-118327: Memory corruption in Media
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8587477:
+Disallow file:// HLS content
+
+pages and scripts loaded from the file:// scheme aren't allowed to read
+arbitrary data from other file:// urls (ie, you can't use fetch!), but
+HLS was a vector around that, since it allows somewhat programmatic
+access to individual bytes of a remote file, which could collectively
+allow reading an entire local file.
+
+As a result, the only safe way to stop this is to disable hls content
+from loading any file:// urls. It was already impossible to mix file://
+and other schemes anyway.
+
+The only real place this was useful was ironically testing, which means
+that we have to make some tweaks to the CrossOriginFileDataSourceWrapper
+implementation to lie about the URL origin.
+
+Fixed: 572878518
+Change-Id: I181db95da42ac7eaa35a655754405efe78ed8b91
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8587477
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720224}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784721
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../filters/hls_data_source_provider_impl.cc     | 16 ++++++++++++++++
+ chromium/media/filters/hls_demuxer_status.h      |  7 ++++++-
+ chromium/tools/metrics/histograms/enums.xml      |  1 +
+ 3 files changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/media/filters/hls_data_source_provider_impl.cc b/chromium/media/filters/hls_data_source_provider_impl.cc
+index 5054e52a4b96..9df31da47bd9 100644
+--- a/chromium/media/filters/hls_data_source_provider_impl.cc
++++ b/chromium/media/filters/hls_data_source_provider_impl.cc
+@@ -200,6 +200,22 @@ void HlsDataSourceProviderImpl::DataSourceInitialized(
+     if (!response_uri.is_empty() && !response_uri.SchemeIs("data")) {
+       stream->TrackOrigin(url::Origin::Create(response_uri));
+     }
++    if (response_uri.SchemeIs("file")) {
++      // For a base page loaded via the file:// protocol, the chrome network
++      // stack allows media content loaded directly via src=, but for security
++      // reasons, does not allow arbitrary reads from other file:// urls (ie,
++      // via JS using `fetch()`).
++      // Since HLS provides the ability to play local manifests with variable
++      // substitution, a file:// hosted playlist could theoretically make
++      // range requests to any arbitrary other file:// uri and test for
++      // playback.
++
++      // As a result, the only thing we can do is block HLS from using the
++      // file:// protocol entirely.
++      std::move(callback).Run(HlsDemuxerStatus::Codes::kInvalidContentScheme);
++      TRACE_EVENT_END("media", perfetto::Track::FromPointer(this));
++      return;
++    }
+   }
+ 
+   if (stream->SecurityInfo().HasIncompatibleRangeAndOrigin()) {
+diff --git a/chromium/media/filters/hls_demuxer_status.h b/chromium/media/filters/hls_demuxer_status.h
+index 3c75e902f525..53a7dcb5b354 100644
+--- a/chromium/media/filters/hls_demuxer_status.h
++++ b/chromium/media/filters/hls_demuxer_status.h
+@@ -76,8 +76,11 @@ struct HlsDemuxerStatusTraits {
+     // error during initialization.
+     kNoDataEverAppended = 18,
+ 
++    // the file:// data scheme is not allowed in HLS.
++    kInvalidContentScheme = 19,
++
+     // Keep this at the end and equal to the highest value ever used.
+-    kMaxValue = kNoDataEverAppended,
++    kMaxValue = kInvalidContentScheme,
+   };
+ 
+   static constexpr StatusGroupType Group() { return "HlsDemuxerStatus"; }
+@@ -122,6 +125,8 @@ struct HlsDemuxerStatusTraits {
+         return "Could not append data to ChunkDemuxer";
+       case Codes::kNoDataEverAppended:
+         return "Segment queue never had any data";
++      case Codes::kInvalidContentScheme:
++        return "The content scheme is disallowed in HLS.";
+     }
+   }
+ };
+diff --git a/chromium/tools/metrics/histograms/enums.xml b/chromium/tools/metrics/histograms/enums.xml
+index 85c93682f0b4..6d696fa5b485 100644
+--- a/chromium/tools/metrics/histograms/enums.xml
++++ b/chromium/tools/metrics/histograms/enums.xml
+@@ -5523,6 +5523,7 @@ shown properly on the user-facing crash UI.
+   <int value="16" label="kInvalidLoadedRanges"/>
+   <int value="17" label="kCouldNotAppendData"/>
+   <int value="18" label="kNoDataEverAppended"/>
++  <int value="19" label="kInvalidContentScheme"/>
+ </enum>
+ 
+ <enum name="HpsTurnOnResult">

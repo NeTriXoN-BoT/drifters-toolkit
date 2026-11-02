@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.9",
+  "items": [
+    "Timed messages now update their displayed seconds while the loader is visible but unfocused. Hidden or minimised windows keep the expiry deadline, and the display catches up when restored. Deliberate reading pauses still apply while the loader is focused.",
+    "Changelog versions keep their existing note panels when switching. The picker returns focus before closing its options, and fits smaller windows and larger text. Changelog and What’s new use unnumbered paragraphs, and What’s new now follows the current release.",
+    "Interface recovery ignores replies from an older interface session while allowing file actions already started to finish. A bounded recovery log in Diagnostics records the renderer version, failure type and exit code when available, without repeating the earlier file actions.",
+    "Combine mods now accepts larger selections through the native review too. There is no fixed eight-package limit; the existing checks on total size, assets and memory still apply.",
+    "Command-line profile launches stay attached until the selected game exits, then restore the original packages. An interrupted monitor or an uncertain game launch preserves the recovery record. Pending launches keep their waiting status until the game is actually detected.",
+    "Command-line profiles can be created from the current setup or started empty, renamed and deleted after review. Inactive local packages are shown as Stored only, matching My mods.",
+    "Update cleanup verifies the old release signature before removing files that are no longer shipped. A missing or changed old release record leaves those files alone while allowing a verified new release to finish installing.",
+    "The Field guide now explains PAK-only, native-only and combined PAK/ASI mods, with examples from Bleed Out and Headshot Only Freakers. Required components are distinguished from optional extensions. Windows, Proton, version checks and the limits of PAK profiles are covered.",
+    "Linux: the bundled browser engine includes another six reviewed upstream security fixes and their required changes. Packaging requires the rebuilt engine and its matching source bundle. The AppImage extraction fallback now removes its temporary files after closing and reports a cleanup failure if anything could not be removed.",
+    "⬇ To update: download the new ZIP for your system and leave it in your Downloads folder. The toolkit offers “Install and restart”. ⬇"
+  ]
+}

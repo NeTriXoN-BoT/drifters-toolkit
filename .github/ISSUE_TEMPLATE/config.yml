@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/NeTriXoN-BoT/drifters-toolkit/security/advisories/new
+    about: Report a suspected vulnerability privately.
+  - name: Downloads and mod-page support
+    url: https://www.nexusmods.com/daysgone/mods/1022
+    about: Get the toolkit or discuss setup on its Nexus page.

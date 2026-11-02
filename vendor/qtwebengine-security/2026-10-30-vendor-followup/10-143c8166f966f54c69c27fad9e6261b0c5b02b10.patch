@@ -1,0 +1,225 @@
+From 143c8166f966f54c69c27fad9e6261b0c5b02b10 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Fri, 17 Apr 2026 07:26:00 -0700
+Subject: [PATCH] [Backport] Dependency for CVE-2026-118353 (3/4)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/7772809:
+Rename ImageResourceContent::IsAccessAllowed() to IsCorsSameOrigin()
+
+Better reflects the meaning of the flag (bottoms out at
+ResourceResponse::IsCorsSameOrigin()).
+
+Also renames the lower level function on ImageResourceInfo.
+
+Change-Id: I63d3d73bf70f58d26ecd0868b9062bbbe36e11a7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7772809
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1616536}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784937
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/core/clipboard/data_transfer.cc   |  2 +-
+ .../core/html/canvas/image_element_base.cc     |  2 +-
+ .../core/layout/layout_image_resource.cc       |  2 +-
+ .../core/loader/resource/image_resource.cc     | 18 +++++++++---------
+ .../core/loader/resource/image_resource.h      |  2 +-
+ .../loader/resource/image_resource_content.cc  |  9 +++++----
+ .../loader/resource/image_resource_content.h   |  2 +-
+ .../core/loader/resource/image_resource_info.h |  2 +-
+ .../renderer/core/style/style_fetched_image.cc |  4 ++--
+ .../renderer/core/svg/svg_fe_image_element.cc  |  2 +-
+ 10 files changed, 23 insertions(+), 22 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/clipboard/data_transfer.cc b/chromium/third_party/blink/renderer/core/clipboard/data_transfer.cc
+index 455478c44b88..b83bd2970c2d 100644
+--- a/chromium/third_party/blink/renderer/core/clipboard/data_transfer.cc
++++ b/chromium/third_party/blink/renderer/core/clipboard/data_transfer.cc
+@@ -495,7 +495,7 @@ static void WriteImageToDataObject(DataObject* data_object,
+     return;
+ 
+   data_object->AddFileSharedBuffer(
+-      image_buffer, cached_image->IsAccessAllowed(), image_url,
++      image_buffer, cached_image->IsCorsSameOrigin(), image_url,
+       image->FilenameExtension(),
+       cached_image->GetResponse().HttpHeaderFields().Get(
+           http_names::kContentDisposition));
+diff --git a/chromium/third_party/blink/renderer/core/html/canvas/image_element_base.cc b/chromium/third_party/blink/renderer/core/html/canvas/image_element_base.cc
+index 6ea2fc49b078..31d92f577baa 100644
+--- a/chromium/third_party/blink/renderer/core/html/canvas/image_element_base.cc
++++ b/chromium/third_party/blink/renderer/core/html/canvas/image_element_base.cc
+@@ -96,7 +96,7 @@ scoped_refptr<Image> ImageElementBase::GetSourceImageForCanvas(
+ }
+ 
+ bool ImageElementBase::WouldTaintOrigin() const {
+-  return CachedImage() && !CachedImage()->IsAccessAllowed();
++  return CachedImage() && !CachedImage()->IsCorsSameOrigin();
+ }
+ 
+ gfx::SizeF ImageElementBase::ElementSize(
+diff --git a/chromium/third_party/blink/renderer/core/layout/layout_image_resource.cc b/chromium/third_party/blink/renderer/core/layout/layout_image_resource.cc
+index 8ce06093a34e..63b20a087bc7 100644
+--- a/chromium/third_party/blink/renderer/core/layout/layout_image_resource.cc
++++ b/chromium/third_party/blink/renderer/core/layout/layout_image_resource.cc
+@@ -182,7 +182,7 @@ void LayoutImageResource::UseBrokenImage() {
+ }
+ 
+ bool LayoutImageResource::IsAccessAllowed() const {
+-  return !cached_image_ || cached_image_->IsAccessAllowed();
++  return !cached_image_ || cached_image_->IsCorsSameOrigin();
+ }
+ 
+ scoped_refptr<Image> LayoutImageResource::GetImage(
+diff --git a/chromium/third_party/blink/renderer/core/loader/resource/image_resource.cc b/chromium/third_party/blink/renderer/core/loader/resource/image_resource.cc
+index afb20158174c..3d5bfda06a6d 100644
+--- a/chromium/third_party/blink/renderer/core/loader/resource/image_resource.cc
++++ b/chromium/third_party/blink/renderer/core/loader/resource/image_resource.cc
+@@ -204,11 +204,11 @@ class ImageResource::ImageResourceInfoImpl final
+   bool IsCacheValidator() const override {
+     return resource_->IsCacheValidator();
+   }
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin
+-          does_current_frame_has_single_security_origin) const override {
+-    return resource_->IsAccessAllowed(
+-        does_current_frame_has_single_security_origin);
++          does_current_frame_have_single_security_origin) const override {
++    return resource_->IsCorsSameOrigin(
++        does_current_frame_have_single_security_origin);
+   }
+   std::optional<ResourceError> GetResourceError() const override {
+     if (resource_->LoadFailedOrCanceled())
+@@ -640,13 +640,13 @@ void ImageResource::MultipartDataReceived(base::span<const uint8_t> bytes) {
+   Resource::AppendData(base::as_chars(bytes));
+ }
+ 
+-bool ImageResource::IsAccessAllowed(
++bool ImageResource::IsCorsSameOrigin(
+     ImageResourceInfo::DoesCurrentFrameHaveSingleSecurityOrigin
+-        does_current_frame_has_single_security_origin) const {
+-  if (does_current_frame_has_single_security_origin !=
+-      ImageResourceInfo::kHasSingleSecurityOrigin)
++        does_current_frame_have_single_security_origin) const {
++  if (does_current_frame_have_single_security_origin !=
++      ImageResourceInfo::kHasSingleSecurityOrigin) {
+     return false;
+-
++  }
+   return GetResponse().IsCorsSameOrigin();
+ }
+ 
+diff --git a/chromium/third_party/blink/renderer/core/loader/resource/image_resource.h b/chromium/third_party/blink/renderer/core/loader/resource/image_resource.h
+index ed3902b7548d..31bf1e99947c 100644
+--- a/chromium/third_party/blink/renderer/core/loader/resource/image_resource.h
++++ b/chromium/third_party/blink/renderer/core/loader/resource/image_resource.h
+@@ -136,7 +136,7 @@ class CORE_EXPORT ImageResource final
+ 
+   // Only for ImageResourceInfoImpl.
+   void DecodeError(bool all_data_received);
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       ImageResourceInfo::DoesCurrentFrameHaveSingleSecurityOrigin) const;
+ 
+   bool HasClientsOrObservers() const override;
+diff --git a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.cc b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
+index 2b63c16d1842..fe8bc5fd29b6 100644
+--- a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
++++ b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.cc
+@@ -52,7 +52,7 @@ class NullImageResourceInfo final
+   base::TimeTicks DiscoveryTime() const override { return base::TimeTicks(); }
+   const ResourceResponse& GetResponse() const override { return response_; }
+   bool IsCacheValidator() const override { return false; }
+-  bool IsAccessAllowed(
++  bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin) const override {
+     return true;
+   }
+@@ -312,8 +312,9 @@ gfx::Size ImageResourceContent::IntrinsicSize(
+ 
+ RespectImageOrientationEnum ImageResourceContent::ForceOrientationIfNecessary(
+     RespectImageOrientationEnum default_orientation) const {
+-  if (image_ && image_->IsBitmapImage() && !IsAccessAllowed())
++  if (image_ && image_->IsBitmapImage() && !IsCorsSameOrigin()) {
+     return kRespectImageOrientation;
++  }
+   return default_orientation;
+ }
+ 
+@@ -619,8 +620,8 @@ void ImageResourceContent::Changed(const blink::Image* image) {
+   NotifyObservers(kDoNotNotifyFinish, CanDeferInvalidation::kYes);
+ }
+ 
+-bool ImageResourceContent::IsAccessAllowed() const {
+-  return info_->IsAccessAllowed(
++bool ImageResourceContent::IsCorsSameOrigin() const {
++  return info_->IsCorsSameOrigin(
+       GetImage()->HasSingleSecurityOrigin()
+           ? ImageResourceInfo::kHasSingleSecurityOrigin
+           : ImageResourceInfo::kHasMultipleSecurityOrigin);
+diff --git a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.h b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.h
+index 6cd18cbd032e..26ba6ae2f2ac 100644
+--- a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.h
++++ b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_content.h
+@@ -142,7 +142,7 @@ class CORE_EXPORT ImageResourceContent final
+   base::TimeTicks LoadStart() const override;
+   base::TimeTicks LoadEnd() const override;
+   AtomicString MediaType() const override;
+-  bool IsAccessAllowed() const;
++  bool IsCorsSameOrigin() const;
+   const ResourceResponse& GetResponse() const;
+   std::optional<ResourceError> GetResourceError() const;
+ 
+diff --git a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_info.h b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_info.h
+index bb95174b8e6b..1ec1852cf9c6 100644
+--- a/chromium/third_party/blink/renderer/core/loader/resource/image_resource_info.h
++++ b/chromium/third_party/blink/renderer/core/loader/resource/image_resource_info.h
+@@ -40,7 +40,7 @@ class CORE_EXPORT ImageResourceInfo : public GarbageCollectedMixin {
+     kHasMultipleSecurityOrigin,
+     kHasSingleSecurityOrigin
+   };
+-  virtual bool IsAccessAllowed(
++  virtual bool IsCorsSameOrigin(
+       DoesCurrentFrameHaveSingleSecurityOrigin) const = 0;
+   virtual std::optional<ResourceError> GetResourceError() const = 0;
+ 
+diff --git a/chromium/third_party/blink/renderer/core/style/style_fetched_image.cc b/chromium/third_party/blink/renderer/core/style/style_fetched_image.cc
+index 19a3e2b8cd4e..40f527e84a49 100644
+--- a/chromium/third_party/blink/renderer/core/style/style_fetched_image.cc
++++ b/chromium/third_party/blink/renderer/core/style/style_fetched_image.cc
+@@ -124,7 +124,7 @@ bool StyleFetchedImage::ErrorOccurred() const {
+ 
+ bool StyleFetchedImage::IsAccessAllowed(String& failing_url) const {
+   DCHECK(image_->IsLoaded());
+-  if (image_->IsAccessAllowed()) {
++  if (image_->IsCorsSameOrigin()) {
+     return true;
+   }
+   failing_url = image_->Url().ElidedString();
+@@ -274,7 +274,7 @@ RespectImageOrientationEnum StyleFetchedImage::ForceOrientationIfNecessary(
+   }
+   // Cross-origin images must always respect orientation to prevent
+   // potentially private data leakage.
+-  if (!image_->IsAccessAllowed()) {
++  if (!image_->IsCorsSameOrigin()) {
+     return kRespectImageOrientation;
+   }
+   return default_orientation;
+diff --git a/chromium/third_party/blink/renderer/core/svg/svg_fe_image_element.cc b/chromium/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
+index 8cb60a948a1b..c778498d4bde 100644
+--- a/chromium/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
++++ b/chromium/third_party/blink/renderer/core/svg/svg_fe_image_element.cc
+@@ -179,7 +179,7 @@ FilterEffect* SVGFEImageElement::Build(SVGFilterBuilder*, Filter* filter) {
+ 
+ bool SVGFEImageElement::TaintsOrigin() const {
+   // We always consider a 'href' that references a local element as tainting.
+-  return !cached_image_ || !cached_image_->IsAccessAllowed();
++  return !cached_image_ || !cached_image_->IsCorsSameOrigin();
+ }
+ 
+ SVGAnimatedPropertyBase* SVGFEImageElement::PropertyFromAttribute(

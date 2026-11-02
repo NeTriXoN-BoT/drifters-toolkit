@@ -1,0 +1,45 @@
+From 00a931090f40179c5f0d211c3964849348618f9c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Tue, 13 Oct 2026 06:57:42 -0700
+Subject: [Backport] CVE-2026-113339: Use after free in SVG
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8563759:
+Harden ElementSMILAnimations::Apply() against removals during iteration
+
+Style resolution during ApplyAnimationValues() can cause animation
+elements to be removed.
+
+Fixed: 572862424
+Change-Id: I3233b96629fe48d13fcbd0c24bc75649b04b9ad7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8563759
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717535}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783396
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../blink/renderer/core/svg/animation/element_smil_animations.cc       | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc b/chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
+index 4a4e55afc7f..9d5996d7ea7 100644
+--- a/chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
++++ b/chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
+@@ -33,7 +33,8 @@ void ElementSMILAnimations::RemoveAnimation(const QualifiedName& attribute,
+ 
+ bool ElementSMILAnimations::Apply(SMILTime elapsed) {
+   bool did_apply = false;
+-  for (SMILAnimationSandwich* sandwich : sandwiches_.Values()) {
++  HeapVector<Member<SMILAnimationSandwich>> sandwiches(sandwiches_.Values());
++  for (SMILAnimationSandwich* sandwich : sandwiches) {
+     sandwich->UpdateActiveAnimationStack(elapsed);
+     if (sandwich->ApplyAnimationValues())
+       did_apply = true;
+-- 
+cgit v1.2.3
+

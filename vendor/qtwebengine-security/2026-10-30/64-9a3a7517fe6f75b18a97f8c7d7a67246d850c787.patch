@@ -1,0 +1,44 @@
+From 9a3a7517fe6f75b18a97f8c7d7a67246d850c787 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Tue, 13 Oct 2026 16:00:52 -0400
+Subject: [PATCH] [Backport] CVE-2026-118351: Memory corruption in Skia
+
+Cherry-pick of patch originally reviewed on
+https://skia-review.googlesource.com/c/skia/+/1392837:
+Ref resource in GrResourceCache when switching UniqueKey
+
+This ensures the resource is referenced by the cache to ensure it is
+transitioned out of the purgeable queue when refcount is 0.
+
+Bug: 570825067
+Change-Id: I4942482ed8d42561e603952462336a1851918f8b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1392837
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784483
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../skia/src/gpu/ganesh/GrResourceCache.cpp            | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp b/chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp
+index 9ed45eba9932..edf724220c4d 100644
+--- a/chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp
++++ b/chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp
+@@ -263,8 +263,14 @@ void GrResourceCache::changeUniqueKey(GrGpuResource* resource, const skgpu::Uniq
+                 old->resourcePriv().isPurgeable()) {
+                 old->cacheAccess().release();
+             } else {
+-                // removeUniqueKey expects an external owner of the resource.
+-                this->removeUniqueKey(sk_ref_sp(old).get());
++                // GrResourceCache::removeUniqueKey() expects a non-zero refcount, we refcount with
++                // GrResourceCache::refResource() instead of sk_ref_sp since the first ref of a
++                // resource must be by the resource cache. In the case that this is the first ref
++                // on the resource, refResource() also transfers the resource to the unpurgeable
++                // queue, which is required as unref() expects the resource to be there.
++                this->refResource(old);
++                this->removeUniqueKey(old);
++                old->unref();
+             }
+         }
+         SkASSERT(nullptr == fUniqueHash.find(newKey));

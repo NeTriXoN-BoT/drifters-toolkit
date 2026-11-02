@@ -1,0 +1,19 @@
+# Application/staging environment for the universal Linux AppImage.
+# Qt is supplied by the pinned SDK; distribution Qt packages provide the
+# system-library dependency set collected by the portable staging tool.
+# A full WebEngine rebuild additionally needs the vendor prerequisites,
+# Clang/lld 19, Git and a maintained 7z; see docs/MODERN_QT_BUILD.md.
+ARG BASE_IMAGE=debian:12-slim@sha256:a4672c0cb26fbdde88e38fa2dfb6c681942306680e41e4378b28770b6e79ee91
+FROM ${BASE_IMAGE}
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build pkg-config python3 nodejs ca-certificates \
+    qt6-base-dev qt6-webengine-dev qt6-webchannel-dev qt6-websockets-dev \
+    qt6-wayland qt6-gtk-platformtheme \
+    libsecret-1-dev libssl-dev xvfb xauth dbus-x11 xdg-utils weston \
+    patchelf squashfs-tools pax-utils file \
+    && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --uid 1001 builder
+WORKDIR /workspace
+USER builder
+CMD ["bash"]

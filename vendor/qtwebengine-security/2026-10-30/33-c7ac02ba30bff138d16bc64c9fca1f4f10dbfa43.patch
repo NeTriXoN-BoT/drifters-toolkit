@@ -1,0 +1,74 @@
+From c7ac02ba30bff138d16bc64c9fca1f4f10dbfa43 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michael=20Br=C3=BCning?= <michael.bruning@qt.io>
+Date: Tue, 27 Oct 2026 23:50:10 +0100
+Subject: [PATCH] CVE-2026-113234: Memory corruption in ANGLE
+
+Manual application of bandaid fix originally proposed at
+https://issues.chromium.org/issues/556750158.
+
+Task-number: QTBUG-151733
+Change-Id: I26dfff5533058824d8e19d1cd8c3b7e113206656
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784185
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../renderer/vulkan/RenderTargetVk.cpp        | 19 +++++++++++++++----
+ .../libANGLE/renderer/vulkan/vk_helpers.cpp   | 14 +++++++++++++-
+ 2 files changed, 28 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp b/chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
+index ab8a737909ff..0b0fe35b92c9 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
+@@ -448,12 +448,23 @@ void RenderTargetVk::invalidateEntireStencilContent(ContextVk *contextVk,
+ gl::ImageIndex RenderTargetVk::getImageIndexForClear(uint32_t layerCount) const
+ {
+     // Determine the GL type from the Vk Image properties.
+-    if (mImage->getType() == VK_IMAGE_TYPE_3D || mImage->getLayerCount() > 1)
++    if (mImage->getType() == VK_IMAGE_TYPE_3D)
++    {
++        // Staged clears on 3D images are recorded and flushed at layer 0 and apply to the entire
++        // image: Vulkan requires arrayLayers == 1 for VK_IMAGE_TYPE_3D, and both
++        // RenderTargetVk::flushStagedUpdates and ImageHelper::flushStagedUpdates only probe layer
++        // range [0, 1) for 3D images.  Staging a clear at the depth-slice index (mLayerIndex > 0)
++        // would permanently orphan it, silently dropping robust-resource-initialization clears
++        // staged by FramebufferVk::invalidateImpl.  The following render pass would then run with
++        // loadOp=DONT_CARE over invalidated contents, disclosing uninitialized/stale GPU memory
++        // (stale tile contents on tile-based GPUs) to the application.
++        return gl::ImageIndex::Make2DArrayRange(mLevelIndexGL.get(), 0, layerCount);
++    }
++    if (mImage->getLayerCount() > 1)
+     {
+-        // This is used for the sake of staging clears.  The depth slices of the 3D image are
+-        // threated as layers for this purpose.
++        // This is used for the sake of staging clears.
+         //
+-        // We also don't need to distinguish 2D array and cube.
++        // We don't need to distinguish 2D array and cube.
+         return gl::ImageIndex::Make2DArrayRange(mLevelIndexGL.get(), mLayerIndex, layerCount);
+     }
+ 
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 735566d37d52..66263ec76df9 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -10713,7 +10713,19 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+ 
+                     // Do not call onWrite as it removes mCurrentSingleClearValue, but instead call
+                     // setContentDefined directly.
+-                    setContentDefined(updateMipLevelVk, 1, updateBaseLayer, updateLayerCount,
++                    //
++                    // A clear of a 3D image (always a single Vulkan array layer) writes every
++                    // depth slice; mark all tracked slices as having defined contents so that a
++                    // later render pass targeting a slice other than 0 uses loadOp=LOAD instead
++                    // of DONT_CARE (which would expose undefined/stale memory on tile-based
++                    // GPUs).
++                    uint32_t definedLayerCount = updateLayerCount;
++                    if (mImageType == VK_IMAGE_TYPE_3D && updateBaseLayer == 0)
++                    {
++                        definedLayerCount = static_cast<uint32_t>(
++                            std::max(getLevelExtents(updateMipLevelVk).depth, 1));
++                    }
++                    setContentDefined(updateMipLevelVk, 1, updateBaseLayer, definedLayerCount,
+                                       update.data.clear.aspectFlags);
+                     break;
+                 }

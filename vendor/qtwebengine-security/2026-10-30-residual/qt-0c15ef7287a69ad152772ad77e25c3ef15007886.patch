@@ -1,0 +1,77 @@
+From 0c15ef7287a69ad152772ad77e25c3ef15007886 Mon Sep 17 00:00:00 2001
+From: Ian Kilpatrick <ikilpatrick@chromium.org>
+Date: Thu, 22 Oct 2026 15:29:38 -0700
+Subject: [PATCH] [Backport] CVE-2026-118344: Use after free in Layout
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8633358:
+Add move constructor and assignment operator to Shelf.
+
+This adds the missing move constructor & assignment operator to the
+Shelf data-type.
+
+Additionally adds the copy assignment operator for completeness.
+
+Fixed: 574852698
+Change-Id: Ief97ee317f7aba8d86b3c6cf920cb362efc679c5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8633358
+Reviewed-by: David Grogan <dgrogan@chromium.org>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725253}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784475
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../core/layout/exclusions/exclusion_space.cc |  2 +-
+ .../core/layout/exclusions/exclusion_space.h  | 19 ++++++++++++++++++-
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc b/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+index 969d10825a0c..474909b2c712 100644
+--- a/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
++++ b/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+@@ -620,7 +620,7 @@ void ExclusionSpaceInternal::DerivedGeometry::Add(
+                                    ? LayoutUnit::Max()
+                                    : shelf_copy->line_right;
+ 
+-        shelves_.insert(i + 1, new_shelf);
++        shelves_.insert(i + 1, std::move(new_shelf));
+       }
+ 
+       // It's safe to early exit out of this loop now. This exclusion won't
+diff --git a/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h b/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+index 2f6f008e678b..ad7eacc54b4c 100644
+--- a/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
++++ b/chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+@@ -326,7 +326,8 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                : nullptr),
+           has_shape_exclusions(false) {}
+ 
+-    // The copy constructor explicitly copies the shape_exclusions member.
++    // The copy constructor and copy assignment operator explicitly copy the
++    // shape_exclusions member.
+     Shelf(const Shelf& other)
+         : block_offset(other.block_offset),
+           line_left(other.line_left),
+@@ -338,6 +339,22 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                      *other.shape_exclusions)
+                                : nullptr),
+           has_shape_exclusions(other.has_shape_exclusions) {}
++    Shelf(Shelf&&) noexcept = default;
++
++    Shelf& operator=(const Shelf& other) {
++      block_offset = other.block_offset;
++      line_left = other.line_left;
++      line_right = other.line_right;
++      line_left_edges = other.line_left_edges;
++      line_right_edges = other.line_right_edges;
++      shape_exclusions =
++          other.shape_exclusions
++              ? MakeGarbageCollected<ShapeExclusions>(*other.shape_exclusions)
++              : nullptr;
++      has_shape_exclusions = other.has_shape_exclusions;
++      return *this;
++    }
++    Shelf& operator=(Shelf&&) noexcept = default;
+ 
+     void Trace(Visitor* visitor) const { visitor->Trace(shape_exclusions); }
+ 

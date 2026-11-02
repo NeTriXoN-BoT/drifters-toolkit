@@ -1,0 +1,274 @@
+From 828f850c406fb313f35cc1733e9c2122d15bfe58 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 2 Sep 2026 17:45:43 -0700
+Subject: [PATCH] [Backport] Dependency for CVE-2026-118327
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8342157:
+Remove HlsDataSourceProvider::ReadStatus
+
+Its pointless, and made errors harder to read.
+
+Bug: 552636361
+Change-Id: I2edf5bf49ea2f0121ebc3f1b493b14587b761119
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8342157
+Auto-Submit: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Phil Yan <philyan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1691236}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784720
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../media/filters/hls_data_source_provider.h    | 17 +++--------------
+ .../filters/hls_data_source_provider_impl.cc    | 12 ++++++------
+ chromium/media/filters/hls_demuxer_status.h     | 12 ------------
+ .../filters/hls_manifest_demuxer_engine.cc      | 13 ++++---------
+ .../media/filters/hls_manifest_demuxer_engine.h |  3 +--
+ .../media/filters/hls_network_access_impl.cc    | 12 ++++++------
+ chromium/media/filters/hls_rendition_impl.cc    |  3 +--
+ 7 files changed, 21 insertions(+), 51 deletions(-)
+
+diff --git a/chromium/media/filters/hls_data_source_provider.h b/chromium/media/filters/hls_data_source_provider.h
+index 3483f3e448a3..b32158301d74 100644
+--- a/chromium/media/filters/hls_data_source_provider.h
++++ b/chromium/media/filters/hls_data_source_provider.h
+@@ -16,6 +16,7 @@
+ #include "media/base/data_source.h"
+ #include "media/base/media_export.h"
+ #include "media/base/status.h"
++#include "media/filters/hls_demuxer_status.h"
+ #include "media/formats/hls/security_metadata.h"
+ #include "media/formats/hls/types.h"
+ #include "url/gurl.h"
+@@ -32,20 +33,8 @@ class MEDIA_EXPORT HlsDataSourceProvider {
+  public:
+   virtual ~HlsDataSourceProvider() = 0;
+ 
+-  struct ReadStatusTraits {
+-    enum class Codes : StatusCodeType {
+-      kError,
+-      kStopped,
+-      kAborted,
+-    };
+-    static constexpr StatusGroupType Group() {
+-      return "HlsDataSourceProvider::ReadStatus";
+-    }
+-  };
+-
+-  using ReadStatus = TypedStatus<ReadStatusTraits>;
+-  using ReadResult = ReadStatus::Or<std::unique_ptr<HlsDataSourceStream>>;
+-  using ReadCb = base::OnceCallback<void(ReadResult)>;
++  using ReadResult = HlsDemuxerStatus::Or<std::unique_ptr<HlsDataSourceStream>>;
++  using ReadCb = HlsDemuxerStatusCb<std::unique_ptr<HlsDataSourceStream>>;
+ 
+   // Represents reading from a specific URI at the given byte range. Multiple
+   // segments can be added to a read queue to join chunks together from either
+diff --git a/chromium/media/filters/hls_data_source_provider_impl.cc b/chromium/media/filters/hls_data_source_provider_impl.cc
+index a33d839a42b2..5054e52a4b96 100644
+--- a/chromium/media/filters/hls_data_source_provider_impl.cc
++++ b/chromium/media/filters/hls_data_source_provider_impl.cc
+@@ -33,12 +33,12 @@ void OnMultiBufferReadComplete(
+     case DataSource::kReadError: {
+       stream->UnlockStreamPostWrite(0, true);
+       return std::move(callback).Run(
+-          HlsDataSourceProvider::ReadStatus::Codes::kError);
++          HlsDemuxerStatus::Codes::kNetworkReadError);
+     }
+     case DataSource::kAborted: {
+       stream->UnlockStreamPostWrite(0, true);
+       return std::move(callback).Run(
+-          HlsDataSourceProvider::ReadStatus::Codes::kAborted);
++          HlsDemuxerStatus::Codes::kNetworkReadAborted);
+     }
+     default: {
+       CHECK_GE(read_size, 0);
+@@ -113,7 +113,7 @@ void HlsDataSourceProviderImpl::ReadFromExistingStream(
+   auto it = data_source_map_.find(stream->stream_id());
+   if (it == data_source_map_.end()) {
+     TRACE_EVENT_NESTABLE_ASYNC_END0("media", "HLS::ReadExistingStream", this);
+-    std::move(callback).Run(ReadStatus::Codes::kError);
++    std::move(callback).Run(HlsDemuxerStatus::Codes::kNetworkReadError);
+     return;
+   }
+ 
+@@ -161,7 +161,7 @@ void HlsDataSourceProviderImpl::OnDataSourceCreated(
+ 
+   if (stream->SecurityInfo().HasIncompatibleRangeAndOrigin()) {
+     std::move(callback).Run(
+-        {ReadStatus::Codes::kError,
++        {HlsDemuxerStatus::Codes::kNetworkReadError,
+          "Range requests are not allowed for cross-origin content"});
+     TRACE_EVENT_END("media", perfetto::Track::FromPointer(this));
+     return;
+@@ -182,7 +182,7 @@ void HlsDataSourceProviderImpl::DataSourceInitialized(
+     auto it = data_source_map_.find(stream->stream_id());
+     CHECK(it != data_source_map_.end());
+     data_source_map_.erase(it);
+-    std::move(callback).Run(ReadStatus::Codes::kStopped);
++    std::move(callback).Run(HlsDemuxerStatus::Codes::kNetworkReadStopped);
+     TRACE_EVENT_END("media", perfetto::Track::FromPointer(this));
+     return;
+   }
+@@ -204,7 +204,7 @@ void HlsDataSourceProviderImpl::DataSourceInitialized(
+ 
+   if (stream->SecurityInfo().HasIncompatibleRangeAndOrigin()) {
+     std::move(callback).Run(
+-        {ReadStatus::Codes::kError,
++        {HlsDemuxerStatus::Codes::kNetworkReadError,
+          "Range requests are not allowed for cross-origin content"});
+     TRACE_EVENT_END("media", perfetto::Track::FromPointer(this));
+     return;
+diff --git a/chromium/media/filters/hls_demuxer_status.h b/chromium/media/filters/hls_demuxer_status.h
+index ea4a89954814..3c75e902f525 100644
+--- a/chromium/media/filters/hls_demuxer_status.h
++++ b/chromium/media/filters/hls_demuxer_status.h
+@@ -124,18 +124,6 @@ struct HlsDemuxerStatusTraits {
+         return "Segment queue never had any data";
+     }
+   }
+-
+-  static TypedStatus<HlsDemuxerStatusTraits> FromReadStatus(
+-      HlsDataSourceProvider::ReadStatus&& s) {
+-    switch (s.code()) {
+-      case HlsDataSourceProvider::ReadStatus::Codes::kError:
+-        return {Codes::kNetworkReadError, std::move(s)};
+-      case HlsDataSourceProvider::ReadStatus::Codes::kAborted:
+-        return {Codes::kNetworkReadAborted, std::move(s)};
+-      case HlsDataSourceProvider::ReadStatus::Codes::kStopped:
+-        return {Codes::kNetworkReadStopped, std::move(s)};
+-    }
+-  }
+ };
+ 
+ using HlsDemuxerStatus = TypedStatus<HlsDemuxerStatusTraits>;
+diff --git a/chromium/media/filters/hls_manifest_demuxer_engine.cc b/chromium/media/filters/hls_manifest_demuxer_engine.cc
+index 4169d55a4403..286568c2ef91 100644
+--- a/chromium/media/filters/hls_manifest_demuxer_engine.cc
++++ b/chromium/media/filters/hls_manifest_demuxer_engine.cc
+@@ -492,8 +492,7 @@ void HlsManifestDemuxerEngine::UpdateMediaPlaylistForRole(
+     HlsDataSourceProvider::ReadResult maybe_stream) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!maybe_stream.has_value()) {
+-    std::move(cb).Run(HlsDemuxerStatusTraits::FromReadStatus(
+-        std::move(maybe_stream).error()));
++    std::move(cb).Run(std::move(maybe_stream).error());
+     return;
+   }
+   auto stream = std::move(maybe_stream).value();
+@@ -585,8 +584,7 @@ void HlsManifestDemuxerEngine::AdaptationAction(
+ 
+ void HlsManifestDemuxerEngine::UpdateHlsDataSourceStats(
+     HlsDataSourceProvider::ReadCb cb,
+-    HlsDataSourceProvider::ReadStatus::Or<std::unique_ptr<HlsDataSourceStream>>
+-        result) {
++    HlsDataSourceProvider::ReadResult result) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!result.has_value()) {
+     std::move(cb).Run(std::move(result).error().AddHere());
+@@ -634,9 +632,7 @@ void HlsManifestDemuxerEngine::ParsePlaylist(
+     HlsDataSourceProvider::ReadResult m_stream) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!m_stream.has_value()) {
+-    std::move(parse_complete_cb)
+-        .Run(HlsDemuxerStatusTraits::FromReadStatus(
+-            std::move(m_stream).error().AddHere()));
++    std::move(parse_complete_cb).Run(std::move(m_stream).error().AddHere());
+     return;
+   }
+   auto stream = std::move(m_stream).value();
+@@ -983,8 +979,7 @@ void HlsManifestDemuxerEngine::DetermineBitstreamContainer(
+   TRACE_EVENT_NESTABLE_ASYNC_END0("media", "HLS::PeekSegmentChunk", this);
+ 
+   if (!maybe_stream.has_value()) {
+-    std::move(cb).Run(HlsDemuxerStatusTraits::FromReadStatus(
+-        std::move(maybe_stream).error()));
++    std::move(cb).Run(std::move(maybe_stream).error());
+     return;
+   }
+ 
+diff --git a/chromium/media/filters/hls_manifest_demuxer_engine.h b/chromium/media/filters/hls_manifest_demuxer_engine.h
+index 7001f2fdd39f..8d7e6162813d 100644
+--- a/chromium/media/filters/hls_manifest_demuxer_engine.h
++++ b/chromium/media/filters/hls_manifest_demuxer_engine.h
+@@ -215,8 +215,7 @@ class MEDIA_EXPORT HlsManifestDemuxerEngine : public ManifestDemuxer::Engine,
+   // memory state and origin tainting.
+   void UpdateHlsDataSourceStats(
+       HlsDataSourceProvider::ReadCb cb,
+-      HlsDataSourceProvider::ReadStatus::Or<
+-          std::unique_ptr<HlsDataSourceStream>> result);
++      HlsDataSourceProvider::ReadResult result);
+ 
+   // Helper to bind `UpdateHlsDataSourceStats` around a response CB.
+   HlsDataSourceProvider::ReadCb BindStatsUpdate(
+diff --git a/chromium/media/filters/hls_network_access_impl.cc b/chromium/media/filters/hls_network_access_impl.cc
+index 689283dc616f..74b1401ed738 100644
+--- a/chromium/media/filters/hls_network_access_impl.cc
++++ b/chromium/media/filters/hls_network_access_impl.cc
+@@ -78,7 +78,7 @@ void HlsNetworkAccessImpl::OnKeyFetch(
+   enc_data->ImportKey(stream->AsString());
+   enc_data->ImportKeySecurity(stream->SecurityInfo());
+   if (enc_data->NeedsKeyFetch()) {
+-    std::move(cb).Run({HlsDataSourceProvider::ReadStatus::Codes::kError,
++    std::move(cb).Run({HlsDemuxerStatus::Codes::kNetworkReadStopped,
+                        "Error importing key in encrypted segment fetch"});
+     return;
+   }
+@@ -89,7 +89,7 @@ void HlsNetworkAccessImpl::ReadManifest(const GURL& uri,
+                                         HlsDataSourceProvider::ReadCb cb) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!data_source_provider_) {
+-    std::move(cb).Run(HlsDataSourceProvider::ReadStatus::Codes::kStopped);
++    std::move(cb).Run(HlsDemuxerStatus::Codes::kNetworkReadStopped);
+     return;
+   }
+   ReadAllInternal(uri, std::move(cb), DataSource::CacheMode::kBypassCache);
+@@ -100,7 +100,7 @@ void HlsNetworkAccessImpl::ReadKey(
+     HlsDataSourceProvider::ReadCb cb) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!data_source_provider_) {
+-    std::move(cb).Run(HlsDataSourceProvider::ReadStatus::Codes::kStopped);
++    std::move(cb).Run(HlsDemuxerStatus::Codes::kNetworkReadStopped);
+     return;
+   }
+   ReadAllInternal(data.GetUri(), std::move(cb));
+@@ -151,7 +151,7 @@ void HlsNetworkAccessImpl::MediaSegmentSecurityChecks(
+   }
+ 
+   // Anything else is disallowed.
+-  std::move(cb).Run({HlsDataSourceProvider::ReadStatus::Codes::kError,
++  std::move(cb).Run({HlsDemuxerStatus::Codes::kNetworkReadError,
+                      "insecure media request"});
+ }
+ 
+@@ -161,7 +161,7 @@ void HlsNetworkAccessImpl::ReadMediaSegment(const hls::MediaSegment& segment,
+                                             HlsDataSourceProvider::ReadCb cb) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   if (!data_source_provider_) {
+-    std::move(cb).Run(HlsDataSourceProvider::ReadStatus::Codes::kStopped);
++    std::move(cb).Run(HlsDemuxerStatus::Codes::kNetworkReadStopped);
+     return;
+   }
+ 
+@@ -214,7 +214,7 @@ void HlsNetworkAccessImpl::ReadStream(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
+   CHECK(stream);
+   if (!data_source_provider_) {
+-    std::move(cb).Run(HlsDataSourceProvider::ReadStatus::Codes::kStopped);
++    std::move(cb).Run(HlsDemuxerStatus::Codes::kNetworkReadStopped);
+     return;
+   }
+   data_source_provider_
+diff --git a/chromium/media/filters/hls_rendition_impl.cc b/chromium/media/filters/hls_rendition_impl.cc
+index f335e82b1206..b9a013304bfb 100644
+--- a/chromium/media/filters/hls_rendition_impl.cc
++++ b/chromium/media/filters/hls_rendition_impl.cc
+@@ -452,8 +452,7 @@ void HlsRenditionImpl::OnSegmentData(scoped_refptr<hls::MediaSegment> segment,
+     // Drop |cb| here, and let the abort handler pick up the pieces.
+     // TODO(crbug.com/40057824): If a seek abort interrupts us, we want to not
+     // bubble the error upwards.
+-    rendition_host_->Quit(HlsDemuxerStatusTraits::FromReadStatus(
+-        std::move(result).error().AddHere()));
++    rendition_host_->Quit(std::move(result).error().AddHere());
+     return;
+   }
+ 

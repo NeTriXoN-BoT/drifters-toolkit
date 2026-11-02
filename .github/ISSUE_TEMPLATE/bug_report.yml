@@ -1,0 +1,77 @@
+name: Bug report
+description: Something in Drifter’s Toolkit is not working as expected.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For security issues, use Security → Report a vulnerability instead.
+        Review attachments before posting. Keep credentials, personal paths, game files, saves and memory dumps out of public reports.
+  - type: input
+    id: version
+    attributes:
+      label: Toolkit version
+      placeholder: "For example: 1.0.9 Local Edition"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system
+      description: On Linux, include your distribution and X11 or Wayland.
+      placeholder: Windows 11 x64, or Linux distribution/version and desktop session
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game edition and setup
+      description: Steam or Epic; on Linux, include native or Flatpak Steam and Proton version if relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Setup or startup
+        - PAK library or imports
+        - Compatibility or Diagnostics
+        - Profiles or game launch
+        - Saves or backups
+        - Workshop
+        - Interface or accessibility
+        - CLI
+        - Updating the toolkit
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include mod-page links and whether any ASI/DLL plugins are installed when relevant. Do not upload their packages.
+      placeholder: |
+        1. Open…
+        2. Choose…
+        3. The problem appears when…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include the exact error message and whether the game was running.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Diagnostics, logs or screenshots
+      description: Optional. Run Diagnostics if relevant, then review and redact the output before attaching it.

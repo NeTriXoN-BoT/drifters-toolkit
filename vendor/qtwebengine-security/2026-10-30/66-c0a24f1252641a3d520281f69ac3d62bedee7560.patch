@@ -1,0 +1,140 @@
+From c0a24f1252641a3d520281f69ac3d62bedee7560 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Thu, 15 Oct 2026 11:24:36 -0400
+Subject: [PATCH] [Backport] CVE-2026-118354: Improper input validation in Skia
+
+Cherry-pick of patch originally reviewed on
+https://skia-review.googlesource.com/c/skia/+/1395157:
+Treat VK_ERROR_UNKNOWN as VK_ERROR_DEVICE_LOST
+
+We normally would not expect VK_ERROR_UNKNOWN as this means there is
+either a problem with our calls to Vulkan which wasn't caught with
+validation layers, or the driver has an implementation issue. Since it
+is not normally expected and is unclear what the issue is we will treat
+is as a device lost.
+
+Bug: 568936430
+Change-Id: I87a145a418fd41a2e6d513ca1a7525556a55c3db
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1395157
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784485
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp   |  4 +++-
+ .../skia/src/gpu/graphite/vk/VulkanSharedContext.cpp |  4 +++-
+ .../third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp  | 12 +++++++++++-
+ .../third_party/skia/src/gpu/vk/VulkanUtilsPriv.h    | 12 +++++++-----
+ 4 files changed, 24 insertions(+), 8 deletions(-)
+
+diff --git a/chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp b/chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp
+index 0a2a3b7d2d1b..7a1eb6b118da 100644
+--- a/chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp
++++ b/chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp
+@@ -2651,6 +2651,7 @@ bool GrVkGpu::checkVkResult(VkResult result) {
+         case VK_SUCCESS:
+             return true;
+         case VK_ERROR_DEVICE_LOST:
++        case VK_ERROR_UNKNOWN:
+             if (!fDeviceIsLost) {
+                 // Callback should only be invoked once, and device should be marked as lost first.
+                 fDeviceIsLost = true;
+@@ -2658,7 +2659,8 @@ bool GrVkGpu::checkVkResult(VkResult result) {
+                                                 device(),
+                                                 fDeviceLostContext,
+                                                 fDeviceLostProc,
+-                                                vkCaps().supportsDeviceFaultInfo());
++                                                vkCaps().supportsDeviceFaultInfo(),
++                                                /*isUnknownError=*/result == VK_ERROR_UNKNOWN);
+             }
+             return false;
+         case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+diff --git a/chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp b/chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp
+index 6a91be6c86be..9bc9df223d41 100644
+--- a/chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp
++++ b/chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp
+@@ -138,6 +138,7 @@ bool VulkanSharedContext::checkVkResult(VkResult result) const {
+     case VK_SUCCESS:
+         return true;
+     case VK_ERROR_DEVICE_LOST:
++    case VK_ERROR_UNKNOWN:
+         {
+             SkAutoMutexExclusive lock(fDeviceIsLostMutex);
+             if (fDeviceIsLost) {
+@@ -152,7 +153,8 @@ bool VulkanSharedContext::checkVkResult(VkResult result) const {
+                                         device(),
+                                         fDeviceLostContext,
+                                         fDeviceLostProc,
+-                                        vulkanCaps().supportsDeviceFaultInfo());
++                                        vulkanCaps().supportsDeviceFaultInfo(),
++                                        /*isUnknownError=*/result == VK_ERROR_UNKNOWN);
+         return false;
+     case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+     case VK_ERROR_OUT_OF_HOST_MEMORY:
+diff --git a/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp b/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp
+index af6aeefb6157..e73c1a39a721 100644
+--- a/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp
++++ b/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp
+@@ -373,7 +373,8 @@ void InvokeDeviceLostCallback(const skgpu::VulkanInterface* vulkanInterface,
+                               VkDevice vkDevice,
+                               skgpu::VulkanDeviceLostContext deviceLostContext,
+                               skgpu::VulkanDeviceLostProc deviceLostProc,
+-                              bool supportsDeviceFaultInfoExtension) {
++                              bool supportsDeviceFaultInfoExtension,
++                              bool isUnknownError) {
+     if (!deviceLostProc) {
+         return;
+     }
+@@ -382,6 +383,15 @@ void InvokeDeviceLostCallback(const skgpu::VulkanInterface* vulkanInterface,
+     std::vector<VkDeviceFaultVendorInfoEXT> vendorInfos = {};
+     std::vector<std::byte> vendorBinaryData = {};
+ 
++    if (isUnknownError) {
++        deviceLostProc(deviceLostContext,
++                       "No details: A VK_UNKNOWN_ERROR has occured.",
++                       addressInfos,
++                       vendorInfos,
++                       vendorBinaryData);
++        return;
++    }
++
+     if (!supportsDeviceFaultInfoExtension) {
+         deviceLostProc(deviceLostContext,
+                        "No details: VK_EXT_device_fault not available/enabled.",
+diff --git a/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h b/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h
+index 59558aa2075b..aa18712758dd 100644
+--- a/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h
++++ b/chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h
+@@ -42,9 +42,9 @@ struct ShaderCaps;
+ namespace skgpu {
+ 
+ class ShaderErrorHandler;
+-struct VulkanInterface;
+-struct VulkanBackendContext;
+ class VulkanExtensions;
++struct VulkanBackendContext;
++struct VulkanInterface;
+ 
+ enum VkVendor {
+     kAMD_VkVendor = 0x1002,
+@@ -346,15 +346,17 @@ bool AllocateAndBindImageMemory(skgpu::VulkanAlloc* outVulkanAlloc,
+ #endif // SK_BUILD_FOR_ANDROID
+ 
+ /**
+- * Calls faultProc with faultContext; passes debug info if VK_EXT_device_fault is supported/enabled.
++ * Calls faultProc with faultContext; passes debug info if VK_EXT_device_fault is supported/enabled
++ * and the error is VK_ERROR_DEVICE_LOST.
+  *
+- * Note: must only be called *after* receiving VK_ERROR_DEVICE_LOST.
++ * Note: must only be called *after* receiving VK_ERROR_DEVICE_LOST or VK_ERROR_UNKNOWN.
+  */
+ void InvokeDeviceLostCallback(const skgpu::VulkanInterface* vulkanInterface,
+                               VkDevice vkDevice,
+                               skgpu::VulkanDeviceLostContext faultContext,
+                               skgpu::VulkanDeviceLostProc faultProc,
+-                              bool supportsDeviceFaultInfoExtension);
++                              bool supportsDeviceFaultInfoExtension,
++                              bool isUnknownError);
+ 
+ sk_sp<skgpu::VulkanInterface> MakeInterface(const skgpu::VulkanBackendContext&,
+                                             const skgpu::VulkanExtensions* extOverride,

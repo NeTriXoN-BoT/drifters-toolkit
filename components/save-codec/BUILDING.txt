@@ -1,0 +1,41 @@
+Build the separate save-container decoder
+
+Required tools: Rust 1.90.0 with Cargo and the relevant target standard library,
+Python 3, and a compatible native linker. No game files or proprietary decoder
+libraries are required. Dependencies are vendored; builds use --frozen --offline
+and work with an empty Cargo home. Do not run cargo update.
+
+The complete matching source download has these top-level files/directories:
+Cargo.toml, Cargo.lock, src/, vendor/, .cargo/, build.py, COPYING, NOTICE.txt,
+BUILDING.txt, SOURCE-MANIFEST.json, runtime-notices/ and origin/. Binary/object
+outputs belong outside this source tree.
+
+Windows x86-64 (GNU target):
+  python build.py --source . --cargo <cargo.exe> --rustc <rustc.exe>
+    --target x86_64-pc-windows-gnu --target-dir <temporary-build-directory>
+    --cargo-home <empty-temporary-cargo-directory> --linker <compatible-gcc.exe>
+  With a bundled toolchain, --dlltool <matching-dlltool.exe> can select its
+  import-library tool explicitly. The GNU target needs a GCC-compatible MinGW
+  runtime, including libgcc; an LLVM-only library set is not sufficient.
+
+Linux x86-64 (static musl target):
+  python3 build.py --source . --cargo <cargo> --rustc <rustc>
+    --target x86_64-unknown-linux-musl --target-dir <temporary-build-directory>
+    --cargo-home <empty-temporary-cargo-directory> --linker <compatible-cc>
+
+Add --test to run the bounded container and isolation tests. Linux tests include
+a child-process seccomp check that refuses file access, sockets and signals to
+other processes. Tests use synthetic buffers and never read game saves.
+
+Output: target/<target>/release/DriftersToolkitSaveCodec, with .exe on Windows.
+The build script reports its checksum and remaps source, dependency, Cargo-home
+and toolchain paths. The native toolkit must pin the exact platform checksum.
+
+Protocol: with no command-line arguments, read one encoded save from stdin and
+write only its decoded GVAS bytes to stdout. Maximum input is 80 MiB; maximum
+decoded output is 64 MiB. Exit 0 means successful decoding; exit 2 means invalid
+or unsupported input. The filter does not edit or write game saves. Its native
+caller is responsible for process isolation, deadlines and resource limits.
+
+The origin/ snapshot records the original GPL decompressor provenance. It is not
+compiled by this Rust build. The vendored Rust dependencies are the build inputs.

@@ -1,0 +1,120 @@
+Bundled-library replacement and rebuild
+
+This portable application dynamically links Qt and other libraries covered by
+the accompanying LGPL and other component licences. Those licences continue to
+govern their respective components. The matching source companion contains the
+actual upstream sources, distribution changes, notices and build recipes; it is
+separate from the small runtime and registration ZIPs. No written promise to
+obtain missing source later is substituted for those files.
+
+You may modify, recombine or relink the supplied application code as necessary
+to run or debug interface-compatible modifications of the LGPL libraries used
+by this application. Reverse engineering necessary to debug those library
+modifications is not prohibited. This permission is limited to those library
+rights; it does not relicense the entire application or grant unrelated
+commercial or source-redistribution rights. No publisher signing key, Nexus
+registration, account or private build service is needed for this rebuild.
+
+The original executables contain public SHA-256 runtime inventories. Replacing
+a library intentionally changes that identity: the original executable should
+refuse the changed bundle. The included generator and source let you rebuild
+executables which accept your modified libraries instead. This does not claim
+that your changed build is the original publisher-verified release.
+
+For the original maintained Linux engine, follow the source build notes
+in the application source: docs/QT_WEBENGINE_SECURITY_2026-10-26.md, then
+docs/QT_WEBENGINE_SECURITY_2026-10-28.md, then
+docs/QT_WEBENGINE_SECURITY_2026-10-30.md, then
+docs/QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md, and finally
+docs/QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md. Keep the recorded
+baseline source and every preceding provenance layer while applying each layer.
+The latest release staging gate is
+QTWEBENGINE-SECURITY-VENDOR-FOLLOWUP-PROVENANCE.json. A historical proof or source
+patch alone does not identify the current runtime outputs.
+
+1. Work in your own new folder. Extract the AppImage there with
+   ./Drifters-Toolkit-Linux-x86_64.AppImage --appimage-extract
+   Keep your modified copy separate from the original download. Do not copy
+   unrelated private state, game files, saves or Nexus credentials into it.
+   The AppImage-generated .DirIcon is only an icon alias; remove that alias
+   from a packaging work copy before using the ordinary AppDir checker.
+
+2. Build your interface-compatible modified libraries and their SDK using the
+   matching source components and their included build recipes. Qt's module
+   configure/CMake tools support a private installation prefix. Qt WebEngine
+   also needs the C++20/compiler, Node, Python, Ninja and Linux development
+   dependencies described in its source documentation. Full WebEngine builds
+   require substantial memory, storage and time; the sources are not a tiny
+   replacement for a compiler or system development packages.
+   The supplied scripts/bootstrap_qt_webengine_security.py and
+   scripts/qt_webengine_security_lock.json reproduce this release's added
+   official vendor backports using the intact WebEngine source archive and
+   vendor/qtwebengine-security/2026-10-26/*.patch files.
+   The 24 Qt patches remain unchanged; recipe revision 2 also applies the separately
+   pinned nine-file Aura dependency adapter, with two exact Google reference
+   patches retained for provenance. Original 75-file vendor and final 81-file derived
+   source inventories are distinct and both required by the success proof.
+   Pass a new --work and --prefix, the original --sdk-prefix and the exact
+   --source-archive. The outer build uses one job; --jobs bounds nested compilation to one through
+   three (default two), with a live 4 GiB available-memory reserve. The completed
+   prefix contains QTWEBENGINE-SECURITY-PROVENANCE.json for ordinary release
+   staging. Your own interface-compatible library changes remain supported by
+   the reindex/rebuild route below; they are labelled locallyModified.
+   An interrupted retained build can use resume_qt_webengine_security.py after
+   verifying its exact source/configuration and adequate storage. Under WSL,
+   explicitly approve the backing drive and provide a fresh local host-volume/
+   registry attestation; native Linux needs no Windows metadata. This workspace
+   uses D: for its own Linux build; another user may approve another drive.
+   The original configured recipe, 75-file vendor inventory, 81-file final
+   inventory and continuation
+   source are supplied separately; no extra source/SDK copy is created by resume.
+   Optional --core-jobs 3 uses normal Ninja for the retained Core output first,
+   then the unchanged two-job CMake runtime targets. Its proof records this
+   explicit maximum; the same memory/storage guards apply.
+   Apply qt_webengine_followup.py, qt_webengine_incremental.py,
+   qt_webengine_residual.py and qt_webengine_vendor_followup.py in that order,
+   using the same retained work tree and prefix. Their respective notes describe
+   the predecessor/source checks and interrupted-build recovery. The complete
+   original exports, compatibility adapters, locks and helpers are included in
+   the matching source download; none substitutes for rebuilding the outputs.
+
+3. Put the resulting replacement libraries/plugins/resources in the extracted
+   AppDir's existing usr/lib, usr/plugins, usr/libexec, usr/resources and
+   usr/translations paths. Keep its fixed relative qt.conf layout. If the
+   dependency paths change, use the explicit stage command with the modified
+   SDK and its complete dependency closure rather than leaving unlisted code.
+
+4. For replacements retaining the same paths and CLI dependency membership:
+   python3 scripts/package_portable_linux.py reindex . /path/to/AppDir
+   This regenerates runtime-manifest.json, labels it locallyModified, and does
+   not make an old executable accept it. No secret signature is involved.
+
+5. Extract the supplied application source into a separate build tree and run:
+   python3 scripts/bootstrap_archive.py --download \
+     --prefix /tmp/drifter-replacement-archive-decoders --cmake cmake --ninja /usr/bin/ninja
+   cmake -S /path/to/application-source -B /path/to/build -G Ninja \
+     -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+     -DCMAKE_PREFIX_PATH=/path/to/modified-qt-sdk \
+     -DDRIFTER_ARCHIVE_PREFIX=/tmp/drifter-replacement-archive-decoders \
+     -DDRIFTER_PORTABLE_MANIFEST=/path/to/AppDir/runtime-manifest.json
+   cmake --build /path/to/build --parallel 2
+   python3 scripts/package_portable_linux.py refresh /path/to/build /path/to/AppDir
+   The public build is the default; private reviewer/UI-test capabilities are
+   not needed to replace libraries. Both GUI and CLI executables must be rebuilt.
+
+6. Check your own build with AppRun --verify-only and AppRun --cli --verify-only,
+   then test X11/Wayland and the relevant library behavior in your environment.
+   Do not disable Chromium's sandbox or run the loader as root. Host namespace,
+   seccomp, display/graphics-driver, keyring and glibc requirements still apply.
+   If desired, package your modified ordinary AppDir with your own matching
+   source/licence materials. Retain the original release unchanged for comparison.
+
+The sources and public inventory mechanism support library modification; they
+do not establish safety or compatibility of an arbitrary replacement. Libraries
+are loaded by the ELF loader before C++ main, so application-level checks do not
+replace trustworthy delivery or protect against an already-compromised account.
+
+Primary component guidance:
+https://www.qt.io/development/open-source-lgpl-obligations
+https://doc.qt.io/qt-6.11/qtwebengine-platform-notes.html
+https://doc.qt.io/qt-6.11/qt-conf.html

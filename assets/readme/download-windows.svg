@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="276" height="72" viewBox="0 0 276 72" role="img" aria-label="Get Windows">
+<title>Get Windows — ready-to-run ZIP</title>
+<rect x="1" y="1" width="274" height="70" rx="8" fill="#111c22" stroke="#cd665a" stroke-width="1.5"/>
+<path d="M9 1h48v70H9a8 8 0 0 1-8-8V9a8 8 0 0 1 8-8z" fill="#cd665a" fill-opacity=".17"/>
+<path d="M57 15v42" stroke="#cd665a" stroke-opacity=".5"/>
+<path d="M17 23l11-2v12H17zm13-2l14-2v14H30zM17 35h11v12l-11-2zm13 0h14v14l-14-2z" fill="#eee7db"/>
+<text x="73" y="30" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1" fill="#f2ede3">GET WINDOWS</text>
+<text x="73" y="49" font-family="Segoe UI,Arial,sans-serif" font-size="11.5" fill="#aebbc1">Ready-to-run ZIP</text>
+<path d="M254 32l5 4-5 4" fill="none" stroke="#cd665a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

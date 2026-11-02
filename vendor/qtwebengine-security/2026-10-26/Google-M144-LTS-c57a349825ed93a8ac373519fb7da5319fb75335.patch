@@ -1,0 +1,627 @@
+From c57a349825ed93a8ac373519fb7da5319fb75335 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Tue, 14 Jul 2026 20:02:04 -0700
+Subject: [PATCH] [M144-LTS] Add aura::Window::GeWeakPtrAsWindow()
+
+This CL moves the WeakPtrFactory from GestureConsumer to subclasses,
+and define WeakPtr getter for Window type, so that we can use the
+same factory instance for super class and base casses, but still
+use WeakPtr<aura::Window> but not WeakPtr<ui::GestureConsumer>.
+
+Background:
+There are increasing report w.r.t. dangling ptr for a window that can
+be destroyed during a method call. This is to simplify the code
+to deal with such situation (e.g. using WindowTracker or observers).
+
+The weak pointer factory should be the last element in the class
+structure, and there is no clean way to cast base::WeakPtr<Super>
+to base::WeakPtr<Sub>.
+
+C++ doesn't support covariance for template, so we can't just
+define base::WeakPtr<aura::Window> GetWeakPtr.
+
+And replced WindowTracker that tracks single window with Weakptr.
+
+Bug: None
+
+(cherry picked from commit d81edbd51ba06e32b3ecb78a6016ba7ff42f41e1)
+
+Change-Id: Ifc993908f56d34e3b694a9d10e26974097923e7c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7846473
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: James Cook <jamescook@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1630665}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8051545
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Victor Gabriel Savu <vsavu@google.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#5092}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+---
+
+diff --git a/ash/accessibility/chromevox/touch_exploration_controller.cc b/ash/accessibility/chromevox/touch_exploration_controller.cc
+index 0db8983..c22a3af 100644
+--- a/ash/accessibility/chromevox/touch_exploration_controller.cc
++++ b/ash/accessibility/chromevox/touch_exploration_controller.cc
+@@ -867,6 +867,10 @@
+   return name;
+ }
+ 
++base::WeakPtr<ui::GestureConsumer> TouchExplorationController::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void TouchExplorationController::ProcessGestureEvents() {
+   std::vector<std::unique_ptr<ui::GestureEvent>> gestures =
+       gesture_provider_->GetAndResetPendingGestures();
+diff --git a/ash/accessibility/chromevox/touch_exploration_controller.h b/ash/accessibility/chromevox/touch_exploration_controller.h
+index f3e5389..6feea986 100644
+--- a/ash/accessibility/chromevox/touch_exploration_controller.h
++++ b/ash/accessibility/chromevox/touch_exploration_controller.h
+@@ -280,6 +280,7 @@
+ 
+   // ui::GestureConsumer:
+   const std::string& GetName() const override;
++  base::WeakPtr<ui::GestureConsumer> GetWeakPtr() override;
+ 
+   // Process the gesture events that have been created.
+   void ProcessGestureEvents();
+@@ -555,6 +556,8 @@
+ 
+   // The maximum touch points seen in the current gesture.
+   size_t max_gesture_touch_points_ = 0;
++
++  base::WeakPtrFactory<TouchExplorationController> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ash
+diff --git a/ash/accessibility/magnifier/fullscreen_magnifier_controller.cc b/ash/accessibility/magnifier/fullscreen_magnifier_controller.cc
+index d0f7a150a..0593f39a 100644
+--- a/ash/accessibility/magnifier/fullscreen_magnifier_controller.cc
++++ b/ash/accessibility/magnifier/fullscreen_magnifier_controller.cc
+@@ -487,6 +487,10 @@
+   return name;
+ }
+ 
++base::WeakPtr<ui::GestureConsumer> FullscreenMagnifierController::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ bool FullscreenMagnifierController::Redraw(
+     const gfx::PointF& position_in_physical_pixels,
+     float scale,
+diff --git a/ash/accessibility/magnifier/fullscreen_magnifier_controller.h b/ash/accessibility/magnifier/fullscreen_magnifier_controller.h
+index 5acc97c..8adfe0c 100644
+--- a/ash/accessibility/magnifier/fullscreen_magnifier_controller.h
++++ b/ash/accessibility/magnifier/fullscreen_magnifier_controller.h
+@@ -168,6 +168,7 @@
+ 
+   // ui::GestureConsumer:
+   const std::string& GetName() const override;
++  base::WeakPtr<ui::GestureConsumer> GetWeakPtr() override;
+ 
+   // Redraws the magnification window with the given origin position and the
+   // given scale. Returns true if the window is changed; otherwise, false.
+@@ -317,6 +318,8 @@
+   // Called every time MoveCursorTo is called, when set in tests.
+   base::RepeatingCallback<void(const gfx::Point&)>
+       cursor_moved_callback_for_testing_;
++
++  base::WeakPtrFactory<FullscreenMagnifierController> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ash
+diff --git a/ash/drag_drop/drag_drop_capture_delegate.cc b/ash/drag_drop/drag_drop_capture_delegate.cc
+index ffd77818..1970782d6 100644
+--- a/ash/drag_drop/drag_drop_capture_delegate.cc
++++ b/ash/drag_drop/drag_drop_capture_delegate.cc
+@@ -9,7 +9,6 @@
+ #include "ui/aura/window_delegate.h"
+ #include "ui/aura/window_event_dispatcher.h"
+ #include "ui/aura/window_observer.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/base/hit_test.h"
+ #include "ui/events/event.h"
+ #include "ui/events/event_target.h"
+@@ -55,18 +54,21 @@
+   // queue to the |drag_drop_tracker_|'s capture window so that when it takes
+   // capture, it still gets a valid gesture state.
+   aura::Window* capture_window = drag_drop_tracker_->capture_window();
+-  aura::WindowTracker tracker({source_window, capture_window});
++  base::WeakPtr<aura::Window> source_window_weak =
++      source_window->GetWeakPtrAsWindow();
++  base::WeakPtr<aura::Window> capture_window_weak =
++      capture_window->GetWeakPtrAsWindow();
+   auto* gesture_recognizer = aura::Env::GetInstance()->gesture_recognizer();
+   gesture_recognizer->TransferEventsTo(
+       source_window, drag_drop_tracker_->capture_window(), behavior);
+-  if (tracker.Contains(source_window)) {
++  if (source_window_weak) {
+     // We also send a gesture end and touch cancel to the source window so it
+     // can clear state.  TODO(varunjain): Remove this whole block when gesture
+     // sequence transferring is properly done in the GR
+     // (http://crbug.com/160558)
+     NotifyWindowOfTouchDispatchGestureEnd(source_window);
+   }
+-  if (!tracker.Contains(capture_window)) {
++  if (!capture_window_weak) {
+     // This means the drag was cancelled during event transfer.
+     // See: crbug.com/1297209.
+     return false;
+diff --git a/ash/wm/gestures/back_gesture/back_gesture_event_handler.cc b/ash/wm/gestures/back_gesture/back_gesture_event_handler.cc
+index 36b75ba..445c2063 100644
+--- a/ash/wm/gestures/back_gesture/back_gesture_event_handler.cc
++++ b/ash/wm/gestures/back_gesture/back_gesture_event_handler.cc
+@@ -311,6 +311,10 @@
+   return name;
+ }
+ 
++base::WeakPtr<ui::GestureConsumer> BackGestureEventHandler::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void BackGestureEventHandler::OnGestureEvent(GestureConsumer* consumer,
+                                              ui::GestureEvent* event) {
+   // Gesture events here are generated by |gesture_provider_|, and they're
+diff --git a/ash/wm/gestures/back_gesture/back_gesture_event_handler.h b/ash/wm/gestures/back_gesture/back_gesture_event_handler.h
+index 38570e7..a0040ff8 100644
+--- a/ash/wm/gestures/back_gesture/back_gesture_event_handler.h
++++ b/ash/wm/gestures/back_gesture/back_gesture_event_handler.h
+@@ -43,6 +43,7 @@
+ 
+   // ui::GestureConsumer:
+   const std::string& GetName() const override;
++  base::WeakPtr<ui::GestureConsumer> GetWeakPtr() override;
+ 
+   // ui::GestureProviderAuraClient:
+   void OnGestureEvent(GestureConsumer* consumer,
+@@ -125,6 +126,8 @@
+   // touch start event and we'll need the touch action information to decide
+   // whether back gesture should be shown.
+   bool should_wait_for_touch_ack_ = false;
++
++  base::WeakPtrFactory<BackGestureEventHandler> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ash
+diff --git a/ash/wm/toplevel_window_event_handler.cc b/ash/wm/toplevel_window_event_handler.cc
+index d15b098..a76ccc94 100644
+--- a/ash/wm/toplevel_window_event_handler.cc
++++ b/ash/wm/toplevel_window_event_handler.cc
+@@ -25,7 +25,6 @@
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_delegate.h"
+ #include "ui/aura/window_event_dispatcher.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+ #include "ui/base/hit_test.h"
+@@ -646,7 +645,7 @@
+   WindowState* window_state = WindowState::Get(source);
+   const bool window_position_managed = window_state->GetWindowPositionManaged();
+   window_state->SetWindowPositionManaged(false);
+-  aura::WindowTracker tracker({source});
++  base::WeakPtr<aura::Window> source_weak = source->GetWeakPtrAsWindow();
+ 
+   run_loop.Run();
+ 
+@@ -654,8 +653,9 @@
+     return ::wm::MOVE_CANCELED;
+ 
+   // Make sure the window hasn't been deleted.
+-  if (tracker.Contains(source))
++  if (source_weak) {
+     window_state->SetWindowPositionManaged(window_position_managed);
++  }
+ 
+   in_move_loop_ = false;
+   return result == DragResult::SUCCESS ? ::wm::MOVE_SUCCESSFUL
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index 2444fa5..a492b3c1 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -1550,6 +1550,14 @@
+ }
+ #endif
+ 
++base::WeakPtr<ui::GestureConsumer> Window::GetWeakPtr() {
++  return weak_factory_.GetWeakPtr();
++}
++
++base::WeakPtr<aura::Window> Window::GetWeakPtrAsWindow() {
++  return weak_factory_.GetWeakPtr();
++}
++
+ void Window::NotifyResizeLoopStarted() {
+   for (auto& observer : observers_)
+     observer.OnResizeLoopStarted(this);
+diff --git a/ui/aura/window.h b/ui/aura/window.h
+index 83bcb3c..c1ab255 100644
+--- a/ui/aura/window.h
++++ b/ui/aura/window.h
+@@ -549,6 +549,11 @@
+ 
+   // ui::GestureConsumer:
+   bool RequiresDoubleTapGestureEvents() const override;
++  base::WeakPtr<ui::GestureConsumer> GetWeakPtr() override;
++
++  // This method is provided to return a WeakPtr of aura::Window instead of
++  // ui::GestureConsumer, as c++ do not support template covariant return type.
++  base::WeakPtr<aura::Window> GetWeakPtrAsWindow();
+ 
+   // Returns |state| as a string. This is generally only useful for debugging.
+   static const std::u16string OcclusionStateToString(OcclusionState state);
+@@ -873,6 +878,8 @@
+ 
+   // Used when this is embedding external content.
+   base::WeakPtr<cc::LayerTreeFrameSink> frame_sink_;
++
++  base::WeakPtrFactory<Window> weak_factory_{this};
+ };
+ 
+ }  // namespace aura
+diff --git a/ui/aura/window_event_dispatcher.cc b/ui/aura/window_event_dispatcher.cc
+index 65846659..4fde9a4fb 100644
+--- a/ui/aura/window_event_dispatcher.cc
++++ b/ui/aura/window_event_dispatcher.cc
+@@ -27,7 +27,6 @@
+ #include "ui/aura/window_delegate.h"
+ #include "ui/aura/window_event_dispatcher_observer.h"
+ #include "ui/aura/window_targeter.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/hit_test.h"
+ #include "ui/base/ime/input_method.h"
+@@ -395,8 +394,8 @@
+     old_dispatch_target_ = nullptr;
+ 
+   // Cleaning up gesture state may end up destroying the hidden window. We use a
+-  // tracker to detect this.
+-  WindowTracker invisible_tracker({invisible});
++  // weak pointer to detect this.
++  base::WeakPtr<aura::Window> invisible_weak = invisible->GetWeakPtrAsWindow();
+   invisible->CleanupGestureState();
+ 
+   // Do not clear the capture, and the |event_dispatch_target_| if the
+@@ -412,16 +411,15 @@
+     Window* capture_window =
+         capture_client ? capture_client->GetCaptureWindow() : nullptr;
+ 
+-    if (!invisible_tracker.Contains(invisible) ||
+-        invisible->Contains(event_dispatch_target_)) {
++    if (!invisible_weak || invisible->Contains(event_dispatch_target_)) {
+       event_dispatch_target_ = nullptr;
+     }
+ 
+     // If the ancestor of the capture window is hidden, release the capture.
+     // Note that this may delete the window so do not use capture_window
+     // after this.
+-    if (invisible_tracker.Contains(invisible) &&
+-        invisible->Contains(capture_window) && invisible != window()) {
++    if (invisible_weak && invisible->Contains(capture_window) &&
++        invisible != window()) {
+       capture_window->ReleaseCapture();
+     }
+   }
+@@ -554,8 +552,7 @@
+   Window* target_window = static_cast<Window*>(target);
+   CHECK(window()->Contains(target_window));
+ 
+-  WindowTracker target_window_tracker;
+-  target_window_tracker.Add(target_window);
++  auto target_window_weak = target_window->GetWeakPtrAsWindow();
+   if (!dispatching_held_event_) {
+     bool can_be_held = IsEventCandidateForHold(*event);
+     if (!move_hold_count_ || !can_be_held) {
+@@ -566,7 +563,7 @@
+         return details;
+     }
+   }
+-  if (target_window_tracker.windows().empty()) {
++  if (!target_window_weak) {
+     // The event target is destroyed while processing the held event.
+     DispatchDetails details;
+     details.target_destroyed = true;
+@@ -1004,15 +1001,14 @@
+       // dispatch.
+       if (target != mouse_moved_handler_) {
+         aura::Window* old_mouse_moved_handler = mouse_moved_handler_;
+-        WindowTracker live_window;
+-        live_window.Add(target);
++        base::WeakPtr<ui::GestureConsumer> live_window = target->GetWeakPtr();
+         DispatchDetails details = DispatchMouseEnterOrExit(
+             target, *event, ui::EventType::kMouseExited);
+         // |details| contains information about |mouse_moved_handler_| being
+         // destroyed which is not our |target|. Return value of this function
+         // should be about our |target|.
+         DispatchDetails target_details = details;
+-        target_details.target_destroyed = !live_window.Contains(target);
++        target_details.target_destroyed = !live_window;
+         if (details.dispatcher_destroyed) {
+           event->SetHandled();
+           return target_details;
+@@ -1028,7 +1024,6 @@
+           event->SetHandled();
+           return target_details;
+         }
+-        live_window.Remove(target);
+ 
+         mouse_moved_handler_ = target;
+         details = DispatchMouseEnterOrExit(target, *event,
+diff --git a/ui/events/gestures/gesture_provider_aura_unittest.cc b/ui/events/gestures/gesture_provider_aura_unittest.cc
+index 9684e81..47d9815 100644
+--- a/ui/events/gestures/gesture_provider_aura_unittest.cc
++++ b/ui/events/gestures/gesture_provider_aura_unittest.cc
+@@ -13,6 +13,21 @@
+ 
+ namespace ui {
+ 
++class TestGestureConsumer : public GestureConsumer {
++ public:
++  TestGestureConsumer() = default;
++  TestGestureConsumer(const TestGestureConsumer&) = delete;
++  TestGestureConsumer& operator=(const TestGestureConsumer&) = delete;
++  ~TestGestureConsumer() override = default;
++
++  base::WeakPtr<GestureConsumer> GetWeakPtr() override {
++    return weak_ptr_factory_.GetWeakPtr();
++  }
++
++ private:
++  base::WeakPtrFactory<TestGestureConsumer> weak_ptr_factory_{this};
++};
++
+ class GestureProviderAuraTest : public testing::Test,
+                                 public GestureProviderAuraClient {
+  public:
+@@ -26,7 +41,7 @@
+                       GestureEvent* event) override {}
+ 
+   void SetUp() override {
+-    consumer_ = std::make_unique<GestureConsumer>();
++    consumer_ = std::make_unique<TestGestureConsumer>();
+     provider_ = std::make_unique<GestureProviderAura>(consumer_.get(), this);
+   }
+ 
+@@ -35,7 +50,7 @@
+   GestureProviderAura* provider() { return provider_.get(); }
+ 
+  private:
+-  std::unique_ptr<GestureConsumer> consumer_;
++  std::unique_ptr<TestGestureConsumer> consumer_;
+   std::unique_ptr<GestureProviderAura> provider_;
+   base::test::SingleThreadTaskEnvironment task_environment_;
+ };
+diff --git a/ui/events/gestures/gesture_types.cc b/ui/events/gestures/gesture_types.cc
+index b0cd211..1af4a807 100644
+--- a/ui/events/gestures/gesture_types.cc
++++ b/ui/events/gestures/gesture_types.cc
+@@ -19,10 +19,6 @@
+   return name;
+ }
+ 
+-base::WeakPtr<GestureConsumer> GestureConsumer::GetWeakPtr() {
+-  return weak_ptr_factory_.GetWeakPtr();
+-}
+-
+ std::unique_ptr<GestureProviderAura> GestureConsumer::TakeProvider() {
+   return std::move(provider_);
+ }
+diff --git a/ui/events/gestures/gesture_types.h b/ui/events/gestures/gesture_types.h
+index 51b03190b..1ea7aa9 100644
+--- a/ui/events/gestures/gesture_types.h
++++ b/ui/events/gestures/gesture_types.h
+@@ -45,7 +45,9 @@
+ 
+   virtual const std::string& GetName() const;
+ 
+-  base::WeakPtr<GestureConsumer> GetWeakPtr();
++  // This is defined as virtual to allow its subclass to provide its own
++  // WeakPtr<SubType>, with single shared WeakPtrFactory.
++  virtual base::WeakPtr<GestureConsumer> GetWeakPtr() = 0;
+ 
+   std::unique_ptr<GestureProviderAura> TakeProvider();
+   void reset_gesture_provider();
+@@ -54,7 +56,6 @@
+ 
+  private:
+   std::unique_ptr<GestureProviderAura> provider_;
+-  base::WeakPtrFactory<GestureConsumer> weak_ptr_factory_{this};
+ };
+ 
+ // GestureEventHelper creates implementation-specific gesture events and
+diff --git a/ui/views/widget/desktop_aura/desktop_capture_client.cc b/ui/views/widget/desktop_aura/desktop_capture_client.cc
+index a89aeade..81ef011 100644
+--- a/ui/views/widget/desktop_aura/desktop_capture_client.cc
++++ b/ui/views/widget/desktop_aura/desktop_capture_client.cc
+@@ -11,7 +11,6 @@
+ #include "ui/aura/env.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/aura/window_tree_host.h"
+ 
+ namespace views {
+@@ -70,11 +69,11 @@
+     // Cancelling touches might cause |new_capture_window| to get deleted.
+     // Track |new_capture_window| and check if it still exists before
+     // committing |capture_window_|.
+-    aura::WindowTracker tracker;
+-    tracker.Add(new_capture_window);
++    base::WeakPtr<aura::Window> new_capture_window_weak =
++        new_capture_window->GetWeakPtrAsWindow();
+     aura::Env::GetInstance()->gesture_recognizer()->CancelActiveTouchesExcept(
+         new_capture_window);
+-    if (!tracker.Contains(new_capture_window)) {
++    if (!new_capture_window_weak) {
+       new_capture_window = nullptr;
+     }
+   }
+diff --git a/ui/wm/core/capture_controller.cc b/ui/wm/core/capture_controller.cc
+index 71c90c1..5b1159a 100644
+--- a/ui/wm/core/capture_controller.cc
++++ b/ui/wm/core/capture_controller.cc
+@@ -10,7 +10,6 @@
+ #include "ui/aura/env.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/aura/window_tree_host.h"
+ 
+ namespace wm {
+@@ -72,11 +71,10 @@
+            raw_ptr<aura::client::CaptureDelegate, CtnExperimental>>
+       delegates = delegates_;
+ 
+-  aura::WindowTracker tracker;
+-  if (new_capture_window)
+-    tracker.Add(new_capture_window);
+-  if (old_capture_window)
+-    tracker.Add(old_capture_window);
++  base::WeakPtr<aura::Window> new_capture_window_weak =
++      new_capture_window ? new_capture_window->GetWeakPtrAsWindow() : nullptr;
++  base::WeakPtr<aura::Window> old_capture_window_weak =
++      old_capture_window ? old_capture_window->GetWeakPtrAsWindow() : nullptr;
+ 
+   // If we're starting a new capture, cancel all touches that aren't
+   // targeted to the capturing window.
+@@ -86,10 +84,12 @@
+     // Cancelling touches might cause |new_capture_window| to get deleted.
+     // Track |new_capture_window| and check if it still exists before
+     // committing |capture_window_|.
+-    if (!tracker.Contains(new_capture_window))
++    if (!new_capture_window_weak) {
+       new_capture_window = nullptr;
+-    if (old_capture_window && !tracker.Contains(old_capture_window))
++    }
++    if (old_capture_window && !old_capture_window_weak) {
+       old_capture_window = nullptr;
++    }
+   }
+ 
+   capture_window_ = new_capture_window;
+@@ -105,8 +105,9 @@
+   // a dangling pointer, so detect and handle it.
+   for (const auto& it : delegates) {
+     it.second->UpdateCapture(old_capture_window, new_capture_window);
+-    if (old_capture_window && !tracker.Contains(old_capture_window))
++    if (old_capture_window && !old_capture_window_weak) {
+       old_capture_window = nullptr;
++    }
+   }
+ 
+   if (capture_delegate_ != old_capture_delegate) {
+diff --git a/ui/wm/core/focus_controller.cc b/ui/wm/core/focus_controller.cc
+index 34371bfb..38b3943 100644
+--- a/ui/wm/core/focus_controller.cc
++++ b/ui/wm/core/focus_controller.cc
+@@ -12,7 +12,6 @@
+ #include "ui/aura/client/capture_client.h"
+ #include "ui/aura/client/focus_change_observer.h"
+ #include "ui/aura/env.h"
+-#include "ui/aura/window_tracker.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/events/event.h"
+@@ -244,17 +243,15 @@
+   // we must not adjust the focus below since this will clobber that change.
+   aura::Window* last_focused_window = focused_window_;
+   if (!pending_activation_.has_value()) {
+-    aura::WindowTracker focusable_window_tracker;
+-    if (focusable) {
+-      focusable_window_tracker.Add(focusable);
+-      focusable = nullptr;
+-    }
++    base::WeakPtr<aura::Window> focusable_window_weak =
++        focusable ? focusable->GetWeakPtrAsWindow() : nullptr;
+ 
+     if (!SetActiveWindow(reason, window, activatable, no_stacking))
+       return;
+ 
+-    if (!focusable_window_tracker.windows().empty())
+-      focusable = focusable_window_tracker.Pop();
++    if (!focusable_window_weak) {
++      focusable = nullptr;
++    }
+   } else {
+     // Only allow the focused window to change, *not* the active window if
+     // called reentrantly.
+@@ -293,9 +290,9 @@
+ 
+   // Allow for the window losing focus to be deleted during dispatch. If it is
+   // deleted pass NULL to observers instead of a deleted window.
+-  aura::WindowTracker window_tracker;
++  base::WeakPtr<aura::Window> lost_focus_weak;
+   if (lost_focus)
+-    window_tracker.Add(lost_focus);
++    lost_focus_weak = lost_focus->GetWeakPtrAsWindow();
+   if (focused_window_ &&
+       observation_manager_.IsObservingSource(focused_window_.get()) &&
+       focused_window_ != active_window_) {
+@@ -307,11 +304,10 @@
+     observation_manager_.AddObservation(focused_window_.get());
+ 
+   for (auto& observer : focus_observers_) {
+-    observer.OnWindowFocused(
+-        focused_window_,
+-        window_tracker.Contains(lost_focus) ? lost_focus : nullptr);
++    observer.OnWindowFocused(focused_window_,
++                             lost_focus_weak ? lost_focus : nullptr);
+   }
+-  if (window_tracker.Contains(lost_focus)) {
++  if (lost_focus_weak) {
+     aura::client::FocusChangeObserver* observer =
+         aura::client::GetFocusChangeObserver(lost_focus);
+     if (observer)
+@@ -320,9 +316,8 @@
+   aura::client::FocusChangeObserver* observer =
+       aura::client::GetFocusChangeObserver(focused_window_);
+   if (observer) {
+-    observer->OnWindowFocused(
+-        focused_window_,
+-        window_tracker.Contains(lost_focus) ? lost_focus : nullptr);
++    observer->OnWindowFocused(focused_window_,
++                              lost_focus_weak ? lost_focus : nullptr);
+   }
+ }
+ 
+@@ -361,9 +356,9 @@
+   aura::Window* lost_activation = active_window_;
+   // Allow for the window losing activation to be deleted during dispatch. If
+   // it is deleted pass NULL to observers instead of a deleted window.
+-  aura::WindowTracker window_tracker;
++  base::WeakPtr<ui::GestureConsumer> lost_activation_weak;
+   if (lost_activation)
+-    window_tracker.Add(lost_activation);
++    lost_activation_weak = lost_activation->GetWeakPtr();
+ 
+   // Start observing the window gaining activation at this point since it maybe
+   // destroyed at an early stage, e.g. the activating phase.
+@@ -390,7 +385,7 @@
+   MAYBE_ACTIVATION_INTERRUPTED();
+ 
+   ActivationChangeObserver* observer = nullptr;
+-  if (window_tracker.Contains(lost_activation)) {
++  if (lost_activation_weak) {
+     observer = GetActivationChangeObserver(lost_activation);
+     if (observer)
+       observer->OnWindowActivated(reason, active_window_, lost_activation);
+@@ -402,7 +397,7 @@
+   if (observer) {
+     observer->OnWindowActivated(
+         reason, active_window_,
+-        window_tracker.Contains(lost_activation) ? lost_activation : nullptr);
++        lost_activation_weak ? lost_activation : nullptr);
+   }
+ 
+   MAYBE_ACTIVATION_INTERRUPTED();
+@@ -410,7 +405,7 @@
+   for (auto& activation_observer : activation_observers_) {
+     activation_observer.OnWindowActivated(
+         reason, active_window_,
+-        window_tracker.Contains(lost_activation) ? lost_activation : nullptr);
++        lost_activation_weak ? lost_activation : nullptr);
+ 
+     MAYBE_ACTIVATION_INTERRUPTED();
+   }

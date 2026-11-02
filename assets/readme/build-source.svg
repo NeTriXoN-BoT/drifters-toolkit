@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="276" height="72" viewBox="0 0 276 72" role="img" aria-label="Build from source">
+<title>Build from source — code and build instructions</title>
+<rect x="1" y="1" width="274" height="70" rx="8" fill="#111c22" stroke="#a6a9a2" stroke-width="1.5"/>
+<path d="M9 1h48v70H9a8 8 0 0 1-8-8V9a8 8 0 0 1 8-8z" fill="#a6a9a2" fill-opacity=".17"/>
+<path d="M57 15v42" stroke="#a6a9a2" stroke-opacity=".5"/>
+<path d="M20 21h15l7 7v20H20zM34 21v9h8M25 35l-3 3 3 3m11-6l3 3-3 3m-8 1l4-8" fill="none" stroke="#eee7db" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="73" y="30" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1" fill="#f2ede3">BUILD FROM SOURCE</text>
+<text x="73" y="49" font-family="Segoe UI,Arial,sans-serif" font-size="11.5" fill="#aebbc1">Code &amp; build instructions</text>
+<path d="M254 32l5 4-5 4" fill="none" stroke="#a6a9a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

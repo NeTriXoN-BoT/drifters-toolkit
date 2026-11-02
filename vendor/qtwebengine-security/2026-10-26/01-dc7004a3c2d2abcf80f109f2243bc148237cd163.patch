@@ -1,0 +1,32 @@
+From dc7004a3c2d2abcf80f109f2243bc148237cd163 Mon Sep 17 00:00:00 2001
+From: Anu Aliyas <anu.aliyas@qt.io>
+Date: Mon, 19 Oct 2026 11:57:39 +0200
+Subject: [fixup][3rdparty] Fix building with system ffmpeg
+
+Added missing include to fix the compilation error.
+
+Tasks: QTBUG-151657
+Change-Id: Ied8563d8a72ff31030a964068cdfdab5f32c2e00
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/781724
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ chromium/media/filters/ffmpeg_glue.cc | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/chromium/media/filters/ffmpeg_glue.cc b/chromium/media/filters/ffmpeg_glue.cc
+index f5934c04a16..b2d24f05c30 100644
+--- a/chromium/media/filters/ffmpeg_glue.cc
++++ b/chromium/media/filters/ffmpeg_glue.cc
+@@ -10,6 +10,9 @@
+ #include "media/filters/ffmpeg_glue.h"
+ 
+ #include "base/check_op.h"
++#if BUILDFLAG(IS_QTWEBENGINE) && BUILDFLAG(USE_SYSTEM_FFMPEG)
++#include "base/logging.h"
++#endif
+ #include "base/metrics/histogram_functions.h"
+ #include "base/no_destructor.h"
+ #include "base/notreached.h"
+-- 
+cgit v1.2.3
+

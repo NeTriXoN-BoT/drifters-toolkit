@@ -1,0 +1,59 @@
+From 179cb42787b36c8d765f2377621d6929cb5ee44c Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 15 Sep 2026 16:05:05 -0400
+Subject: [PATCH] [Backport] CVE-2026-113315: Memory corruption in ANGLE
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8415406:
+Always robust init all levels of immutable textures
+
+A previous change made it such that only BASE+ levels are
+robust-initialized.  This is fine for mutable textures, since levels
+outside this range are inaccessible to GL.  However, that's not true for
+immutable textures, where framebuffer completeness is always true
+regardless of which level the framebuffer is attached to.
+
+Bug: chromium:553117511
+Change-Id: Ied52d392f79bed56152c063816be2986b810080f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415406
+Reviewed-by: Ran Wang <wangra@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783836
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../third_party/angle/src/libANGLE/Texture.cpp  | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/Texture.cpp b/chromium/third_party/angle/src/libANGLE/Texture.cpp
+index 8ccbf225065..dd3a6363f05 100644
+--- a/chromium/third_party/angle/src/libANGLE/Texture.cpp
++++ b/chromium/third_party/angle/src/libANGLE/Texture.cpp
+@@ -2531,17 +2531,24 @@ angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializ
+         return angle::Result::Continue;
+     }
+ 
++    const bool initializeBaseOnly = levels == EnsureInitializedLevels::BaseOnly;
++    const GLint baseLevel         = mState.getEffectiveBaseLevel();
++    // Start initializing from baseLevel if specifically requested or if the texture is mutable.  If
++    // the texture is immutable, initialize all the levels because framebuffers outside [BASE, MAX]
++    // range are complete for immutable textures.
++    const GLint initFirstLevel = (initializeBaseOnly || !getImmutableFormat()) ? baseLevel : 0;
++
+     bool anyDirty = false;
+-    bool allInitialized = (mState.getEffectiveBaseLevel() == 0);
++    bool allInitialized =
++        levels == EnsureInitializedLevels::AllEnabledLevels && initFirstLevel == 0;
+ 
+     ImageIndexIterator it = ImageIndexIterator::MakeGeneric(
+-        mState.mType, static_cast<GLint>(mState.getEffectiveBaseLevel()),
+-        IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1, ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
++        mState.mType, initFirstLevel, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
++        ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
+     while (it.hasNext())
+     {
+         const ImageIndex index = it.next();
+-        if (levels == EnsureInitializedLevels::BaseOnly &&
+-            index.getLevelIndex() != static_cast<GLint>(mState.getEffectiveBaseLevel()))
++        if (initializeBaseOnly && index.getLevelIndex() != baseLevel)
+         {
+             break;
+         }

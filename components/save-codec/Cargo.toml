@@ -1,0 +1,18 @@
+[package]
+name = "drifter-save-codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0-or-later"
+
+[[bin]]
+name = "DriftersToolkitSaveCodec"
+path = "src/main.rs"
+
+[dependencies]
+oozextract = "=0.5.6"
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+strip = true

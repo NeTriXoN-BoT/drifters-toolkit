@@ -1,0 +1,20 @@
+Static Linux runtime provenance
+
+Component: musl 1.2.3
+Controlling notice: MUSL-1.2.3-COPYRIGHT.txt
+Notice source: https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?h=v1.2.3
+Notice SHA-256: f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af
+
+Pinned Rust release: 1.90.0 (1159e78c4 2025-09-14)
+Target: x86_64-unknown-linux-musl
+Rust target-stdlib distribution archive SHA-256:
+38490d575786f4688e83b357baeb022d8dde0ace2cb8c1357e060c76644fc56a
+
+The Rust 1.90.0 official native musl distribution recipe invokes
+musl-toolchain.sh for x86_64. That script pins musl-cross-make commit
+fe915821b652a7fa37b34a596f47d8e20bc72338 and MUSL_VER=1.2.3.
+https://github.com/rust-lang/rust/blob/1.90.0/src/ci/docker/host-x86_64/dist-x86_64-musl/Dockerfile
+https://github.com/rust-lang/rust/blob/1.90.0/src/ci/docker/scripts/musl-toolchain.sh
+
+This records runtime source identity and retained notices. It does not assert
+that the toolchain has incorporated every later musl security repair.

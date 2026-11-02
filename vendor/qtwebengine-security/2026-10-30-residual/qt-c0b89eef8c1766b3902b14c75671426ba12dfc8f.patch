@@ -1,0 +1,196 @@
+From c0b89eef8c1766b3902b14c75671426ba12dfc8f Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Fri, 9 Oct 2026 01:42:05 +0800
+Subject: [PATCH] [Backport] CVE-2026-118322: Memory corruption in ANGLE
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8542590:
+Metal: Handle non-OOM command buffer errors
+
+Previously, ContextMtl::checkCommandBufferError() only raised an error
+for MTLCommandBufferErrorOutOfMemory and silently discarded all other
+MTLCommandBufferError codes (such as Timeout, PageFault, NotPermitted,
+and DeviceRemoved), while ContextMtl::getResetStatus() unconditionally
+returned NoError.
+
+- Prevent AtomicCommandBufferError::store() from overwriting non-OOM
+  GPU fault errors before they are popped.
+- Handle non-OOM errors in ContextMtl::checkCommandBufferError() by
+  setting mContextLost and raising an internal error.
+- Return UnknownContextReset from ContextMtl::getResetStatus() when
+  mContextLost is set.
+- Check command buffer errors after GPU synchronization in
+  FramebufferMtl::readPixelsImpl() and BufferMtl::mapRange().
+
+Bug: chromium:568895029
+Change-Id: I0e296243291b1bd698d2bc56ba715cab1c3ee3fa
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8542590
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784722
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../src/libANGLE/renderer/metal/BufferMtl.mm  |  7 +++++--
+ .../src/libANGLE/renderer/metal/ContextMtl.h  |  5 +++--
+ .../src/libANGLE/renderer/metal/ContextMtl.mm | 20 ++++++++++++++++---
+ .../libANGLE/renderer/metal/FrameBufferMtl.mm |  5 +++++
+ .../renderer/metal/mtl_command_buffer.h       |  2 +-
+ .../renderer/metal/mtl_command_buffer.mm      | 15 ++++++++++++++
+ 6 files changed, 46 insertions(+), 8 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm b/chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm
+index 22f065c9a0d..c781fd2ae29 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm
+@@ -210,16 +210,19 @@ bool isOffsetAndSizeMetalBlitCompatible(size_t offset, size_t size)
+     if (mapPtr)
+     {
+         ContextMtl *contextMtl = mtl::GetImpl(context);
++        uint8_t *ptr           = nullptr;
+         if (mShadowCopy.size() == 0)
+         {
+-            *mapPtr = mBuffer->mapWithOpt(contextMtl, (access & GL_MAP_WRITE_BIT) == 0,
++            ptr = mBuffer->mapWithOpt(contextMtl, (access & GL_MAP_WRITE_BIT) == 0,
+                                           access & GL_MAP_UNSYNCHRONIZED_BIT) +
+                       offset;
+         }
+         else
+         {
+-            *mapPtr = syncAndObtainShadowCopy(contextMtl) + offset;
++            ptr = syncAndObtainShadowCopy(contextMtl) + offset;
+         }
++        ANGLE_TRY(contextMtl->checkCommandBufferError());
++        *mapPtr = ptr;
+     }
+ 
+     return angle::Result::Continue;
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h b/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h
+index 3f1143a3b05..28ef42b88ad 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h
+@@ -347,6 +347,7 @@ class ContextMtl : public ContextImpl, public mtl::Context
+     void flushCommandBuffer(mtl::CommandBufferFinishOperation operation);
+     void present(const gl::Context *context, id<CAMetalDrawable> presentationDrawable);
+     angle::Result finishCommandBuffer();
++    angle::Result checkCommandBufferError();
+ 
+     // Check whether compatible render pass has been started. Compatible render pass is a render
+     // pass having the same attachments, and possibly having different load/store options.
+@@ -530,8 +531,6 @@ class ContextMtl : public ContextImpl, public mtl::Context
+ 
+     angle::Result startOcclusionQueryInRenderPass(QueryMtl *query, bool clearOldValue);
+ 
+-    angle::Result checkCommandBufferError();
+-
+     // Dirty bits.
+     enum DirtyBitType : size_t
+     {
+@@ -646,6 +645,8 @@ class ContextMtl : public ContextImpl, public mtl::Context
+     ProvokingVertexHelper mProvokingVertexHelper;
+ 
+     mtl::ContextDevice mContextDevice;
++
++    bool mContextLost = false;
+ };
+ 
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm b/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm
+index e1962371c24..e7a26e223a4 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -1070,6 +1070,10 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+ // Device loss
+ gl::GraphicsResetStatus ContextMtl::getResetStatus()
+ {
++    if (mContextLost)
++    {
++        return gl::GraphicsResetStatus::UnknownContextReset;
++    }
+     return gl::GraphicsResetStatus::NoError;
+ }
+ 
+@@ -2978,9 +2982,19 @@ static bool isDrawNoOp(const mtl::RenderPipelineDesc &descriptor,
+ 
+ angle::Result ContextMtl::checkCommandBufferError()
+ {
+-    ANGLE_CHECK_GL_ALLOC(
+-        this, mCmdBuffer.cmdQueue().popCmdBufferError() != MTLCommandBufferErrorOutOfMemory);
+-    return angle::Result::Continue;
++    switch (mCmdBuffer.cmdQueue().popCmdBufferError())
++    {
++        case MTLCommandBufferErrorNone:
++            return angle::Result::Continue;
++        case MTLCommandBufferErrorOutOfMemory:
++            ANGLE_CHECK_GL_ALLOC(this, false);
++            return angle::Result::Stop;
++        default:
++            mContextLost = true;
++            ANGLE_CHECK(this, false, "Metal command buffer execution failed.",
++                        GL_INVALID_OPERATION);
++            return angle::Result::Stop;
++    }
+ }
+ 
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm b/chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm
+index 7747395f681..4c5e78eaf42 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm
+@@ -1633,6 +1633,9 @@ void RoundValueAndAdjustCorrespondingValue(float a,
+ 
+         buffer->syncContent(contextMtl, contextMtl->getBlitCommandEncoder());
+         const uint8_t *bufferData = buffer->mapReadOnly(contextMtl);
++        // Verify that the command buffer (including any pending clears/draws and the readback
++        // blit) executed without GPU faults before reading back the buffer contents.
++        ANGLE_TRY(contextMtl->checkCommandBufferError());
+ 
+         angle::Result result = readPixelsCopyImpl(
+             context, area, packPixelsParams, renderTarget,
+@@ -1652,6 +1655,8 @@ void RoundValueAndAdjustCorrespondingValue(float a,
+     {
+         contextMtl->flushCommandBuffer(mtl::WaitUntilFinished);
+     }
++    // Verify that prior command buffers affecting this texture completed without GPU faults.
++    ANGLE_TRY(contextMtl->checkCommandBufferError());
+ 
+     angle::MemoryBuffer readPixelRowBuffer;
+     int bufferRowPitch = area.width * readAngleFormat.pixelBytes;
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h b/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h
+index 8bcb245d2b4..f4cadf7aab9 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h
+@@ -58,7 +58,7 @@ class AtomicSerial : angle::NonCopyable
+ class AtomicCommandBufferError : angle::NonCopyable
+ {
+   public:
+-    void store(MTLCommandBufferError value) { mValue.store(value, std::memory_order_release); }
++    void store(MTLCommandBufferError value);
+     MTLCommandBufferError pop()
+     {
+         return mValue.exchange(MTLCommandBufferErrorNone, std::memory_order_acq_rel);
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm b/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm
+index ef26a5f401c..3cefe1b9a2c 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm
++++ b/chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm
+@@ -480,6 +480,21 @@ void RandomizeClearValue(ObjCAttachmentDescriptor *objCRenderPassAttachment)
+     }
+ }
+ 
++// AtomicCommandBufferError implementation
++void AtomicCommandBufferError::store(MTLCommandBufferError value)
++{
++    // Do not overwrite an existing non-OOM GPU fault error (e.g. Timeout, PageFault,
++    // DeviceRemoved) with a subsequent error (such as NotPermitted from rejected follow-up
++    // submissions or OutOfMemory) so the root-cause fault is preserved until popped.
++    MTLCommandBufferError prevError = mValue.load(std::memory_order_relaxed);
++    while (
++        (prevError == MTLCommandBufferErrorNone || prevError == MTLCommandBufferErrorOutOfMemory) &&
++        !mValue.compare_exchange_weak(prevError, value, std::memory_order_release,
++                                      std::memory_order_consume))
++    {
++    }
++}
++
+ // CommandQueue implementation
+ void CommandQueue::reset()
+ {

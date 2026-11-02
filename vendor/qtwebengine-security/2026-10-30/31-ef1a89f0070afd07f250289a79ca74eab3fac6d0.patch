@@ -1,0 +1,263 @@
+From ef1a89f0070afd07f250289a79ca74eab3fac6d0 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Tue, 22 Sep 2026 11:36:58 -0700
+Subject: [PATCH] [Backport][parts] CVE-2026-113188: Memory corruption in GPU
+
+Manual partial backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8436737:
+gpu: Reject separate GL texture mode for WebGPU/Vulkan GL interop
+
+ExternalVkImageBacking normally allocates a single VkImage and imports
+it into GL via GL_EXT_memory_object, so both APIs alias one allocation.
+When that import is unavailable it falls back to use_separate_gl_texture
+mode, which allocates an independent GL texture next to the VkImage and
+keeps the two in sync by reading pixels back and re-uploading them on
+access, tracked by the latest_content_ bitmask.
+
+UpdateContent() set the destination content bit even when that copy
+failed. Because the function short-circuits once the bit is set, a
+single failed sync is permanently masked and subsequent readers sample
+never-written VkDeviceMemory or GL texture storage.
+
+Create() and CreateFromGMB() already DCHECK that the WebGPU-on-Vulkan-
+via-GL-interop configuration never selects that mode, but the DCHECK is
+compiled out in release and UseSeparateGLTexture() depends on the shared
+image format, which is renderer-controlled. In that configuration GL is
+ANGLE on its GL backend, so BGRA_8888 takes the fallback (see
+angleproject/4831) even though the drivers interop is enabled on all
+support external objects. A well-behaved client never gets there, since
+Blink allocates the WebGPU swap texture with the preferred canvas
+format and that is forced to RGBA on Linux, but a compromised renderer
+can ask for BGRA_8888 directly.
+
+Enforce the invariant rather than harden the sync path.
+ExternalVkImageBackingFactory::IsSupported() now rejects any format that
+would take the fallback when interop is enabled, and the two DCHECKs
+become bail-outs so a caller that skips IsSupported() gets no backing
+instead of an incoherent one. Keying the rejection on
+UseSeparateGLTexture() rather than on the format also covers
+--ignore-gpu-blocklist forcing interop onto a driver without the
+external objects extension, where every format takes the fallback.
+
+This is deliberately scoped to the interop configuration:
+
+- Fuchsia runs ANGLE on Vulkan, so UseSeparateGLTexture() is always
+  false there and the mode is already unreachable. Fuchsia is also the
+  only platform where this factory imports client GMBs, and Flatland
+  supports BGRA_8888, so rejecting that format outright would risk
+  breaking a shipping path for no security benefit.
+
+- Vulkan on Linux enabled from the command line either comes with
+  VulkanFromANGLE, which means ANGLE on Vulkan again and
+  AngleVulkanImageBackingFactory taking precedence, or is an unsupported
+  configuration. Both are reachable only behind flags and are covered by
+  the hardening below.
+
+Also included:
+
+- UpdateContent() now only sets a content bit when the copy succeeded,
+  and CopyPixelsFromGLTextureToVkImage() and
+  CopyPixelsFromVkImageToGLTexture() return [[nodiscard]] bool to make
+  that possible. The rejection above does not cover the flag-only
+  configurations that still reach the fallback, so this stays as defense
+  in depth.
+
+- CreateFromGMB() initializes latest_content_ to kInVkImage. This is a
+  separate bug: an imported buffer's content is in the VkImage, but with
+  no content bits set UpdateContent() copies nothing, so a GL read of a
+  separate GL texture would observe uninitialized storage regardless of
+  any copy failure.
+
+No test changes are needed: the unit test fixture constructs the factory
+with interop disabled, so its format coverage is unaffected.
+
+Longer term the fallback should go away entirely, along with
+ExternalVkImageBacking being forked for Fuchsia and Vulkan on Linux
+requiring AngleVulkan, but that is out of scope here.
+
+This supersedes the approach in crrev.com/c/8421508, which gated
+BeginAccess() on the content bits and added a testing-only override to
+force use_separate_gl_texture on.
+
+Bug: 533122125
+Change-Id: I1775a7c7dfa97683b364915f5fa7deb7c29f7c3d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8436737
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1702813}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784132
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../shared_image/external_vk_image_backing.cc | 40 +++++++++++--------
+ .../shared_image/external_vk_image_backing.h  |  4 +-
+ 2 files changed, 25 insertions(+), 19 deletions(-)
+
+diff --git a/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc b/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+index cb513d4d57c4..11587cad06db 100644
+--- a/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
++++ b/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+@@ -314,6 +314,7 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::CreateFromGMB(
+       command_pool, use_separate_gl_texture, std::move(handle),
+       std::move(buffer_usage));
+   backing->SetCleared();
++  backing->latest_content_ = kInVkImage;
+   return backing;
+ }
+ 
+@@ -956,13 +957,14 @@ void ExternalVkImageBacking::UpdateContent(uint32_t content_flags) {
+ 
+   if (content_flags == kInVkImage) {
+     if ((latest_content_ & kInGLTexture)) {
+-      CopyPixelsFromGLTextureToVkImage();
+-      latest_content_ |= kInVkImage;
++      if (CopyPixelsFromGLTextureToVkImage()) {
++        latest_content_ |= kInVkImage;
+     }
+   } else if (content_flags == kInGLTexture) {
+     if (latest_content_ & kInVkImage) {
+-      CopyPixelsFromVkImageToGLTexture();
+-      latest_content_ |= kInGLTexture;
++      if(CopyPixelsFromVkImageToGLTexture()) {
++        latest_content_ |= kInGLTexture;
++      }
+     }
+   }
+ }
+@@ -987,7 +989,7 @@ ExternalVkImageBacking::GetMapPlaneData() const {
+   return {data, total_data_bytes};
+ }
+ 
+-void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
++bool ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+   DCHECK(use_separate_gl_texture());
+   DCHECK_EQ(vk_textures_.size(), gl_textures_.size());
+ 
+@@ -997,7 +999,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+   // Make sure a gl context is current, since textures are shared between all gl
+   // contexts, we don't care which gl context is current.
+   if (!MakeGLContextCurrent()) {
+-    return;
++    return false;
+   }
+ 
+   auto [plane_data, total_data_bytes] = GetMapPlaneData();
+@@ -1018,7 +1020,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+                                       0, &stage_buffer, &stage_allocation);
+   if (result != VK_SUCCESS) {
+     DLOG(ERROR) << "vkCreateBuffer() failed." << result;
+-    return;
++    return false;
+   }
+ 
+   absl::Cleanup destroy_buffer = [&]() {
+@@ -1029,7 +1031,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+   result = vma::MapMemory(allocator, stage_allocation, &buffer);
+   if (result != VK_SUCCESS) {
+     DLOG(ERROR) << "vma::MapMemory() failed. " << result;
+-    return;
++    return false;
+   }
+ 
+   for (size_t plane = 0; plane < vk_textures_.size(); ++plane) {
+@@ -1040,7 +1042,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+     if (!gl_textures_[plane].ReadbackToMemory(pixmap)) {
+       DLOG(ERROR) << "GL readback failed";
+       vma::UnmapMemory(allocator, stage_allocation);
+-      return;
++      return false;
+     }
+   }
+ 
+@@ -1049,7 +1051,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+   std::vector<ExternalSemaphore> external_semaphores;
+   if (!BeginAccessInternal(/*readonly=*/false, &external_semaphores)) {
+     DLOG(ERROR) << "BeginAccess() failed.";
+-    return;
++    return false;
+   }
+ 
+   // Everything was successful so `stage_buffer` + `stage_allocation` ownership
+@@ -1089,7 +1091,7 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+         std::move(command_buffer));
+     fence_helper()->EnqueueBufferCleanupForSubmittedWork(stage_buffer,
+                                                          stage_allocation);
+-    return;
++    return false;
+   }
+ 
+   std::vector<VkSemaphore> begin_access_semaphores;
+@@ -1113,9 +1115,11 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+       std::move(command_buffer));
+   fence_helper()->EnqueueBufferCleanupForSubmittedWork(stage_buffer,
+                                                        stage_allocation);
++
++  return true;
+ }
+ 
+-void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
++bool ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   DCHECK(use_separate_gl_texture());
+   DCHECK_EQ(vk_textures_.size(), gl_textures_.size());
+ 
+@@ -1125,7 +1129,7 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   // Make sure a gl context is current, since textures are shared between all gl
+   // contexts, we don't care which gl context is current.
+   if (!MakeGLContextCurrent()) {
+-    return;
++    return false;
+   }
+ 
+   auto [plane_data, total_data_bytes] = GetMapPlaneData();
+@@ -1146,7 +1150,7 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+                                       0, &stage_buffer, &stage_allocation);
+   if (result != VK_SUCCESS) {
+     DLOG(ERROR) << "vkCreateBuffer() failed." << result;
+-    return;
++    return false;
+   }
+ 
+   absl::Cleanup destroy_buffer = [&]() {
+@@ -1159,7 +1163,7 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   std::vector<ExternalSemaphore> external_semaphores;
+   if (!BeginAccessInternal(/*readonly=*/true, &external_semaphores)) {
+     DLOG(ERROR) << "BeginAccess() failed.";
+-    return;
++    return false;
+   }
+   DCHECK(external_semaphores.empty());
+ 
+@@ -1196,8 +1200,8 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   result = vma::MapMemory(allocator, stage_allocation, &buffer);
+   if (result != VK_SUCCESS) {
+     DLOG(ERROR) << "vma::MapMemory() failed. " << result;
+-    return;
+-  }
++    return false;
++ }
+ 
+   for (size_t plane = 0; plane < vk_textures_.size(); ++plane) {
+     auto& sk_image_info = plane_data[plane].image_info;
+@@ -1209,6 +1213,8 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   }
+ 
+   vma::UnmapMemory(allocator, stage_allocation);
++
++  return true;
+ }
+ 
+ bool ExternalVkImageBacking::UploadToVkImage(
+diff --git a/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h b/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+index 85c6140bc52b..70961e733e85 100644
+--- a/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
++++ b/chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+@@ -226,8 +226,8 @@ class ExternalVkImageBacking final : public ClearTrackingSharedImageBacking {
+   // mapping VkImage.
+   std::pair<std::vector<MapPlaneData>, size_t> GetMapPlaneData() const;
+ 
+-  void CopyPixelsFromGLTextureToVkImage();
+-  void CopyPixelsFromVkImageToGLTexture();
++  [[nodiscard]] bool CopyPixelsFromGLTextureToVkImage();
++  [[nodiscard]] bool CopyPixelsFromVkImageToGLTexture();
+ 
+   scoped_refptr<SharedContextState> context_state_;
+   std::vector<TextureHolderVk> vk_textures_;

@@ -1,0 +1,139 @@
+From 87c1f4da8d8f921f696075bdc6d40fb7abd66f10 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Thu, 8 Oct 2026 11:43:04 -0700
+Subject: [Backport] CVE-2026-113012: Improper input validation in GPU
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8520423
+gpu: Restore GL context/surface after WrappedSkImageBacking MakeCurrent
+
+WrappedSkImageBacking makes its shared context current during
+initialization and destruction. Restore whichever GL context was
+previously current once that work is done, so callers' context state is
+preserved.
+
+Also make the passthrough decoder verify after each command that its own
+context is still current. If a command left a different context current,
+the decoder now marks its context as lost instead of continuing.
+
+Bug: 568215670
+Change-Id: I3fb356bbe3796c2c6c61cfc2ff2548c26f63cca4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8520423
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714771}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783204
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../service/gles2_cmd_decoder_passthrough.cc       | 13 +++++++
+ .../shared_image/wrapped_sk_image_backing.cc       | 42 ++++++++++++++++++++++
+ 2 files changed, 55 insertions(+)
+
+diff --git a/chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+index 9f015e5c05e..93373d62547 100644
+--- a/chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
++++ b/chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+@@ -806,6 +806,19 @@ GLES2Decoder::Error GLES2DecoderPassthroughImpl::DoCommandsImpl(
+       result = DoCommonCommand(command, arg_count, cmd_data);
+     }
+ 
++    // A command must not leave a different GL context or surface current. If
++    // one did, subsequent commands would operate on the wrong context or
++    // surface, so treat it as a lost context. This only checks Chromium's
++    // bookkeeping, which is cheap enough to do per command.
++    if (result == error::kNoError && !context_lost_ &&
++        (gl::GLContext::GetCurrent() != context_.get() ||
++         gl::GLSurface::GetCurrent() != surface_.get())) {
++      LOG(ERROR) << "GLES2DecoderPassthroughImpl: context or surface is no "
++                    "longer current after command "
++                 << GetCommandName(command);
++      MarkContextLost(error::kMakeCurrentFailed);
++    }
++
+     if (result == error::kNoError && context_lost_) {
+       result = error::kLostContext;
+     }
+diff --git a/chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc b/chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
+index a699557beef..9e21faba047 100644
+--- a/chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
++++ b/chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
+@@ -29,6 +29,8 @@
+ #include "third_party/skia/include/gpu/GpuTypes.h"
+ #include "third_party/skia/include/gpu/ganesh/SkSurfaceGanesh.h"
+ #include "third_party/skia/include/private/chromium/GrPromiseImageTexture.h"
++#include "ui/gl/gl_context.h"
++#include "ui/gl/gl_surface.h"
+ 
+ namespace gpu {
+ 
+@@ -40,6 +42,43 @@ std::string GetLabel(const std::string& debug_label) {
+   return std::string("WrappedSkImage_" + debug_label);
+ }
+ 
++// Saves the GL context and surface that are current on construction, and
++// makes them current again on destruction if a different context or surface
++// was made current in between. Backings in this file make the
++// SharedContextState current, and may be created or destroyed while another
++// client's context (e.g. a command decoder's) is current. That client expects
++// its context to still be current afterwards.
++class ScopedRestoreCurrentGLContext {
++ public:
++  ScopedRestoreCurrentGLContext()
++      : context_(gl::GLContext::GetCurrent()),
++        surface_(gl::GLSurface::GetCurrent()) {}
++
++  ScopedRestoreCurrentGLContext(const ScopedRestoreCurrentGLContext&) = delete;
++  ScopedRestoreCurrentGLContext& operator=(
++      const ScopedRestoreCurrentGLContext&) = delete;
++
++  ~ScopedRestoreCurrentGLContext() {
++    if (!context_ || (gl::GLContext::GetCurrent() == context_.get() &&
++                      gl::GLSurface::GetCurrent() == surface_.get())) {
++      return;
++    }
++    if (!context_->MakeCurrent(surface_.get())) {
++      LOG(ERROR) << "Failed to restore the previously current GL context.";
++      // MakeCurrent can fail without changing the current context. Release
++      // whatever is current so the caller does not continue on the wrong
++      // context; it will instead fail to find its context current.
++      if (gl::GLContext* current = gl::GLContext::GetCurrent()) {
++        current->ReleaseCurrent(nullptr);
++      }
++    }
++  }
++
++ private:
++  scoped_refptr<gl::GLContext> context_;
++  scoped_refptr<gl::GLSurface> surface_;
++};
++
+ }  // namespace
+ 
+ class WrappedSkImageBacking::SkiaImageRepresentationImpl
+@@ -158,6 +197,7 @@ WrappedSkImageBacking::WrappedSkImageBacking(
+ WrappedSkImageBacking::~WrappedSkImageBacking() {
+   auto destroy_resources = [](scoped_refptr<SharedContextState> context_state,
+                               std::vector<TextureHolder> textures) {
++    ScopedRestoreCurrentGLContext restore_context;
+     context_state->MakeCurrent(nullptr);
+ 
+     for (auto& texture : textures) {
+@@ -198,6 +238,7 @@ bool WrappedSkImageBacking::Initialize(const std::string& debug_label) {
+ 
+   // MakeCurrent to avoid destroying another client's state because Skia may
+   // change GL state to create and upload textures (crbug.com/1095679).
++  ScopedRestoreCurrentGLContext restore_context;
+   if (!context_state_->MakeCurrent(nullptr)) {
+     return false;
+   }
+@@ -267,6 +308,7 @@ bool WrappedSkImageBacking::InitializeWithData(
+ 
+   // MakeCurrent to avoid destroying another client's state because Skia may
+   // change GL state to create and upload textures (crbug.com/1095679).
++  ScopedRestoreCurrentGLContext restore_context;
+   if (!context_state_->MakeCurrent(nullptr)) {
+     return false;
+   }
+-- 
+cgit v1.2.3
+

@@ -1,0 +1,243 @@
+From 153a09cdc9631d3783236a0956f0986e14fd0b6a Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Mon, 12 Oct 2026 11:23:25 -0400
+Subject: [Backport] CVE-2026-113341: Memory corruption in Skia
+
+Manual cherry-pick of patch originally reviewed on
+https://skia-review.googlesource.com/c/skia/+/1383616:
+Imagination FBO workaround v2
+
+Overhaul ensure_previous_framebuffer_not_deleted workaround to prevent
+driver use-after-free on FBO deletion.
+
+The previous workaround had several flaws:
+1. It only rebound FBO 0 immediately before deletion, which actually left the FBO being deleted as the driver's "previously bound" FBO. Imagination drivers retain an internal reference to the previous complete FBO, leading to a use-after-free when that FBO is deleted.
+
+2. In surfaceless contexts, FBO 0 is undefined/incomplete, so the driver
+retains its reference to the earlier complete FBO anyway.
+
+3. It only checked the draw framebuffer binding. Read framebuffers left
+bound after blits or MSAA resolves were deleted while still bound.
+
+4. Context resets caused Ganesh to assume FBO 0 without issuing a bind,
+causing subsequent deletions to skip the unbind check.
+
+To fix this, mirror Chromium's GLES2DecoderImpl workaround:
+- Allocate a 1x1 complete guard FBO backed by a renderbuffer (to avoid disturbing texture state) that is held for the context's lifetime and intentionally never deleted.
+
+- In bindFramebuffer(), pre-bind the guard FBO before every target binding so no Skia FBO is ever left behind as the driver's previous binding.
+
+- In deleteFramebuffer(), unconditionally rebind FBO 0 (which pre-binds the guard FBO), ensuring the FBO being deleted is neither current nor previous on either the draw or read target.
+
+- Add GLFramebufferDeletionTest to validate binding invariants and probe driver behavior.
+
+Bug: b/569165786
+Change-Id: Ic515d1a6cb5d3fe401bc746e80eac2c7beaa11e0
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1383616
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/782971
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp | 120 +++++++++++++++++----
+ .../third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h   |  18 ++++
+ 2 files changed, 119 insertions(+), 19 deletions(-)
+
+diff --git a/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp b/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp
+index f0ded71eb78..4eb7bdefdd2 100644
+--- a/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp
++++ b/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp
+@@ -692,6 +692,12 @@ void GrGLGpu::onResetContext(uint32_t resetBits) {
+         fHWBoundRenderTargetUniqueID.makeInvalid();
+         fHWSRGBFramebuffer = kUnknown_TriState;
+         fBoundDrawFramebuffer = 0;
++        // GrGpu starts with every reset bit dirty and all entry points call handleDirtyContext(),
++        // so the first reset happens before Ganesh binds any framebuffer.
++        if (this->caps()->workarounds().ensure_previous_framebuffer_not_deleted &&
++            !fTriedToCreateCompleteFBO) {
++            this->createCompleteFramebuffer();
++        }
+     }
+ 
+     // we assume these values
+@@ -3212,7 +3218,75 @@ void GrGLGpu::onFBOChanged() {
+ #endif
+ }
+ 
++void GrGLGpu::createCompleteFramebuffer() {
++    SkASSERT(this->caps()->workarounds().ensure_previous_framebuffer_not_deleted);
++    SkASSERT(!fTriedToCreateCompleteFBO && !fCompleteFBOID);
++    fTriedToCreateCompleteFBO = true;
++
++    GrGLuint fboid = 0;
++    GrGLuint rbid = 0;
++    GL_CALL(GenFramebuffers(1, &fboid));
++    GL_CALL(GenRenderbuffers(1, &rbid));
++    if (!fboid || !rbid) {
++        // Neither object has been bound, so deleting them can't trigger the driver bug.
++        if (fboid) {
++            GL_CALL(DeleteFramebuffers(1, &fboid));
++        }
++        if (rbid) {
++            GL_CALL(DeleteRenderbuffers(1, &rbid));
++        }
++        return;
++    }
++
++    // Chromium attaches a texture; a renderbuffer doesn't disturb texture unit or pixel unpack
++    // state. RGBA4 is color-renderable in core ES 2.0, but prefer RGBA8 where it is supported.
++    GrGLenum format = this->glCaps().canFormatBeFBOColorAttachment(GrGLFormat::kRGBA8)
++                              ? GR_GL_RGBA8
++                              : GR_GL_RGBA4;
++    GL_CALL(BindRenderbuffer(GR_GL_RENDERBUFFER, rbid));
++    GL_CALL(RenderbufferStorage(GR_GL_RENDERBUFFER, format, 1, 1));
++
++    // Bind directly; bindFramebuffer() would try to pre-bind the complete FBO.
++    this->invalidateBoundRenderTarget();
++    GL_CALL(BindFramebuffer(GR_GL_FRAMEBUFFER, fboid));
++    fBoundDrawFramebuffer = fboid;
++    this->onFBOChanged();
++    GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
++                                    GR_GL_RENDERBUFFER, rbid));
++
++#if defined(__has_feature)
++#define SK_GL_COMPLETE_FBO_IS_TSAN __has_feature(thread_sanitizer)
++#else
++#define SK_GL_COMPLETE_FBO_IS_TSAN 0
++#endif
++// See skbug.com/40043725
++#if defined(SK_DEBUG) && !SK_GL_COMPLETE_FBO_IS_TSAN
++    if (!this->glCaps().skipErrorChecks()) {
++        GrGLenum status;
++        GL_CALL_RET(status, CheckFramebufferStatus(GR_GL_FRAMEBUFFER));
++        if (status != GR_GL_FRAMEBUFFER_COMPLETE) {
++            // Keep using it: pre-binding an incomplete FBO is no worse than not pre-binding.
++            SkDebugf("WARNING: ensure_previous_framebuffer_not_deleted FBO is incomplete (0x%x)\n",
++                     status);
++        }
++        if (this->glCaps().rebindColorAttachmentAfterCheckFramebufferStatus()) {
++            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
++                                            GR_GL_RENDERBUFFER, rbid));
++        }
++    }
++#endif
++#undef SK_GL_COMPLETE_FBO_IS_TSAN
++
++    fCompleteFBOID = fboid;
++}
++
+ void GrGLGpu::bindFramebuffer(GrGLenum target, GrGLuint fboid) {
++    if (fCompleteFBOID && fboid != fCompleteFBOID) {
++        // ensure_previous_framebuffer_not_deleted: make the complete FBO the previous binding of
++        // this target so the driver never retains a reference to an FBO we may later delete.
++        // This mirrors Chromium's GLES2DecoderImpl::BindFramebuffer().
++        GL_CALL(BindFramebuffer(target, fCompleteFBOID));
++    }
+     GL_CALL(BindFramebuffer(target, fboid));
+     if (target == GR_GL_FRAMEBUFFER || target == GR_GL_DRAW_FRAMEBUFFER) {
+         fBoundDrawFramebuffer = fboid;
+@@ -3224,31 +3298,39 @@ void GrGLGpu::deleteFramebuffer(GrGLuint fboid) {
+     // We're relying on the GL state shadowing being correct in the workaround code below so we
+     // need to handle a dirty context.
+     this->handleDirtyContext();
+-    if (fboid == fBoundDrawFramebuffer) {
+-        if (this->caps()->workarounds().unbind_attachments_on_bound_render_fbo_delete) {
+-            // This workaround only applies to deleting currently bound framebuffers
+-            // on Adreno 420.  Because this is a somewhat rare case, instead of
+-            // tracking all the attachments of every framebuffer instead just always
+-            // unbind all attachments.
+-            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
+-                                            GR_GL_RENDERBUFFER, 0));
+-            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_STENCIL_ATTACHMENT,
+-                                            GR_GL_RENDERBUFFER, 0));
+-            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_DEPTH_ATTACHMENT,
+-                                            GR_GL_RENDERBUFFER, 0));
+-        }
+-
+-        if (this->caps()->workarounds().ensure_previous_framebuffer_not_deleted) {
+-            // Some drivers keep an internal reference to the previously bound
+-            // framebuffer, so make sure it isn't the one being deleted.
+-            this->bindFramebuffer(GR_GL_FRAMEBUFFER, 0);
+-        }
++    if (fboid == fBoundDrawFramebuffer &&
++        this->caps()->workarounds().unbind_attachments_on_bound_render_fbo_delete) {
++        // This workaround only applies to deleting currently bound framebuffers
++        // on Adreno 420.  Because this is a somewhat rare case, instead of
++        // tracking all the attachments of every framebuffer instead just always
++        // unbind all attachments.
++        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
++                                        GR_GL_RENDERBUFFER, 0));
++        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_STENCIL_ATTACHMENT,
++                                        GR_GL_RENDERBUFFER, 0));
++        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_DEPTH_ATTACHMENT,
++                                        GR_GL_RENDERBUFFER, 0));
++    }
++
++    if (this->caps()->workarounds().ensure_previous_framebuffer_not_deleted) {
++        // Some drivers keep an internal reference to the previously bound framebuffer, so make
++        // sure the FBO being deleted is neither the current nor the previous binding of either
++        // target. fBoundDrawFramebuffer isn't enough to decide whether that's needed: the read
++        // binding isn't tracked (blits and MSAA resolves leave their source FBO bound to
++        // GL_READ_FRAMEBUFFER), a context reset assumes 0 without binding it, and the FBO may be
++        // the previous binding even when it isn't the current one. So always rebind 0 (which
++        // pre-binds fCompleteFBOID), leaving current == 0 and previous == fCompleteFBOID for
++        // both targets.
++        SkASSERT(!fCompleteFBOID || fboid != fCompleteFBOID);
++        this->invalidateBoundRenderTarget();
++        this->bindFramebuffer(GR_GL_FRAMEBUFFER, 0);
+     }
+ 
+     GL_CALL(DeleteFramebuffers(1, &fboid));
+ 
+     // Deleting the currently bound framebuffer rebinds to 0.
+     if (fboid == fBoundDrawFramebuffer) {
++        fBoundDrawFramebuffer = 0;
+         this->onFBOChanged();
+     }
+ }
+diff --git a/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h b/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h
+index b4675f3bf73..a6a830db1ae 100644
+--- a/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h
++++ b/chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h
+@@ -271,6 +271,10 @@ public:
+ 
+     std::unique_ptr<GrSemaphore> prepareTextureForCrossContextUsage(GrTexture*) override;
+ 
++    // All of Ganesh's framebuffer binds and deletions must go through these two functions. With
++    // ensure_previous_framebuffer_not_deleted enabled, bindFramebuffer() binds fCompleteFBOID
++    // before the requested FBO, and deleteFramebuffer() first rebinds 0, so the FBO being deleted
++    // is never the current or previous binding of either the draw or read target.
+     void bindFramebuffer(GrGLenum fboTarget, GrGLuint fboid);
+     void deleteFramebuffer(GrGLuint fboid);
+ 
+@@ -363,6 +367,10 @@ private:
+ 
+     void onFBOChanged();
+ 
++    // Creates fCompleteFBOID for ensure_previous_framebuffer_not_deleted. Called at most once, from
++    // the first onResetContext() that resets kRenderTarget_GrGLBackendState.
++    void createCompleteFramebuffer();
++
+     // Returns whether the texture is successfully created. On success, a non-zero texture ID is
+     // returned. On failure, zero is returned.
+     // The texture is populated with |texels|, if it is non-null.
+@@ -637,6 +645,16 @@ private:
+ 
+     GrGLuint                    fStencilClearFBOID;
+ 
++    // ensure_previous_framebuffer_not_deleted: some drivers (Imagination) keep a reference to the
++    // previously bound *complete* framebuffer and can touch it after it has been deleted. Like
++    // Chromium's GLES2DecoderImpl (gpu_driver_bug_list.json entry 471), bindFramebuffer() binds
++    // this 1x1 complete FBO before every other framebuffer, so it is always the "previous" binding
++    // and no Skia FBO is ever the previous binding when it is deleted. It is created by the first
++    // onResetContext() and is intentionally never deleted (nor is its renderbuffer): the client
++    // owns the GL context, and deleting it would leave a deleted FBO as the previous binding.
++    GrGLuint                    fCompleteFBOID = 0;
++    bool                        fTriedToCreateCompleteFBO = false;
++
+     // last scissor / viewport scissor state seen by the GL.
+     struct {
+         TriState fEnabled;
+-- 
+cgit v1.2.3
+

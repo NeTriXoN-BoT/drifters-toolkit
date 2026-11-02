@@ -1,0 +1,88 @@
+From d25137d496e6a0d23ca81b18f31b2cd3ea8957d4 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Thu, 22 Oct 2026 17:22:08 -0700
+Subject: [PATCH] [Backport] CVE-2026-118337: Improper access control in Forms
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8613243:
+Copy ListedElements before iterating in ConstructEntryList
+
+HTMLFormElement::ConstructEntryList and BuildSearchString iterate over
+ListedElements() while calling AppendToFormData() on each control. For
+<textarea>, AppendToFormData() forces a synchronous style and layout
+update, which can mutate the DOM and clear listed_elements_ mid-loop.
+Copy ListedElements() before iterating, matching HTMLFormElement::reset
+and the HTML specification.
+
+Also guard ImageInputType::EnsurePrimaryContent() with InStyleRecalc(),
+matching ImageInputType::SetUseFallbackContent(), so synchronous cached
+image completion during layout tree attachment does not mutate the UA
+shadow tree during style recalc.
+
+Fixed: 569286605
+Change-Id: Ide74cfb742e8df43258883b11caf219e15d02d76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613243
+Reviewed-by: David Baron <dbaron@chromium.org>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725339}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784822
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/core/exported/web_searchable_form_data.cc      | 3 ++-
+ .../blink/renderer/core/html/forms/html_form_element.cc     | 6 +++++-
+ .../blink/renderer/core/html/forms/image_input_type.cc      | 3 +++
+ 3 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/exported/web_searchable_form_data.cc b/chromium/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+index 6c040767f20d..b81f17721883 100644
+--- a/chromium/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
++++ b/chromium/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+@@ -187,7 +187,8 @@ bool BuildSearchString(const HTMLFormElement& form,
+                        const TextEncoding& encoding,
+                        const HTMLInputElement* text_element) {
+   bool is_element_found = false;
+-  for (ListedElement* item : form.ListedElements()) {
++  ListedElement::List elements(form.ListedElements());
++  for (ListedElement* item : elements) {
+     auto* control = DynamicTo<HTMLFormControlElement>(item);
+     if (!control)
+       continue;
+diff --git a/chromium/third_party/blink/renderer/core/html/forms/html_form_element.cc b/chromium/third_party/blink/renderer/core/html/forms/html_form_element.cc
+index 033d3b8ed033..83bfe5cea2d6 100644
+--- a/chromium/third_party/blink/renderer/core/html/forms/html_form_element.cc
++++ b/chromium/third_party/blink/renderer/core/html/forms/html_form_element.cc
+@@ -594,6 +594,7 @@ void HTMLFormElement::ScheduleFormSubmission(
+       target_frame->ScheduleFormSubmission(scheduler, form_submission);
+ }
+ 
++// https://html.spec.whatwg.org/multipage/#constructing-the-form-data-set
+ FormData* HTMLFormElement::ConstructEntryList(
+     HTMLFormControlElement* submit_button,
+     const TextEncoding& encoding) {
+@@ -604,7 +605,10 @@ FormData* HTMLFormElement::ConstructEntryList(
+   base::AutoReset<bool> entry_list_scope(&is_constructing_entry_list_, true);
+   if (submit_button)
+     submit_button->SetActivatedSubmit(true);
+-  for (ListedElement* control : ListedElements()) {
++  // Copy the element list because |AppendToFormData()| can update DOM
++  // structure.
++  ListedElement::List elements(ListedElements());
++  for (ListedElement* control : elements) {
+     DCHECK(control);
+     HTMLElement& element = control->ToHTMLElement();
+     if (!element.IsDisabledFormControl())
+diff --git a/chromium/third_party/blink/renderer/core/html/forms/image_input_type.cc b/chromium/third_party/blink/renderer/core/html/forms/image_input_type.cc
+index e744258f0a55..e43b14538f00 100644
+--- a/chromium/third_party/blink/renderer/core/html/forms/image_input_type.cc
++++ b/chromium/third_party/blink/renderer/core/html/forms/image_input_type.cc
+@@ -248,6 +248,9 @@ void ImageInputType::EnsurePrimaryContent() {
+   if (!HasCreatedShadowSubtree()) {
+     return;
+   }
++  if (GetElement().GetDocument().InStyleRecalc()) {
++    return;
++  }
+   if (ShadowRoot* root = GetElement().UserAgentShadowRoot())
+     root->RemoveChildren();
+   CreateShadowSubtree();

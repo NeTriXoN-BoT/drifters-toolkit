@@ -1,0 +1,28 @@
+From a0cd745663fa18c70cb22f1b8fdf8e90405e1da4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michael=20Br=C3=BCning?= <michael.bruning@qt.io>
+Date: Thu, 29 Oct 2026 12:10:42 +0100
+Subject: [PATCH] [fixup][roll][expat] Roll expat to 2.8.5
+
+We need the XML_DEV_URANDOM define in the configuration for the
+build to work on macOS.
+
+Change-Id: Ie18596c6b3c69fefd8062edbde9668c32fed2bc6
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784620
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ chromium/third_party/expat/include/expat_config/expat_config.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/chromium/third_party/expat/include/expat_config/expat_config.h b/chromium/third_party/expat/include/expat_config/expat_config.h
+index 802bf5bba26..72e53777a29 100644
+--- a/chromium/third_party/expat/include/expat_config/expat_config.h
++++ b/chromium/third_party/expat/include/expat_config/expat_config.h
+@@ -124,6 +124,7 @@
+ 
+ /* Define to include code reading entropy from `/dev/urandom'. */
+ /* #undef XML_DEV_URANDOM */
++#define XML_DEV_URANDOM 1
+ 
+ /* Define to make parameter entity parsing functionality available. */
+ #define XML_DTD 1

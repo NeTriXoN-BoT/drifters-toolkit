@@ -1,0 +1,51 @@
+From d2e5cc5f21b8573a01aca7a96d696f3c9b48ae10 Mon Sep 17 00:00:00 2001
+From: Vladimir Belyavsky <belyavskyv@gmail.com>
+Date: Thu, 15 Oct 2026 23:53:02 +0300
+Subject: Fix crash in SkiaOutputSurfaceImplOnGpu on missing shared context
+ state
+
+DisplayCompositorMemoryAndTaskController::InitializeOnGpu() stores the
+result of GetSharedContextState() without checking it, and it can be
+null if creating the context fails. SkiaOutputSurfaceImplOnGpu::Create()
+only checks the state it fetches itself, so if that second attempt
+succeeds, the constructor calls shared_gpu_deps_->memory_tracker(),
+which dereferences the stored null state.
+
+Bail out of Create() like for any other initialization failure if the
+display compositor has no shared context state. viz then disables GPU
+compositing and falls back to software compositing, as it already does
+when no shared context state can be created at all.
+
+The code is unchanged in current upstream Chromium (155.0.8049.0) and
+there is no upstream fix for it yet.
+
+Fixes: QTBUG-151614
+Change-Id: I8d76ef27116e93620c2c7f6e5880f71aaf540220
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/780962
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../service/display_embedder/skia_output_surface_impl_on_gpu.cc   | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc b/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+index a56b63041d9..d25a4a6e2e3 100644
+--- a/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
++++ b/chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+@@ -272,6 +272,14 @@ std::unique_ptr<SkiaOutputSurfaceImplOnGpu> SkiaOutputSurfaceImplOnGpu::Create(
+     return nullptr;
+   }
+ 
++  // |shared_gpu_deps| keeps the SharedContextState it got when the display
++  // compositor was created, which may have failed even if getting it above
++  // succeeded. The constructor dereferences it via memory_tracker().
++  if (!shared_gpu_deps || !shared_gpu_deps->shared_context_state()) {
++    LOG(ERROR) << "No shared context state for the display compositor.";
++    return nullptr;
++  }
++
+   // Even with Vulkan/Dawn compositing, the SharedImageFactory constructor
+   // always initializes a GL-backed SharedImage factory to fall back on.
+   // Creating the GLTextureImageBackingFactory invokes GL API calls, so
+-- 
+cgit v1.2.3
+

@@ -1,0 +1,2499 @@
+{
+  "schemaVersion": 1,
+  "residualRevision": 1,
+  "qtVersion": "6.11.3",
+  "baseChromiumVersion": "140.0.7339.264",
+  "vendorReferenceHead": "43bcb1ece119814c1be448629ba0bd751b51ec7d",
+  "reviewCutoffUtc": "2026-10-30T11:31:13.084745+00:00",
+  "baselineIncrementalLock": {
+    "sha256": "0e2a8f9a4457ef5e0adbf166bcd3ebf637d7494461014b30fb27fdfafb415bfa",
+    "size": 117688
+  },
+  "baselineRuntimeProof": {
+    "sha256": "2ec9160769acce0a6f25ae0349e1e9c4931f297f2cac303fe5157e1e97ef4ec9",
+    "size": 36560
+  },
+  "baselineRuntimeProofMeaning": "Observed predecessor on this builder, not a universal reproducible binary requirement. A new build must capture its exact validated predecessor proof and outputs before mutation.",
+  "baselineSourceCheckpoint": {
+    "chromium/cc/tiles/image_controller.cc": "c11cadaaafdadd2a53f1f48bf1f99bbf0e726af25fdc0e4acca35cde7ec1c76f",
+    "chromium/cc/tiles/image_controller.h": "c8bfb6720cb80630e8b4035ee94348ed1bdc17abf4d9a254d0acd5446330f066",
+    "chromium/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc": "abba0fa16c80d83d4b2c16f62469e20cd5846fb5c7ab091f16d646c8e31d5195",
+    "chromium/components/viz/service/display/resolved_frame_data.cc": "5a355aacc6547854664be42296221f75fdb2a46c11bdffa2efeeb0a4a21cbdc5",
+    "chromium/components/viz/service/display/resolved_frame_data.h": "2988bbd9de5e568b363bdfe4b155c72c167bc7dc059e3b73c90b6ce10512425c",
+    "chromium/components/viz/service/display/surface_aggregator.cc": "231b43b7719aea4a9552baffe53e1392d9f5fdc5f5988ef18594caac7a8e9734",
+    "chromium/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc": "25b942ffe93d3784f6ea346b7b530de21cb0ab6f3a15c71ebba394a232a4a559",
+    "chromium/content/browser/accessibility/render_accessibility_host.cc": "5dc95899cff31240bffa2eafe683ac4a725b2deff4b6f7578081c62515a98aa8",
+    "chromium/content/browser/file_system_access/file_system_access_directory_handle_impl.cc": "0d8d141c84cf08978f6134ce2250008e4b4ece1a6dde9f72252c10447bb124e8",
+    "chromium/content/browser/file_system_access/file_system_access_file_handle_impl.cc": "05fd8b4dfbb7b471be17be4bb7555de9a402c99ca8e596be2daf0cf09bb46a4d",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base.cc": "6a408d01185f514cbfe94fdd37e4eafe76d590c581e19214e71414f529f85de3",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base.h": "865b9def8815b5c23ec6760a95b842021a14350912dc70040aa974915bb9589f",
+    "chromium/content/browser/file_system_access/file_system_access_handle_base_unittest.cc": "8ad5c02fa14c0bb0638670817d7c5a9bee9b5a427738074da4fb5e3f221d6ebb",
+    "chromium/content/browser/file_system_access/file_system_access_manager_impl.cc": "b305a1a5f15de7b67795b9cad6c6506f2f99d87d93711e1605715941f6f31800",
+    "chromium/content/browser/file_system_access/file_system_access_manager_impl.h": "3f992bb3b326bf5c884913a29804165fbe87642dd0b0e0215fdab477124b4e54",
+    "chromium/content/browser/file_system_access/file_system_access_observer_host.cc": "5a4c9a9b4fc1b257666d358a58833de70839dbffbe0923be1b0c5a5d94a79f3a",
+    "chromium/content/browser/file_system_access/file_system_access_transfer_token_impl.cc": "1c75b007f69ff29b312a860cbfca10464638c3addcea452a6ba6ee3cb26e2809",
+    "chromium/content/browser/renderer_host/render_frame_host_impl.cc": "809ce88d3390e635f9e368c947cfd148323ab247588d5ff65af7aa21e51e27e4",
+    "chromium/content/browser/service_worker/service_worker_client_utils.h": "9ea45410bc588a47ad2bdbbde6f6814d2e59a65e057671444d0e5e574631751d",
+    "chromium/content/browser/web_contents/web_contents_impl.cc": "1059b7d3fcce619633dcbd8dc86111547c8a7fa2dcaf2d01f4659c8d0e2ca92c",
+    "chromium/content/common/service_worker/race_network_request_simple_buffer_manager.cc": "82e5990c135f60218feb4e1faff617726843f009c579d76dca60a0afeedceefa",
+    "chromium/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc": "e2e4d7c434a6f296ac435c96eaca5305e0ed22e9008df6e45491b9b31f0616e6",
+    "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc": "0fa3fadea344204d099239e7732c9ead72fcb4f830174508b985e911fd05d328",
+    "chromium/gpu/command_buffer/service/shared_image/external_vk_image_backing.h": "b3ed4a48c1b33eae761913bb303cb3749aa9fd5128ab79f8af0ef72efd7035f0",
+    "chromium/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc": "3482dd9c7d15d2f0f18bea8166e4260e02b51b65e98fe3a79ffa0490f975c328",
+    "chromium/media/base/cdm_promise_adapter.cc": "a0b922591cd3ddb86153bd1fbb08576b64f9c2a3a8d2e427094d78948889e9bf",
+    "chromium/media/filters/ffmpeg_glue.cc": "c40861af68a24800a6de1bcea8f2087f95a967fdc6db69cb436c1a306f291114",
+    "chromium/media/mojo/clients/mojo_cdm.cc": "bcd54cfc6c835f60d12790b804937637ebe8a0f39253061355949fe10e0dd4ab",
+    "chromium/media/mojo/clients/mojo_cdm_unittest.cc": "97fce7f6b9d4566df69e6a4680dbc61e96bdff417a6cc5fe1427b349c4610833",
+    "chromium/mojo/core/channel_posix.cc": "ad58b95303799e263e282d154fd67c6b740b41cb4339ff688299ca349644c8d2",
+    "chromium/net/http/http_auth_controller.cc": "55700f3237766a6dd8296561eefd53bc8707e33f06f36d1279b2ca0a3e6325de",
+    "chromium/net/http/http_auth_controller.h": "dbb91bfeb5ba44b53a3568418b7a4f390bfb29f1046c5b86f94e8fd72b7a8a10",
+    "chromium/net/http/http_cache.cc": "3b6c1fecbf144d279e0d727993607faf9aeb360b339ed417ab18a2990989d60e",
+    "chromium/net/http/http_cache_transaction.h": "1bb6d4a3c73d59cee6f620deaa9525f257345faf1b4ac87a816d72ba6ddd090e",
+    "chromium/net/http/http_network_transaction.cc": "9660f895cc9b2ccadaf6f1029aebd248d3a9d4884a5678e864ce062a0852da19",
+    "chromium/net/http/http_network_transaction.h": "2bd177880820fd109a6740b9128c11d2081fc96123c589b6a26c324b6ecb5c66",
+    "chromium/net/http/http_proxy_client_socket.cc": "3e0037c0e3994684cb5945b0922f8cdcdd48ca8c056bf8228ee351c1eeaedd98",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_request.cc": "e38d7d3377ac5f6e6dd20724f6f9d93481a65350837a4cfad026b7462a375222",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_request.h": "453b9a0fb07562756e9c0e42d33a3f334203be869317152f06068ee0a7f0e55c",
+    "chromium/net/proxy_resolution/configured_proxy_resolution_service.cc": "39931da1cc3d34e825c73fc9b4dc4709d342aebd465c968ce5cce7c260d786ab",
+    "chromium/net/quic/quic_proxy_client_socket.cc": "4fc3e4604b600867e8e87536dca26a55a6c89cc5b29b5370ec04bde812d34d19",
+    "chromium/net/spdy/spdy_proxy_client_socket.cc": "a3b483036fa03f925ee4e9763c5489b3a7e5c65cf04e7929770829889e2f0ddb",
+    "chromium/storage/browser/blob/blob_data_builder.cc": "e9b6de28bc1df637192ad6bb1cc477c5bb2d87606503d140020d7ad4989de17a",
+    "chromium/storage/browser/blob/blob_data_builder.h": "a5fc7becce7fd37d183ab1e16686caebd145703598b59972ef268cd2ce449cb3",
+    "chromium/storage/browser/blob/blob_data_handle.cc": "54333918d9e218a77b7ebec9a96e43344c9c62425726725fdb71d34bbc918576",
+    "chromium/storage/browser/blob/blob_entry.cc": "153c71e280a9f2e66499dc4a45d0ca7986c451cc133e8361c8293c98fb1b7f4f",
+    "chromium/storage/browser/blob/blob_entry.h": "bc7f78388f1c6cbb084db38dcbe82951713b32f99f494bddd8a8202eb1ca9595",
+    "chromium/storage/browser/blob/blob_flattener_unittest.cc": "f279880178575f3f2ca08ced326cc10add65c9ec7a72805af869f1e10ad43b37",
+    "chromium/storage/browser/blob/blob_slice_unittest.cc": "5807c37c77c54eeb705a5176c77ffac5d2b3a447d6fc34ef37e65fde9681f80d",
+    "chromium/storage/browser/blob/blob_storage_context.cc": "3d2dc23f1ff4a382117869d9b7f9e00912733754aec7114ac81bca6b38532d4f",
+    "chromium/storage/browser/blob/blob_storage_context.h": "24e953f415d78bae32ce67dabc8bced7fbcdcb2bffc9fbd5954acbf419f31c50",
+    "chromium/storage/browser/blob/blob_storage_context_unittest.cc": "8b7cb457896ca95accd7e8613371bf1af44eee47bafb7e50125dd84f53c38de2",
+    "chromium/storage/browser/blob/blob_storage_registry.cc": "014601821290b1e19b2a1e22a791c709c3d2cb5a8ebb837d9a8840d33b9b2ca6",
+    "chromium/storage/browser/blob/blob_storage_registry.h": "f624a83c039174de13704b93e147ae4efb5049104df5df8ce530c967d535561a",
+    "chromium/storage/browser/blob/blob_storage_registry_unittest.cc": "5945ceb7e40744f7fb8e85604040a4a6db4df8380ed49a8248b0bfa0579aa411",
+    "chromium/storage/browser/blob/view_blob_internals_job.cc": "a9076f06ad6b92caa61644fcd43dda2adec5907f3ab6aea1d19a2fd636ccbe66",
+    "chromium/storage/browser/file_system/sandbox_directory_database.cc": "429e955715677be8922d73ba606a5014e87dfd33f4fbe4f73ea6ee992e451146",
+    "chromium/storage/browser/file_system/sandbox_directory_database_unittest.cc": "3f5f0dc3f9df7613c8ec0e96d2230a253ada32e3b7c9813451a418fa7e2a5e60",
+    "chromium/third_party/angle/src/compiler.gni": "49a2fadf7e84041039289a273a36db7149275cf3bf1ff43be9ab087360ba79e6",
+    "chromium/third_party/angle/src/compiler/translator/Compiler.cpp": "34c80e1de784a97facfe9abe52a9ceed502b94f5be600b5896b375d909a8e4e5",
+    "chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp": "588fe675f89d762990b59e90c183aae515df37ebb372f20a6d4306b645a83bee",
+    "chromium/third_party/angle/src/compiler/translator/hlsl/UtilsHLSL.cpp": "2bbcf2fe7de1e74d744964ae15497a71195ea08a850cae62430af37e3bda881b",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp": "7bbf0df91595247437c6c1c0c5db0d685e4688523dc624b8d1b1fa4bd885fd7c",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/FoldConstantSwitch.h": "dba7a80066a3d3ad60a821840b3b0838429abbff2997263ab7cc82b31f6a4751",
+    "chromium/third_party/angle/src/compiler/translator/tree_ops/PruneNoOps.cpp": "88d19cd995cf9f23a3b5a4ebd510656478ec93f0be3a710db5a05ccbcec8c870",
+    "chromium/third_party/angle/src/compiler/translator/tree_util/IntermTraverse.h": "cbb3785a97d45f88522be6556e36de12ac378084c9f6f57c799f6bd37650f182",
+    "chromium/third_party/angle/src/libANGLE/Context.cpp": "ccf3af75b4d28e2fdbb95ffd357460c690ff86aafa5712e3b95b9f12c5d0cfa4",
+    "chromium/third_party/angle/src/libANGLE/State.cpp": "455b9f6aaffb700ef3cdbb4cfd31576fc0af04bbfbc2ad745df8418a251459b1",
+    "chromium/third_party/angle/src/libANGLE/Texture.cpp": "55d5a1cc7255d1bbfa7a6913fb3501fd45b8e109f28e63ce5b0cdd002fccef90",
+    "chromium/third_party/angle/src/libANGLE/Texture.h": "7439f93ec4ffa6973b89f9ab4a3c2ffc5fbae4845f6c3517057c6450eb7335cc",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/IndexDataManager.h": "dc78c226bc97cb52d93571b2ae30db1eb2ab942ae5500e31da74636f3eb66eaa",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.cpp": "e5f6a1f4a03c67331534ca4031df50b2b2588e4c551b42e168eb1eb337f01b57",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/TextureD3D.h": "dcabf41956c2eff647c48270d0a93cd4a1386eaf08d640b172dfb8c917a02cf6",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp": "de9f54ec14d649061cf9b559a12291eb3df1724f4e100f5f6a043fc3b8d18395",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Image11.cpp": "641f401589403f96a96c37386b310010e719b7ab8da3e1edce5f56997008b0d5",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp": "2fc23c8bcadd7793442be210468981acc633cbaa61f53fc8820d17429981163d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp": "a906ac935540ea4b465fdda377d24fa9b6059ca952f0a8a0bb3c102015f032f4",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp": "c0469d4c9a9fa0e3e9be6bb03f9528d40ea3002e09632fb00d5df4b685fc492a",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h": "d17d2d1b4e56468581d14ce130b9a230ee678ed815427d76192691ce742370da",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp": "c969a4833695789f9481d081ddfa8626b3a0736e231dfccf4e32dc4425f6d483",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/StateManager11.h": "1baa524dfc0d47b9995b11c7f6706afd37d866a5b7e6b05e49d35f5eff698c2d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp": "2721dfdf115229552ab2045193d3afa2677e5d7deab27504f26ca2ade24b772d",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp": "834864f9ca1b0e5328e422eeccc2082abc2236336dc3adefb3a9aed6cf412282",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp": "3ab6c10946ff5513378bb5646f6cbb090c78179276008ab43b17356b5c3cb835",
+    "chromium/third_party/angle/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h": "52f0d2cf49238187ed892b596fc7bf23c9d4487b4c2905ed3b5fa355fae25e70",
+    "chromium/third_party/angle/src/libANGLE/renderer/metal/TextureMtl.mm": "73c4829f56a1987234a480b4f9a92ab79267b539e3bc9eb911b5b03794d5602b",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp": "8afbc516fae0d612e54f3322b39b62a2ce071b104bb9fdbab4b2bd655fdbb2b4",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/TextureVk.cpp": "682b62ba1c6478ef70c49f7ebf9963717916df6d08a3b7d756f36d83c46690d2",
+    "chromium/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp": "83dc91baf495c2c441f520c2dea13fdc3054f981c9e4e28edfe4fba8712fd728",
+    "chromium/third_party/angle/src/libANGLE/validationES.cpp": "6e6fcacbb2c04937f7af14f78153163c9c13f004d846c5e244ae019e2bb0ffe4",
+    "chromium/third_party/angle/src/libANGLE/validationES.h": "41b5fc5c809ba85b00e5f76119562226a14083a42a9b5295e879b77750c7cf6e",
+    "chromium/third_party/angle/src/libANGLE/validationES2.cpp": "77809d35579e97ff9303f68ead3847c94391eb512f2d1da291a91a4843e6006a",
+    "chromium/third_party/angle/src/libANGLE/validationES3.cpp": "feaab8284a97766cf4a81317505d47e93c3d7d5977e81223fdebfa5fd67b1145",
+    "chromium/third_party/blink/renderer/controller/oom_intervention_impl.cc": "af3689a2f9ce9f58a5bbb4a616cdf2f80aacaee6d8c0a4bf775ac69636698bf5",
+    "chromium/third_party/blink/renderer/controller/oom_intervention_impl.h": "74316796235938c3a467bafc73b6d8d2047d08ffaf59439b5901a9558b56f551",
+    "chromium/third_party/blink/renderer/core/animation/animation.cc": "b3fbef26b4812c199f943c294914dcec1f2db6b7758ff8d7e508eb04b0089289",
+    "chromium/third_party/blink/renderer/core/display_lock/display_lock_context.cc": "3aaa0f5b02067669fd8c49c82d0fb92d5be152d902cf1a1ed317ed177390cbda",
+    "chromium/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc": "06ab1f84b23e63d8f1a80167c051896dd3bde3d8a226030bbedd6c6069ca23e9",
+    "chromium/third_party/blink/renderer/core/dom/id_target_observer.h": "b46c988e40dc7716a2f30834f3d9c5ae83a587722d5661b7fb7e461d8fb1044a",
+    "chromium/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc": "8b821ffa5464faa0c35a6c06b7ef85cafb4a317fd8f81f13d5b159c043d499cb",
+    "chromium/third_party/blink/renderer/core/editing/commands/split_element_command.cc": "3703300c49b8067fc0d7e0d04745145cbfcf5c31509dca34f1be38e2388e446d",
+    "chromium/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc": "a801e0e464d598177cf7caed34f7607ef6af30adfe895ef56816eda860777975",
+    "chromium/third_party/blink/renderer/core/editing/frame_caret.cc": "6d00f56a7f188232617e17c34fc91de4d0ef9fec0d70e0d91aa38e99c0ce9d0d",
+    "chromium/third_party/blink/renderer/core/editing/selection_controller.cc": "9cfc0a9dfb113f509931423189a91d42176b3d292fdb974a639e17e16599453e",
+    "chromium/third_party/blink/renderer/core/editing/selection_template.cc": "0a91e7817b0966c6fcfee8579af88dfc54992e263e727e17a8173d87fedf9165",
+    "chromium/third_party/blink/renderer/core/exported/web_view_test.cc": "3a92232210da833eaf006a591205e6d9aaa96431a9e9ac6688c8435a8794c33f",
+    "chromium/third_party/blink/renderer/core/html/html_object_element_test.cc": "06973084df47a05582409805eab666c11201f261052d6bab85a4a61a4f9ec811",
+    "chromium/third_party/blink/renderer/core/html/html_plugin_element.cc": "a9df41529e3d2c7fbad9e1ff249532b0560d755a046babf83367133552e69739",
+    "chromium/third_party/blink/renderer/core/input/event_handler_test.cc": "96cfe2be96ed9a64ee73ae825940b47db904b1d1d7121cc38e70affda89fefd1",
+    "chromium/third_party/blink/renderer/core/input/gesture_manager.cc": "8f3c6a37d773b04d8081e9c8cf10ab2815b1682c057384e448f267eada37017e",
+    "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc": "5247a968630c1d6f83d85e85f290fb06eace289f989cc46a0073c3ae17faf93b",
+    "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h": "2dd8d5f420f6c184c0910d11bb1060ab15f971d34d5eb8aa107f1a3f60bc6b71",
+    "chromium/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc": "11fc45eddf1317b94c5b16bc30e641ab65ff351d12ce9d983ab3b66b58758e43",
+    "chromium/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc": "e780e791c3820c85cea6d5b69c4209ac6e0a0469fd91c36e850c5e96ddc67797",
+    "chromium/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc": "ba61444babab40696ada75ce2817ce14b20fec5615d84c5855138d504a1e0658",
+    "chromium/third_party/blink/renderer/core/timing/largest_contentful_paint.cc": "10eccd08ea3b069c332beb6dc91399b6cdef548ced5c00e8fdd891b35878a234",
+    "chromium/third_party/blink/renderer/core/timing/performance.cc": "4e7deacb7209e2e61b929696bd1be1c4e0656f1239f05b9d30bfe58f83aa1f35",
+    "chromium/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc": "ce91029dd3cd217f6f5eab928a1c6dab75c9ec5525da62bfc1ee65131ba67512",
+    "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc": "82f02410a0c91109cdf4d7d87239b3f8225ea2866067203bef4ebbc608756857",
+    "chromium/third_party/blink/renderer/core/xml/parser/xml_document_parser.h": "06327fb20fe05bab3c2508d1f2875cc740d9881fd8925e1db09927a1a29d5f40",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.cc": "409746f76000ce095221d2be2211d49b51524486ae515c4438b40e9057da76fe",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_node_object.h": "09664e67b99aadb179a1f353cef73c52fb2f3cae704e1a60d093fad7dbb46417",
+    "chromium/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc": "f166e42529dde6ee4495599d579e3127602d44b83e0cb496b8ae8fd671fa8c6f",
+    "chromium/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "ea50a97d96592cf3d9c9a0407cc3bcfeed5b503fd78ce6282786f0eb1e3db55d",
+    "chromium/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc": "28d9849d6ec99431b43990588f34e50c66cefbbf969232fbc38b43a0c939375a",
+    "chromium/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css": "d6b5b8d8220d67b0c5d831b5da8a4a52a7296bc8bbbd687cf471104f146c79ca",
+    "chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc": "3154a810515fa378c500cafcff331c64f518c14bbc6ea78887b5e8930771df33",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc": "4fc106c77d743433c6844c26c0d0e35d0ebe80640764641a2cc481450ba169cf",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc": "9f06be96a1c56bf14131b50a21d9712d8871a58a5df6e86a81629d117502e40e",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc": "57761be07d325f6b6cb23f2d8f928a16fa672d92c755f151504af8b2695e9750",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc": "a95c8a8b192efd0144656725d27244c027e2e2398e0fbb538d264c1b250e2c43",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc": "4dd54d512894399a5b259b0300b1a12a4a865b7ce9e84f86aeb714ec96af6375",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc": "fb6ccde03fa7e230073b7cd6c27b5560e77ee433d66ecde6b125e12092d5917c",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc": "c55d7955562b3911b0c2fd80b20429bd2e0d42a531aa26999808030102f2d72f",
+    "chromium/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc": "9c7e08f3bfa366695cd62ac7a5b784117d636af2a23144ac2cbcb67ce2902ccb",
+    "chromium/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc": "18981fa97bd88c4759568f0bb6ec1c637645e09e3b381c781d89e359094bf438",
+    "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc": "223ebff292db6f64bdaa289d810f60d1831736187d3bf929dfc8bf3bfec7cd50",
+    "chromium/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h": "1cfa33cdd37c665e64f64a570d04164064bd746dea771f93f91e011332180ff3",
+    "chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc": "ed919669b7b7e27745b7b4220a72862c66323a9c21293d139188a3c7dbedd4b1",
+    "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5": "97c6f2c5c013cf57202b17100102daa17f29475a4efecac6a8a0c3b19f8b1059",
+    "chromium/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html": "f0386058066c3f9ca0a5ea1961300b983f4eb6ed30280d40fa87b8e53683ef02",
+    "chromium/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt": "f7daec8d46310df734330fe326f48e3a275dc61de942badbe6946d62a469adcf",
+    "chromium/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html": "0bc1a645df817c0597a014c2689623b337ce828ec0b977a01bf8fbf945010d2c",
+    "chromium/third_party/expat/README.chromium": "7d5f241a229f353fa4c08f7eb1ae80472edc22e6f6204506e0e7e497ce69f830",
+    "chromium/third_party/expat/include/expat_config/expat_config.h": "d67316ce5214c50d2d2dfbd602efd6f5461d671c4d061414ea14efb3e257f5ed",
+    "chromium/third_party/expat/src/.ci.sh": "890a027863d1c2a4a324ec43b2533988fa703baaf5ad317df3f836bc46b50691",
+    "chromium/third_party/expat/src/.gitattributes": "e0c8113c29dade6a9f5358032c608d5d3d99aceef3dd51576b62254c123b14b2",
+    "chromium/third_party/expat/src/.github/dependabot.yml": "c90f3d61afa34e3e2e74c321123c0663a85d3a12544fd280e5a947c21c379c3d",
+    "chromium/third_party/expat/src/.github/workflows/autotools-cmake.yml": "dbf901134e2cc3037fa0f231a1d91143272e43b504650d27e2dbf3182871a4e7",
+    "chromium/third_party/expat/src/.github/workflows/clang-format.yml": "aad92b1d5854989c3ce097661dc2ecae1f446c179d3f5b344a057e8ccea3720a",
+    "chromium/third_party/expat/src/.github/workflows/clang-static-analyzer.yml": "46024e54bcb37819e7a4438271ce370e00c1c97b1df753aa5d6ab7070a0c8ce3",
+    "chromium/third_party/expat/src/.github/workflows/clang-tidy.yml": "50e10ecd93dee97e2c86bc39eab6ee8de0be2efd1556c5665c6371185679e7db",
+    "chromium/third_party/expat/src/.github/workflows/cmake-required-version.yml": "3aa7a2c8bc9b60e2d24e145b4026a6e798dfa7a3bec7a14833122fbaa65ca81c",
+    "chromium/third_party/expat/src/.github/workflows/codespell.yml": "f2f54f651541560d8516aee7b27778544a8d4d4f62a354b20dc2710eb8f039b2",
+    "chromium/third_party/expat/src/.github/workflows/coverage.yml": "df340edd1c77c692cd3ff871469f8bc1682129a747ff8e6d70e8fb1c40ea90ce",
+    "chromium/third_party/expat/src/.github/workflows/coverity-scan.yml": "f8dfcc5654af9f1cbd7b753abff907243ba752b54f87f8d577fbfb94bbea6129",
+    "chromium/third_party/expat/src/.github/workflows/cppcheck.yml": "585ccd7ee3f1cb2cd9ab5333ece1bfe4014592a7d29b0bb0c83a945cf8084a8c",
+    "chromium/third_party/expat/src/.github/workflows/emscripten.yml": "88daae106387126785d0095540b3ecde199bc6954f5abb6aa5f0b44b075192f8",
+    "chromium/third_party/expat/src/.github/workflows/expat_config_h.yml": "444d4c9c1bc837f3ecb2cf0f30ac1153d75f4cbafb8eeaf692ddc1643c82ecf0",
+    "chromium/third_party/expat/src/.github/workflows/fil-c.yml": "61ae7b92fe9a28734e5253d1246b7cf82be3f4d0d688bb13bb40a76f99b5f578",
+    "chromium/third_party/expat/src/.github/workflows/freebsd.yml": "3c28806cfcf3f5e7a76471f4b563d55fa00f2c02954befc527450cc8b6c01956",
+    "chromium/third_party/expat/src/.github/workflows/fuzzing.yml": "a1164566f3c491ff0c765f9b093413682e7d5add256d3f54ff990a8705de5366",
+    "chromium/third_party/expat/src/.github/workflows/linux.yml": "facad03ebb854f2f782d9defae4518e46397bd9f658cea04a169747ed77f4065",
+    "chromium/third_party/expat/src/.github/workflows/macos.yml": "40f2bebccff5ff3e4b456c37b0681ce4d46fdbfc008a2902df536aa7461f89f4",
+    "chromium/third_party/expat/src/.github/workflows/mingw-clang.yml": "cb5598fa5f2f74472c1fb711ab0621cab355a696d99b5385ef84348eb5422b04",
+    "chromium/third_party/expat/src/.github/workflows/musl.yml": "34357072d99e26bb389822bcaf2baf316e18aee3f465a8d0d4255b1e5261fa9a",
+    "chromium/third_party/expat/src/.github/workflows/perl-integration.yml": "17a518fdb47f5817898aa09a8dc24481b698c2264b7e212ea16865d32f2b27af",
+    "chromium/third_party/expat/src/.github/workflows/qemu.yml": "4c2acc68c135eeb272b5a730f178998d467a774584ccf362d9af707145da647b",
+    "chromium/third_party/expat/src/.github/workflows/scripts/check_for_missing_config_header_includes.sh": "140a460c26d4681e32a4d615416e49dd780505461c6658e2dca6bb203758ca12",
+    "chromium/third_party/expat/src/.github/workflows/solaris.yml": "61ce9a600af1bdbf0e59a2d8962862894ce5a830f1fb40f9e9d649d0f6013364",
+    "chromium/third_party/expat/src/.github/workflows/valid-xml.yml": "acb0c293db9ebbb63c90892fa2673e1cf4d282a2640b08e419767a88436eb0b0",
+    "chromium/third_party/expat/src/.github/workflows/wasi_sdk.yml": "56ed0aa1836df54e0d6c840cf00d9eab2bd0423ac433f77e4f3e8bf670fc2f60",
+    "chromium/third_party/expat/src/.github/workflows/windows-binaries.yml": "1a54f5ed19329d737e8381099213d7e8dc533181a9ccb795a1f469241312c255",
+    "chromium/third_party/expat/src/.github/workflows/windows-build.yml": "f0ba17c8ccebabe4f19e30c3531467a932297a417f89f6884c2c9e9a96b034ea",
+    "chromium/third_party/expat/src/.github/workflows/zizmor.yml": "fe558a10461dc372880c4617aeb3529c63e1126054bf1a2f0435206b0a5f6534",
+    "chromium/third_party/expat/src/.gitignore": "8b7e8d7ba5bde98574fa3ca561faddc31324df976c883721b762f64f5c02e481",
+    "chromium/third_party/expat/src/.mailmap": "0589457531b488a7804ab9850c2199d7b72e8f0752050ccef6450aa92b0786ce",
+    "chromium/third_party/expat/src/expat/CMake.README": "db8f863ebe588b8af6f322d21c7e33adf4f8ddc0b00cd42bece1bdb90580641b",
+    "chromium/third_party/expat/src/expat/CMakeLists.txt": "391dad264d5332998f9222925a900bfb6ac3dbf0144125bf5b8b2396de9170f0",
+    "chromium/third_party/expat/src/expat/Changes": "d524be92cf55121cb6cb7bc13625f0498f1d31b4990fb52c93a574edbb372939",
+    "chromium/third_party/expat/src/expat/ConfigureChecks.cmake": "bded6ccff89d4c66249116cb5c8fff3f28fb96e07663b43dea4f10f65ccf79c1",
+    "chromium/third_party/expat/src/expat/Makefile.am": "df5ebc4f628eaeef70e0c1ca9e1cdcba89ca54913702d4cd5ec311f0523f7162",
+    "chromium/third_party/expat/src/expat/README.md": "bce315e3b4c90a34ac4c4a4d8f34874c9d9abdd5b36ff12d1f264e01df7ca5ad",
+    "chromium/third_party/expat/src/expat/apply-htmltidy.sh": "4ae707b0f957fbea69b9e5745dd88f13c75eef75192ed43e8c9f809971dba1d4",
+    "chromium/third_party/expat/src/expat/cmake/autotools/expat__macos.cmake.in": "55d2201e6979677d353e081b1e8aba91ef50c78557c9c1b1053427bdd1d0428a",
+    "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win32.cmake": "0ebef88ce46dbbf571dc71987c9db908cb3a64dae184e09c12470511f0c6a1d0",
+    "chromium/third_party/expat/src/expat/cmake/mingw-toolchain-win64.cmake": "383dc6ad6b58909c4626d988cc7dab59c148f9c8f417e6ce947b735edea2ec24",
+    "chromium/third_party/expat/src/expat/configure.ac": "92d0a64c5913f8170c054574b1209153ed2cf865913f2bbc2145c29594365e26",
+    "chromium/third_party/expat/src/expat/coverage.sh": "5d6473cdf05e9b638926b480a4a4f694b6dbe54ca3c646071707d7b67bf7b849",
+    "chromium/third_party/expat/src/expat/distribute.sh": "9ce0cf11c96cfbca50e9ea55fa326578da489f61e9ebeb7e737c60f9760424c5",
+    "chromium/third_party/expat/src/expat/doc/reference.html": "76351001baeab4877654e354bcd0834c2cf0e619b344c30d91a6bc7f5612b176",
+    "chromium/third_party/expat/src/expat/doc/xmlwf.xml": "f0094f6c1b165ff8e5684ec7e615397899af4c72527b29dc2318dcfea50aba57",
+    "chromium/third_party/expat/src/expat/examples/element_declarations.c": "c4194cb7eadfa7de68baf7d768a8947f05f270dbc0b9c7778b32019036d3e66e",
+    "chromium/third_party/expat/src/expat/examples/elements.c": "87b28863e1c4539694b103d996365d95cc44238d1a9fb9b2cc193a99b722460c",
+    "chromium/third_party/expat/src/expat/examples/outline.c": "701b4dbe8906a3f7b861bea7116c82bf5b7ade0006f467da541f519e9f390469",
+    "chromium/third_party/expat/src/expat/fix-xmltest-log.sh": "07abceb2d1a9c0fb54ec0a11da2019cc4e9c031c5fa66aba0e8c6821f03199f6",
+    "chromium/third_party/expat/src/expat/fuzz/xml_lpm_fuzzer.cpp": "19485c699d499d70847b9399c132ed5d0423f757af78e9a27a9c1351a5105716",
+    "chromium/third_party/expat/src/expat/fuzz/xml_parse_fuzzer.c": "ed77751395f9891b9788a767ca2b23f467e512698aa4dd06216eb6c32186581e",
+    "chromium/third_party/expat/src/expat/fuzz/xml_parsebuffer_fuzzer.c": "7d0825ca0a9b0e80759de7f52a19ceac8fe78bc44997e2f7614fdef524556e98",
+    "chromium/third_party/expat/src/expat/lib/Makefile.am": "f0a9b25eee893830ec487ac29bec3cd96a673ddeb7e11f0a2417c9a386cf90e1",
+    "chromium/third_party/expat/src/expat/lib/ascii.h": "5ce49460794894b78f97060f634c129d13f2e9cc9b8dacd829f4be2dbc6e0649",
+    "chromium/third_party/expat/src/expat/lib/asciitab.h": "5792cb56f285c8876b988d875a70d49019bc7e6d5ebcd0f8224b24e695301832",
+    "chromium/third_party/expat/src/expat/lib/expat.h": "17cd1fc3b4c61d00de96091ceed0a3721d5bac9755c6d04e89d9f8a79d037c12",
+    "chromium/third_party/expat/src/expat/lib/expat_external.h": "2249eae72c6bc9021b7110267507cca98ff6a269fb8b5af5bcb508858e83bfc1",
+    "chromium/third_party/expat/src/expat/lib/fallthrough.h": "5e42477487bca7e7caac6b832ab940f39a1a20b8765c945374e4f6c2670f55b6",
+    "chromium/third_party/expat/src/expat/lib/hash_table.h": "ad93851f86df1f4e8f85488dbac53cab3539e59d701ad747c7beea354d69e0dc",
+    "chromium/third_party/expat/src/expat/lib/iasciitab.h": "a9cd6f2cf5199ae3c29d22ee4913736fcd984f62132146a0352c88549700e83f",
+    "chromium/third_party/expat/src/expat/lib/internal.h": "0123d00963768b5779544cc54dcccad311824b192a38d3489c4fb1fbbfa33b17",
+    "chromium/third_party/expat/src/expat/lib/latin1tab.h": "b0daf8a75c690e895421f765ddb2ae2fbc1ba14694e06a3215dba84f1ff3427d",
+    "chromium/third_party/expat/src/expat/lib/libexpat.def.cmake": "3be6f98774580420c8563a9aee487ecf13b35f418144c3659fcce5d877199bb5",
+    "chromium/third_party/expat/src/expat/lib/memory_sanitizer.h": "377ca054fdc531360f42a5cb7c522bcbf88b6c67aebc2e29544c37d14e836bde",
+    "chromium/third_party/expat/src/expat/lib/nametab.h": "8f78e64f11e2b23df8b32cb5528cfeda6215acd6abf6bcf1ad59fdc7b1ffd105",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random.c": "33b936335d0bbe1bb36b0da65d82e2d656fef9cf2e49660101c74a3f4f9d5c37",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random.h": "dd1a23b22604b61e1942e9fccdefe4d876cdf55477cd2e61904e50af162c15bf",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.c": "e9a72469deea3c7faed0fd45e3ac7d81e8ce4e63b52ef7bb647baf71f3d0fd78",
+    "chromium/third_party/expat/src/expat/lib/random_arc4random_buf.h": "fccc4650a76f0b4df0b1123abeb248087a22d4eba9acbd1188cd44e21de4377b",
+    "chromium/third_party/expat/src/expat/lib/random_dev_urandom.c": "4d2a204c94285b0c459397619acfca5a8f5d690fbd8f419ac45879074e6afebd",
+    "chromium/third_party/expat/src/expat/lib/random_dev_urandom.h": "65a0bf3666927824029dd52dc4b6af3218719999ab9f45db8d8406645960f5ab",
+    "chromium/third_party/expat/src/expat/lib/random_getentropy.c": "ba99df7b694ff0b62d2871cc13b87e75d1a715af6045102ee7aff120ec1ae332",
+    "chromium/third_party/expat/src/expat/lib/random_getentropy.h": "8a122afb95decf1fcf960cf92004d0305d7c9154f84c1ac739e67ef554e02e59",
+    "chromium/third_party/expat/src/expat/lib/random_getrandom.c": "7d813973f1b021bd6576820180df180d3b07e5c47072ce083b7cb2029bcaed6d",
+    "chromium/third_party/expat/src/expat/lib/random_getrandom.h": "06738fafa3ec5b0148a699efeaa55aa80b8956b78a95bf5f78fcd9e0be998c48",
+    "chromium/third_party/expat/src/expat/lib/random_rand_s.c": "39ae3d8d337517ae2db5935a501cc9d6f55cc12e8ba552c03ea78eda6bdc2200",
+    "chromium/third_party/expat/src/expat/lib/random_rand_s.h": "941134a3796e544bf44c428cd1e1553506c9f344a5c0c4479a8a819745a0c0ff",
+    "chromium/third_party/expat/src/expat/lib/siphash.h": "12ecc9915bccb793ea8bb543cc7d002e226f4e4d6b97ec9839dca41cbe4e2e27",
+    "chromium/third_party/expat/src/expat/lib/utf8tab.h": "3fa349a3a19143366e80a58d9aa950152ef9cd7903f557f971051410b47f335c",
+    "chromium/third_party/expat/src/expat/lib/winconfig.h": "0ab6446eb98abc492ae341ef7607b535e44dedf52633fdc7c6e1a1361aec3922",
+    "chromium/third_party/expat/src/expat/lib/xcsinc.c": "1210979a688301412f46e058d0497fa3c1c63c296c2e015834cda0f0b314875d",
+    "chromium/third_party/expat/src/expat/lib/xmlparse.c": "73e23fc6220bc12f13eda7022444f6d4d1027aaf025cc7e8d4284c3c297d37d7",
+    "chromium/third_party/expat/src/expat/lib/xmlrole.c": "b1ad87cc3c0d4722358a7dfb1642df7f62066d1613a0a56dc9289e7112fb3f0c",
+    "chromium/third_party/expat/src/expat/lib/xmlrole.h": "8a0b61cd6efcd7427acbc86759e9013e7a61755097a1f82cbb2a79c011af5ee5",
+    "chromium/third_party/expat/src/expat/lib/xmltok.c": "47ffd58f56f61284fd84cecd94ddad4c79cde922f57994c1525f8df1eb9272eb",
+    "chromium/third_party/expat/src/expat/lib/xmltok.h": "623dea24bc27712e2e205a0c0517c79e211234f8d1051fe46d780839f754cf9e",
+    "chromium/third_party/expat/src/expat/lib/xmltok_impl.c": "4dcd7ae88dd90bbc89d0e41ba6affb46a107ee28df3b49cb84cdf228b7cc7981",
+    "chromium/third_party/expat/src/expat/lib/xmltok_impl.h": "a5053c69219d12788088de9bd670537e1c784302766c331afe6b253460d0417d",
+    "chromium/third_party/expat/src/expat/lib/xmltok_ns.c": "ea723a3470d3eed5c4a4e873bec2f996c605326fad25709b45452664261c5465",
+    "chromium/third_party/expat/src/expat/qa.sh": "badb4b26d052dfc9580809cb8b43b456bd96cd393b97420d994806b07bd6c4c6",
+    "chromium/third_party/expat/src/expat/win32/expat.iss": "60936b7e0e302d9a81a438bbea1d575ac996d07c2a98f38a2d16e28fc2a674ec",
+    "chromium/third_party/expat/src/expat/xmlwf/codepage.c": "1a2f9785862feaa7bc96602a66f818c9026494a7998e710e716ef0936f33feea",
+    "chromium/third_party/expat/src/expat/xmlwf/codepage.h": "d97800c0fb370665cd4c122597232aa6d9f427fd1fce93e095ee48f91216ced6",
+    "chromium/third_party/expat/src/expat/xmlwf/ct.c": "14666beb38dc8b35b8efe376fd4bf81fe418c2098b6670580bfdede3820cffc9",
+    "chromium/third_party/expat/src/expat/xmlwf/filemap.h": "be0b64c4da62c9cb299ac30f213a45cba03c7e02b85e02f142a6c9ce3f9823f7",
+    "chromium/third_party/expat/src/expat/xmlwf/readfilemap.c": "b5aa1bdd2a7d9e68ccb8d524fef0b6953d1875f202d8a97ddd8dc2faba81f3e4",
+    "chromium/third_party/expat/src/expat/xmlwf/unixfilemap.c": "ee32d5f3f34be7ebc474fd143816239de2286a428a1f237e016f6529f9937b5a",
+    "chromium/third_party/expat/src/expat/xmlwf/win32filemap.c": "7b578506af82cac899891037593355f437900627177e8c40045e26e9f16f1340",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlfile.c": "3c358d0735b262ecf1ab07d22ea160b8f0b1746a6a01b866092e80259c12b9a1",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlfile.h": "8140b905f2a9868a16711a018602874c5a1289bee2b55cd2f301ad466763dbd2",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlmime.c": "5061a6442db55bb85153040ebae2ed0e132ad3be67804ebf713c285c7c3c576d",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlmime.h": "01515428e8af51f0a9c93856a68c883728d8b02ba2f9659ced71514f945b000b",
+    "chromium/third_party/expat/src/expat/xmlwf/xmltchar.h": "3ca28b7ff0f149de1e022ce4031aed1092a8981cc86e62e45131fa1b04964755",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf.c": "01c4a19e804272702e569ad2ae40f76b29895a7c68672fc79c82608054bc5b14",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.py": "7ed57832aa08952eee34c8af67f5ffa428bf7bc08c6d2ebbe192840613085c01",
+    "chromium/third_party/expat/src/expat/xmlwf/xmlwf_helpgen.sh": "8abc9b59ccd8f072de24556c016e095ec2ed9f5c1f86fc00d5d33c41d90115a5",
+    "chromium/third_party/libvpx/source/libvpx/vp8/vp8_dx_iface.c": "c797f51d4d743e3bf979d8d3dbef6788cd13c0ffff7fabdd0d0a96c7a9dbc4b2",
+    "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.cpp": "4af7bd6635619b97b1cf11346b37501ada9b52048056f93f67a4f2feb925da85",
+    "chromium/third_party/pdfium/fpdfsdk/cpdfsdk_formfillenvironment.h": "1300fe1cec511eeb2bcb5136ad367cda0dfc48a22f782929e534cc4b73070e54",
+    "chromium/third_party/pdfium/fxjs/cjs_app.cpp": "377707160f433106148a47958245a78057c1d72096adcfb6e0ea4e005bc85430",
+    "chromium/third_party/pdfium/fxjs/cjs_runtime.cpp": "140c317f12bd727eacdba571fb718c2791f905d8ed1bfbc78a83ef37085a21ba",
+    "chromium/third_party/pdfium/third_party/BUILD.gn": "25bb8bd1a59a0ef1d2c671e3c1c327687ea4b94ac056aa876ed23d4e0355876f",
+    "chromium/third_party/pdfium/third_party/agg23/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/bigint/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/bigint/README.pdfium": "5a65a1539b279172d4bc942af9200fac6165dffdaf5663e962a302fc27e16e60",
+    "chromium/third_party/pdfium/third_party/lcms/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/README.pdfium": "84b075b8b33ec258adc273b2db0402d66c4a30fc77878e03227812ca6c047bc2",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/image.c": "afa33bcf1a6d0692ba0bb47fb569cbf749098f240f43be4efe44bc4e5687dd7f",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/image.h": "7b7a1d0358975f7658a86551e8cd527e018ee24d7876f7e7fd22f8bd46bb8484",
+    "chromium/third_party/pdfium/third_party/libopenjpeg/j2k.c": "6f47b9b1051ae2b66aaee1c5ff139d760fa48e18b974783c0163611807ba1abd",
+    "chromium/third_party/pdfium/third_party/libtiff/BUILD.gn": "3f179716ab1f22dad09da6aae63af57017ec7306918903e34f5a7952752ba641",
+    "chromium/third_party/skia/src/core/SkImageFilter.cpp": "8cf3959cca3290dc4b54cd623ec8b1c93d08f532d1e115b8b2c7d19365e54c5c",
+    "chromium/third_party/skia/src/core/SkImageFilterCache.h": "1ea4ee800d775911a9a1274ec918865e247903510822453044d8807258bd8067",
+    "chromium/third_party/skia/src/core/SkImageFilter_Base.h": "1fd1c2d127a7c948cc571d7c6d7e30379e34b951a8e50dea296e0f3d3730f64b",
+    "chromium/third_party/skia/src/gpu/ganesh/GrResourceCache.cpp": "e91ad3f8a13648b476a080e16c54c5125c6af64b2920ff43296dce02feb2e385",
+    "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.cpp": "86dd304dcb7c4b09deb0afcc24f5f87af1ebcd1a54423afb728a408a995aed60",
+    "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLGpu.h": "92fd92e59f3da0a7e4163fa18afba8fab67c3dc57aa25f42f9d72a952fb6ecca",
+    "chromium/third_party/skia/src/gpu/ganesh/vk/GrVkGpu.cpp": "d4d9b73bfef04f791c274ec3d03963a552947b072514519b7def76c7b397b350",
+    "chromium/third_party/skia/src/gpu/graphite/vk/VulkanSharedContext.cpp": "64205aa5a13b6e32e1e1d8df01afb61aff09c1d3cb509ab9e5e92473b7c6c2ff",
+    "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.cpp": "3535c04a6816d8baa38ef823e9e0510a52243bd167493f563d493defd93e7b0a",
+    "chromium/third_party/skia/src/gpu/vk/VulkanUtilsPriv.h": "e1589638de2d2c163f47fa47dfdad2b3318a0b663e11784ad5a46d8d39414d29",
+    "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp": "67cd6cd0e0e6fdde86241bfbd6a0dccd1976981370c4695dff6d7bef9e412629",
+    "chromium/third_party/skia/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp": "913c2974c1e8472e13dea49386cd9aec73d9ce7d1fb7ca370cfdf5ce78fad778",
+    "chromium/third_party/webrtc/modules/rtp_rtcp/BUILD.gn": "4d885b94473bdfc8aeee6eeb2c8adb3e9b01eb9b070a41b3bff964910eeb4c96",
+    "chromium/third_party/webrtc/modules/rtp_rtcp/source/forward_error_correction.cc": "c459afacf23e47663d6abe144c09ca023fe640f9563a28008dffa152b09fce27",
+    "chromium/ui/accessibility/ax_location_and_scroll_updates.cc": "a8d68285411c053f1909876ae96c0b2a1ac8c0a4fc36737911a9484a6c9c191e",
+    "chromium/ui/accessibility/ax_location_and_scroll_updates.h": "c1501f15bcb4bc61081c8bce5edf38682e4971428f54ffe70f067386d5fd4159",
+    "chromium/ui/accessibility/ax_node_data.cc": "1b02876ece4c20df2ccb532f2c3550943c05163f8333f8b7b5b041da60ed9a0b",
+    "chromium/ui/accessibility/ax_node_data.h": "4374ab68f50d49eb202a05fd4e7ad2be32d557c29510791480d31a696f093918",
+    "chromium/ui/accessibility/ax_tree_update.cc": "9bddec4f9f1a2dc9b3e37a610920c3b283842c32f983125fb2e831c5a41eb7b9",
+    "chromium/ui/accessibility/ax_tree_update.h": "a7bed455736c3a5bb6cf98a7df40469cbcdb609aae90faa80333977a33ada1d1",
+    "chromium/ui/accessibility/ax_updates_and_events.cc": "d5fe318c357adb0d34332eef16884e193326565c6570aa2ad3e33a461d4f5df9",
+    "chromium/ui/accessibility/ax_updates_and_events.h": "aa7648e10b8e6067f2ad26222088a702273577f90e83e2a0253008e68fffa0c0",
+    "chromium/ui/aura/client/default_capture_client.cc": "03cb061a31a2ce07b06dbc0948e711ba1544b114135a582167abb6a6926dc8e9",
+    "chromium/ui/aura/client/default_capture_client.h": "85efb775f28f89b6684989e3c9ed1961587fca29d06a3e4ebe942fbe4e35259f",
+    "chromium/ui/aura/window.cc": "1b847422fc5e88c969754bc8095e64766b12b36050d07078fa48a1e26e3039ab",
+    "chromium/ui/aura/window.h": "21b31c5b700f4643862f247816f58b512521d7cec9fbb471837fe506125475de",
+    "chromium/ui/aura/window_event_dispatcher.cc": "4e3285faa265d3969339de8e604bb243aa8bb20e86106adbd96bd2af4a67e662",
+    "chromium/ui/aura/window_event_dispatcher_unittest.cc": "7dc2bf547aaa14c1997b7166465a1c5fee6cf801ad735758589a6b2711d30ab3",
+    "chromium/ui/events/gestures/gesture_provider_aura_unittest.cc": "5b4e1e100e019070da26f3bbfb546b93266d48105858ea8e308bdbd26377e6a2",
+    "chromium/ui/events/gestures/gesture_types.cc": "5a43f4002dcccb058353cc2c4cd4115e351494ca5dfc5326256f9eb8caa61ffa",
+    "chromium/ui/events/gestures/gesture_types.h": "bb9fbb3f866513c71697d3adbc5f96ff787b6d056c92040de1d9b9d859cb3dea",
+    "chromium/ui/views/widget/desktop_aura/desktop_capture_client.cc": "99c0c99f64976ac801b771dc60b24a4bfce72bf7383af45b5853956384487e03",
+    "chromium/ui/views/widget/desktop_aura/desktop_capture_client.h": "80ca33063a1a60e9e29d5c8b8dbd13059f64c716cc50a53fdd36536a13a007ab",
+    "chromium/ui/wm/core/capture_controller.cc": "2086a5c0f9003b47921f82ed67a10770d3fc1942ad96100216e73d6a008eefc6",
+    "chromium/ui/wm/core/capture_controller.h": "955a445167ee85de27177576d9eb5475f981493b1d9fcb9632122d6e13fa295f",
+    "chromium/ui/wm/core/focus_controller.cc": "00fe8cfd35af018a001476aeba03547bb7fe96cc57d142d5373050bf067d1276",
+    "chromium/v8/src/ast/ast-value-factory.cc": "35e74a104227d7776a9a24716427c159d56c6f46a222c6a33dd90d40c9a83822",
+    "chromium/v8/src/ast/ast-value-factory.h": "c8d7f34a224bbeeef30a2f9d67da98ec44c1f25fe1813298f8845643c68e2c38",
+    "chromium/v8/src/codegen/compiler.cc": "d5546eb7a8d36852525a3697fdfcac7d5551aba00a8d806d30aef70dfba2c996",
+    "chromium/v8/src/execution/frames.cc": "aa10b4475a2dd5c73b7fac89a6513bf9392676081a13443fec6b716df29cc551",
+    "chromium/v8/src/heap/factory.cc": "e507f3472a60ac99e0e9d2738839e6f2d02008ac572908919ed9cde8c03f38c0",
+    "chromium/v8/src/heap/factory.h": "bd2170dd3db9df35629c53ee0d54563a674e3bf591367d4faa71d371420991d7",
+    "chromium/v8/src/ic/ic.cc": "d1aabc943d8712747e9d21a8a107da34ca25b4e025b7d98e5e6ca7557dfba8ad",
+    "chromium/v8/src/objects/name-inl.h": "84213e3a6aa553d795d708b7bdbf45afa892740a2004db0048a89845c389fd6b",
+    "chromium/v8/src/objects/name.h": "a7b65b2c610e6f2de85681ff41a8cf192e578f3261bba513a8547a47168c56dc",
+    "chromium/v8/src/objects/script-inl.h": "055d2c16b13c79064f6cbc8189722b8a62631399a9e9c99edc1b92183a206b45",
+    "chromium/v8/src/objects/script.cc": "69eda1f66cf2863a4ffa207ddbb1ce008e257c002040d4402c4ec099315097c2",
+    "chromium/v8/src/objects/script.h": "528aa501bd7064300ce2669a22751dce51384b018597122feb5bbd42f07abf17",
+    "chromium/v8/src/objects/script.tq": "019886ea87a6b25edd16aff7e6cf4ee001a4fa68444b0347aa8141c4e2367550",
+    "chromium/v8/src/objects/shared-function-info-inl.h": "0b02f5c34c5cf0061d369ba34798d6566b00d277fc98279b4a3b7529838440b7",
+    "chromium/v8/src/objects/shared-function-info.h": "365cefda128863c19d89389f02e6b4ed9af2610f80a36091a1d7ab4ef47c517a",
+    "chromium/v8/src/objects/string-table.cc": "31aced2efab6b0cb5681479aa8135fcb13148b501276b4b9509beaca7c19bd16",
+    "chromium/v8/src/objects/string.cc": "5e7f0ec923ac59b11f68473d3d2937182745631ad8f4b60d393f166db36861ca",
+    "chromium/v8/src/objects/string.h": "685e50972ab41e30a794541b0b93d5dac54f79f92ae54732a40491190523023d",
+    "chromium/v8/src/parsing/parse-info.cc": "dc7be95537d2c6d368629251705bd0c0fa5a218df2cff342c1663183aad8bd6b",
+    "chromium/v8/src/parsing/parser.cc": "c24b168c201d0beefe7e19bda6b7eb720d5b5032ab0ccfc66a7bd1cc07e3506a",
+    "chromium/v8/src/strings/string-hasher-inl.h": "8bc3e4e645c4c83067110d6873d9fbfe5dd3fddcce4ee8af7c3ae965caf485f4",
+    "chromium/v8/src/strings/string-hasher.h": "83c36c380061ef1c883e7e4249c4e3b16ce4432e0e788e6bdec3a7ca60662bf3",
+    "chromium/v8/test/mjsunit/regress/regress-566091009.js": "bd3a59a6ed7bcd36ded202d8594a83a033863776c1daee6870f53f0d165c7926"
+  },
+  "patchDirectory": "vendor/qtwebengine-security/2026-10-30-residual",
+  "upstream": [
+    {
+      "commit": "0c15ef7287a69ad152772ad77e25c3ef15007886",
+      "name": "qt-0c15ef7287a69ad152772ad77e25c3ef15007886.patch",
+      "sha256": "5e22e85bcff08368369c58e2ee0db750c788aab21e0e16c3075b30e80d84dff0",
+      "size": 3674,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/0c15ef7287a69ad152772ad77e25c3ef15007886.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "9826dbc8326bc7f4fdd5d6df87e0c769c140bd97",
+      "name": "qt-9826dbc8326bc7f4fdd5d6df87e0c769c140bd97.patch",
+      "sha256": "7e82063294306f530d066568071dfc40d3b770f88ac94ea96180d485c3a2999a",
+      "size": 11016,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/9826dbc8326bc7f4fdd5d6df87e0c769c140bd97.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "fad69ec9843b37d725e8f0e5aa8cb05a10e85f24",
+      "name": "qt-fad69ec9843b37d725e8f0e5aa8cb05a10e85f24.patch",
+      "sha256": "a94074f7f14b6754470cb79b17809ae5c7a246caf8bf7ada628320869a466c4e",
+      "size": 2654631,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/fad69ec9843b37d725e8f0e5aa8cb05a10e85f24.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "828f850c406fb313f35cc1733e9c2122d15bfe58",
+      "name": "qt-828f850c406fb313f35cc1733e9c2122d15bfe58.patch",
+      "sha256": "7a5dbca8c1fdf2d6494dae1e6c4965025e75d47b3bfb713b16e99c461b448464",
+      "size": 12611,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/828f850c406fb313f35cc1733e9c2122d15bfe58.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "7dadb2c65469c360f14c28984f3d8a9eaea565f8",
+      "name": "qt-7dadb2c65469c360f14c28984f3d8a9eaea565f8.patch",
+      "sha256": "938f0f64f798a90e1ac186615e7c70f33094d077813b2bd439a35aa7e8ba6989",
+      "size": 4721,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/7dadb2c65469c360f14c28984f3d8a9eaea565f8.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "c0b89eef8c1766b3902b14c75671426ba12dfc8f",
+      "name": "qt-c0b89eef8c1766b3902b14c75671426ba12dfc8f.patch",
+      "sha256": "6e0850142b1d53f2ee8ba286aa0b093e52d7beb8049583cce99bf3ce29ef8a5b",
+      "size": 9427,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/c0b89eef8c1766b3902b14c75671426ba12dfc8f.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "43bcb1ece119814c1be448629ba0bd751b51ec7d",
+      "name": "qt-43bcb1ece119814c1be448629ba0bd751b51ec7d.patch",
+      "sha256": "324be2a8fe62300e24fc480ed5c0e616f54bc943af2c8dc4d1567be4e4240710",
+      "size": 7061,
+      "url": "https://github.com/qt/qtwebengine-chromium/commit/43bcb1ece119814c1be448629ba0bd751b51ec7d.patch",
+      "kind": "qt-vendor"
+    },
+    {
+      "commit": "ccf9bb2b18e54adc73a00e95662d630212753176",
+      "name": "chromium-ccf9bb2b18e54adc73a00e95662d630212753176.patch",
+      "sha256": "d229a25b85f091053c8d68b561fd1883583bb7dccb3fc7f81f476ba2d020b377",
+      "size": 11207,
+      "url": "https://github.com/chromium/chromium/commit/ccf9bb2b18e54adc73a00e95662d630212753176.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "9d98906b751989a200ff24d26a4d849a80367b13",
+      "name": "chromium-9d98906b751989a200ff24d26a4d849a80367b13.patch",
+      "sha256": "5029de74368718713c560c8be17d614b15460ea4302908fc8192e1a753b08fed",
+      "size": 13599,
+      "url": "https://github.com/chromium/chromium/commit/9d98906b751989a200ff24d26a4d849a80367b13.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "e2075db3e7a43bdc805061b991c8c4a90ab0047b",
+      "name": "chromium-e2075db3e7a43bdc805061b991c8c4a90ab0047b.patch",
+      "sha256": "b35ad459f7fc871af7d63046c6052b33fc98b0bda4e9a4a6322afa83f46cb8da",
+      "size": 13103,
+      "url": "https://github.com/chromium/chromium/commit/e2075db3e7a43bdc805061b991c8c4a90ab0047b.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "d473602c676cc7010c45f02f470df7e1817791e1",
+      "name": "chromium-d473602c676cc7010c45f02f470df7e1817791e1.patch",
+      "sha256": "57d4f257154e802c9a24e2f1debb4f4f18a2c4aa5345bcd5e3798bab745e7a6a",
+      "size": 6777,
+      "url": "https://github.com/chromium/chromium/commit/d473602c676cc7010c45f02f470df7e1817791e1.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "de2718436b301a9593589ea0451faaa47ffc1512",
+      "name": "chromium-de2718436b301a9593589ea0451faaa47ffc1512.patch",
+      "sha256": "66dc06da1d10bf864a2315500ad3b5787bf09d6ee69dd39a549c107680ed1eac",
+      "size": 9867,
+      "url": "https://github.com/chromium/chromium/commit/de2718436b301a9593589ea0451faaa47ffc1512.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "c2129805543e04b57059da7f540a4bab20be4642",
+      "name": "chromium-c2129805543e04b57059da7f540a4bab20be4642.patch",
+      "sha256": "d0594943f4d27e115f1412e87a66f230fbb5c70558178e810ea3cb69a418b5cc",
+      "size": 14114,
+      "url": "https://github.com/chromium/chromium/commit/c2129805543e04b57059da7f540a4bab20be4642.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "93f574f14f95614b97b5006c9bd8801e1537f31b",
+      "name": "chromium-93f574f14f95614b97b5006c9bd8801e1537f31b.patch",
+      "sha256": "7e9207124c020a5567b57bd38da479cfa628c9e210aa579898554c5d39b1b658",
+      "size": 42308,
+      "url": "https://github.com/chromium/chromium/commit/93f574f14f95614b97b5006c9bd8801e1537f31b.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "a21ce95c24ce3964416f09ae1862f53f319eb4d0",
+      "name": "chromium-a21ce95c24ce3964416f09ae1862f53f319eb4d0.patch",
+      "sha256": "55aaefeba6e0d66b3280b6ac3391be3a914813f914f2f6d3bc7f3ebc0529461d",
+      "size": 17044,
+      "url": "https://github.com/chromium/chromium/commit/a21ce95c24ce3964416f09ae1862f53f319eb4d0.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "961c7e83d9434470c588f210a1bb5375f2970d73",
+      "name": "skia-961c7e83d9434470c588f210a1bb5375f2970d73.patch",
+      "sha256": "4e07a18d42c551e6ae3824bf2f571638b3746710ad17a73503067a11822ff020",
+      "size": 16422,
+      "url": "https://github.com/google/skia/commit/961c7e83d9434470c588f210a1bb5375f2970d73.patch",
+      "kind": "skia"
+    },
+    {
+      "commit": "18321f161f295cf0c3617456a321a1dee8761f71",
+      "name": "v8-18321f161f295cf0c3617456a321a1dee8761f71.patch",
+      "sha256": "bf26a98300bd898bfcf484faa3bb4c6c6d8004b836f4a4e4cf171c99bb94a159",
+      "size": 5751,
+      "url": "https://github.com/v8/v8/commit/18321f161f295cf0c3617456a321a1dee8761f71.patch",
+      "kind": "v8"
+    },
+    {
+      "commit": "b5bf5c298efb0218986f98c41b0c9279a4e8839d",
+      "name": "v8-b5bf5c298efb0218986f98c41b0c9279a4e8839d.patch",
+      "sha256": "9045ec49af8f7527a245e5250aa98f285c9104f7527c1b797ff096fe0e806988",
+      "size": 6179,
+      "url": "https://github.com/v8/v8/commit/b5bf5c298efb0218986f98c41b0c9279a4e8839d.patch",
+      "kind": "v8"
+    },
+    {
+      "commit": "aa789d9bd566b9865add4070dc6777b3266c64e9",
+      "name": "skia-aa789d9bd566b9865add4070dc6777b3266c64e9.patch",
+      "sha256": "07bb4e6a05bfcab4fe7316a79628298ae7f5a7aca3224a746ef5ccb3d4c86efd",
+      "size": 2313,
+      "url": "https://github.com/google/skia/commit/aa789d9bd566b9865add4070dc6777b3266c64e9.patch",
+      "kind": "skia"
+    },
+    {
+      "commit": "f795cb525d53c99ee2efdebad49bc2323c146844",
+      "name": "chromium-f795cb525d53c99ee2efdebad49bc2323c146844.patch",
+      "sha256": "8714ea9e578c26673f706d5f2f0f374263a38a4abfb48e0305abb14392c3eeec",
+      "size": 6362,
+      "url": "https://github.com/chromium/chromium/commit/f795cb525d53c99ee2efdebad49bc2323c146844.patch",
+      "kind": "chromium"
+    },
+    {
+      "commit": "23dd0d13e63baaf7e8cce1132604a0bc2f8a440b",
+      "name": "chromium-23dd0d13e63baaf7e8cce1132604a0bc2f8a440b.patch",
+      "sha256": "f511c8743ce73535259a6db95cd950031154acc67c90ab883dd483cc5c6ba800",
+      "size": 9091,
+      "url": "https://github.com/chromium/chromium/commit/23dd0d13e63baaf7e8cce1132604a0bc2f8a440b.patch",
+      "kind": "chromium"
+    }
+  ],
+  "adapter": {
+    "name": "qt140-residual-compatibility.patch",
+    "sha256": "17b7616f1500a90525b5fc013dbfb91a78d0f61c74b2384a428c1bf09290940e",
+    "size": 2701163
+  },
+  "regression": {
+    "name": "qt140-residual-regressions.patch",
+    "sha256": "b43880fdfacfe847105e5dfd18c6ca10a99fa5760d34e7bfdd49dfcbd5ec5faf",
+    "size": 62653
+  },
+  "files": [
+    {
+      "path": "chromium/base/metrics/persistent_memory_allocator.cc",
+      "before": {
+        "sha256": "584b8315878f8ce9a3966aa12e18f3dc0dd5a6ea63413afb85b2fb889e400fef",
+        "size": 56643
+      },
+      "after": {
+        "sha256": "463c74f65b1008575aba04a76417915bd06c42d1508e8d20665e6ccd266edc75",
+        "size": 56804
+      }
+    },
+    {
+      "path": "chromium/components/metrics/persistent_system_profile.cc",
+      "before": {
+        "sha256": "d011836f659648456626f196cffe1c23230412857d983026edded5b969f597ef",
+        "size": 17093
+      },
+      "after": {
+        "sha256": "b5319949e5d9ab1af9c3f3ec954d92c838e493bcc846845b50149b26f6ae4e96",
+        "size": 17362
+      }
+    },
+    {
+      "path": "chromium/content/browser/cache_storage/cache_storage.cc",
+      "before": {
+        "sha256": "a762d3d3d28fb33e6dd015dbf7c56b6fe1d48fbfcbef7e83e071a5b757d22e2c",
+        "size": 61450
+      },
+      "after": {
+        "sha256": "e3a74733ef9c9dd2ae36bb9b623b5e3c26f059c3b05242bfc3a5ccd83cb3dd36",
+        "size": 60181
+      }
+    },
+    {
+      "path": "chromium/content/browser/cache_storage/cache_storage.proto",
+      "before": {
+        "sha256": "c274fa5aa7cade08400b7adb6c1af66135bddcb84894c9775f4db01d28c5067e",
+        "size": 3006
+      },
+      "after": {
+        "sha256": "8ec78e14ed675c54afc88eb214d532be171fe07c092fc952b71d66704602abeb",
+        "size": 3048
+      }
+    },
+    {
+      "path": "chromium/content/browser/cache_storage/cache_storage_cache.cc",
+      "before": {
+        "sha256": "df86a30d09e89b68e0d62bf62f07a1cb0046ecce76120f5164a8f2ef0392d4ce",
+        "size": 107751
+      },
+      "after": {
+        "sha256": "dbe8c6872e791b5687e3169b9ca6351561779111f8cf263dd61b768bec024fb1",
+        "size": 108167
+      }
+    },
+    {
+      "path": "chromium/content/browser/cache_storage/cache_storage_cache_unittest.cc",
+      "before": {
+        "sha256": "af7282192624ddb67e00ab1db2cfb9b7ed7b9a382ea76b6c42d0f6184422b56d",
+        "size": 113200
+      },
+      "after": {
+        "sha256": "2f6db72844ae5502b92ba1f513de9c68eeb7da629b84c2748b045d42371a58b0",
+        "size": 114895
+      }
+    },
+    {
+      "path": "chromium/content/browser/cache_storage/cache_storage_manager_unittest.cc",
+      "before": {
+        "sha256": "2f73c4f318cbc94e5a6bcc1c5ea59ac6e22bb87b9cf70bb6449d7a0f0da43317",
+        "size": 129261
+      },
+      "after": {
+        "sha256": "d83a221ea1e6634ed5afc225fb014600fda58e3c8a7bb1b43bc9e6cb23620e7f",
+        "size": 131249
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_data_source_provider.h",
+      "before": {
+        "sha256": "7856d501b3f43781d997219a2731c6b11e35142cf9cc7220111f634d087f1c4c",
+        "size": 8686
+      },
+      "after": {
+        "sha256": "7fa8b521e838c277788aa883e1a424c8438dd07695f5011156c3c706cea1f783",
+        "size": 8476
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_data_source_provider_impl.cc",
+      "before": {
+        "sha256": "bfdf4246f239fd145f9458360855191b3f94d3620e2e2f5413612d74c4a1e30c",
+        "size": 8476
+      },
+      "after": {
+        "sha256": "d2d52750c12a2d1751abb08e33ce5512f124bc93290e8fd3a59dbc5327a45fcf",
+        "size": 9363
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_demuxer_status.h",
+      "before": {
+        "sha256": "71d874a08a97075b0f085beb413e3d5909a318aadbc77abd596a8367b8fb57dd",
+        "size": 5402
+      },
+      "after": {
+        "sha256": "e156b69b72a57f7ce0f5f150da3738c72717262a4294adf754e639048b480a6c",
+        "size": 5086
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_manifest_demuxer_engine.cc",
+      "before": {
+        "sha256": "7377a7c552cc7f8998fe1667e0868e94d7433ed789cef17f9b7e17f489ac8e4f",
+        "size": 37372
+      },
+      "after": {
+        "sha256": "6c70a11e452591177ede6614389f1fee5bc5eed33467416e552497b0a6715ac5",
+        "size": 37162
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_manifest_demuxer_engine.h",
+      "before": {
+        "sha256": "0d733f523d4adab7e9bbe415c0643fbbfe0a206b11ad24e289cd95b0951a389a",
+        "size": 15098
+      },
+      "after": {
+        "sha256": "c0bbba85a862f6a632c4a4267c9784fc63cd3da4931c49eb4df3ebaf8ef6c490",
+        "size": 15045
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_network_access_impl.cc",
+      "before": {
+        "sha256": "a66fd5f516321b498557ddf892bc1c979ce8d57df097493d6b695631b7d3880c",
+        "size": 9444
+      },
+      "after": {
+        "sha256": "e76bada341f53ed8331b1956bf8b9b2d1e38e3ccf8e23bcda7655e12c4f5bdbc",
+        "size": 9410
+      }
+    },
+    {
+      "path": "chromium/media/filters/hls_rendition_impl.cc",
+      "before": {
+        "sha256": "bc8082fa94c3b2746f1ad0674bdb6fde920bdf32a9f8d848d024bc1d1859868b",
+        "size": 20926
+      },
+      "after": {
+        "sha256": "6bda7d587538222bbf37af210821b625a7778400eeba37d4558c47ceb2555879",
+        "size": 20877
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache_transaction.cc",
+      "before": {
+        "sha256": "33cddf7a21c3fbd4fc0e3ea2046549197ae1f4f00b98ef0327a59c49820385e0",
+        "size": 151588
+      },
+      "after": {
+        "sha256": "87133ec2b3f944feba4a9cff371fa79132d5f537ec44c38562bb6fb29d797c85",
+        "size": 151710
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache_unittest.cc",
+      "before": {
+        "sha256": "6e5dcba2934f47251c7c2587ac2f537a2d7a8493dcc7786bf749cbc95f50d17b",
+        "size": 554666
+      },
+      "after": {
+        "sha256": "2531c140dccdfa67e0f6e2133caaba4712e89f6730cb113139fe04d11e351bc1",
+        "size": 557957
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache_writers.cc",
+      "before": {
+        "sha256": "a71dd08b0f8cadf3f247882af3f9d453fe04ccfc19bbc2be31cc1a96e5831cb7",
+        "size": 19516
+      },
+      "after": {
+        "sha256": "6a0fea391c9b547aed531b6af656fa7d94c1846201e319a99b14024298e7d45d",
+        "size": 19747
+      }
+    },
+    {
+      "path": "chromium/net/http/http_cache_writers.h",
+      "before": {
+        "sha256": "46c65f7d16cfc45d784a1d8580837494fb019eafb6257b5424d7320c21c50206",
+        "size": 11689
+      },
+      "after": {
+        "sha256": "9ce20e67204cbb80b5815f6c50a9544594f54b85ef02ed1d0b438cc7fd6d746c",
+        "size": 11725
+      }
+    },
+    {
+      "path": "chromium/net/http/partial_data.cc",
+      "before": {
+        "sha256": "8f18a650f7526f8476257c8999aff6e9ab8a3a252e719019342d32e6c68071fc",
+        "size": 16027
+      },
+      "after": {
+        "sha256": "d98b6c693fef5914a745c00a9c28c389b9ca9ff8f8f665af7a411913175bd382",
+        "size": 16510
+      }
+    },
+    {
+      "path": "chromium/net/http/partial_data.h",
+      "before": {
+        "sha256": "ac74d170eecd227f9337572bf7dfb2ab6ba54b09e31baf86e35d148d30376743",
+        "size": 7159
+      },
+      "after": {
+        "sha256": "8b6c60d4b3f0b228508dba8bd9007c24ad59d31232b967373ca637676059291a",
+        "size": 7373
+      }
+    },
+    {
+      "path": "chromium/storage/browser/quota/quota_database.cc",
+      "before": {
+        "sha256": "b0ab5c1db8a46c8d1d8153c4b62a53c80d1ef7a3e6ee367963e279f35b9d9ebd",
+        "size": 45831
+      },
+      "after": {
+        "sha256": "360fa00780ecae028198e2da0730eed412df4af76228224a05bb05affe618de8",
+        "size": 44444
+      }
+    },
+    {
+      "path": "chromium/storage/browser/quota/quota_database.h",
+      "before": {
+        "sha256": "2d562306fc10c1fe9eceed1c0b958a2711ab5818454f4b312e8ef0017332eb87",
+        "size": 14061
+      },
+      "after": {
+        "sha256": "ac564c754388d30552e1c61b06cae60fe856699b86b80e1e323837fdfb6c77f8",
+        "size": 13987
+      }
+    },
+    {
+      "path": "chromium/storage/browser/quota/quota_database_unittest.cc",
+      "before": {
+        "sha256": "192376961c60786ae05f0d0d6333a69baad899ac021757b125be8dbb956f4ee7",
+        "size": 54219
+      },
+      "after": {
+        "sha256": "2355322bb85e241354d3c42139b7b5e2934da46e59b8c65316dfeedbaaedcda3",
+        "size": 53541
+      }
+    },
+    {
+      "path": "chromium/storage/browser/quota/storage_directory.cc",
+      "before": {
+        "sha256": "bf91a8217b7199991b6c73a1686d80ea34c0bfd33c61aeabca28670a7c10959f",
+        "size": 3019
+      },
+      "after": {
+        "sha256": "a6dd3f8e3c4c874ef11780b279c7832a004099e0fae653bc132523127bf75ceb",
+        "size": 4361
+      }
+    },
+    {
+      "path": "chromium/storage/browser/quota/storage_directory_unittest.cc",
+      "before": {
+        "sha256": "672d1eb0daf1dd6933bc7420f515eb74420088cb3f13e1f00845493feb63ff63",
+        "size": 6171
+      },
+      "after": {
+        "sha256": "050f94526cb8a1aa4846e9cdaec92789fb0d1aeb424f7f7067672afd751a75c9",
+        "size": 10204
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/BufferMtl.mm",
+      "before": {
+        "sha256": "fc1b77b345f046a0b89e7872d5e2ebb301b7965a7bdb5e2e2872ba5cb6c73b17",
+        "size": 29835
+      },
+      "after": {
+        "sha256": "6bdff79b6def25bf1c6c82c60e80db3b3c2c99bcdb7aeac791056e89d237da12",
+        "size": 29950
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.h",
+      "before": {
+        "sha256": "35f44137416bdd75a34b165ee639d989ac827fca1f8003d5b3e64cf0d8f294ec",
+        "size": 31999
+      },
+      "after": {
+        "sha256": "935ae8cc3bdd1ac6256565d8427f9b085b3ef924d6d8f6572ee2e60b37943025",
+        "size": 32030
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/ContextMtl.mm",
+      "before": {
+        "sha256": "198493535c7837d5d60c30d7b68ee99697ce3af81eb1d207f52f4b8e3ad7a9c9",
+        "size": 121286
+      },
+      "after": {
+        "sha256": "d5e0e5205fe1d745483f8c87fc47d75928f7c3f7158661534516ddb4fbd7c3ff",
+        "size": 121726
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/FrameBufferMtl.mm",
+      "before": {
+        "sha256": "f75f70bccba60c0b8adfb8af88e7d0ac5ab7bf6172cdf18566d7cea32c62074d",
+        "size": 74377
+      },
+      "after": {
+        "sha256": "274a8109afe83ecb20b47a721233bb3e590f0b7da6431b307caddd852e5c65e0",
+        "size": 74764
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.h",
+      "before": {
+        "sha256": "93bee059f7df2231b322dcde01b972e0a0bd5ad1e0fec2cfc63f8f1188aa7f50",
+        "size": 29352
+      },
+      "after": {
+        "sha256": "1699b62e30a7e002e249c0547886b04fdfe0717abf43fc39923185eaf5ac4c39",
+        "size": 29301
+      }
+    },
+    {
+      "path": "chromium/third_party/angle/src/libANGLE/renderer/metal/mtl_command_buffer.mm",
+      "before": {
+        "sha256": "214d0340aa6371186b674e427c5bda4865088d39e045a9fc159a21b4e2a56771",
+        "size": 87632
+      },
+      "after": {
+        "sha256": "654699e33d1b06b8050eddf66f94a9163a86af29b9c890474e94c0890d788863",
+        "size": 88362
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/dom/element.cc",
+      "before": {
+        "sha256": "4a20b5f176664c9fd8ff55efdac4c71c2afd4f3677e1d264a8a9af66a7cbfb93",
+        "size": 473148
+      },
+      "after": {
+        "sha256": "fde5545ebc96bb955da554b99b5bf3ce287cc88524f3bb4582e4d8a66d640744",
+        "size": 473106
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/focus_event.cc",
+      "before": {
+        "sha256": "3d45b0aaf72394979ed3c37eed5faeae64a220fb86789fbaf10c518216e1586f",
+        "size": 3110
+      },
+      "after": {
+        "sha256": "b8bcb7290eff28f239d7baf28fc516fce46d22a2246829594026479ce6a28fb7",
+        "size": 3182
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/mouse_event.cc",
+      "before": {
+        "sha256": "946b199d5a1b8319cbecfbea4377b14f8dc501597c384eae9f0f5c9565ecbd9a",
+        "size": 22860
+      },
+      "after": {
+        "sha256": "e2638fdb88a5e586aa2802e92b7c9a5e05154cb342214ba902b64bcc70e58140",
+        "size": 23039
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/mouse_event.h",
+      "before": {
+        "sha256": "2d9afdb819b71e7a07f3ba24dc937be6fc3b0806b5aa4586863752d4301a0856",
+        "size": 8946
+      },
+      "after": {
+        "sha256": "f69697b121fce777bb6a12e0c5ef7ffd993b6ebef16f15e2826316e1db6dc189",
+        "size": 8946
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/pointer_event.cc",
+      "before": {
+        "sha256": "53a3ecee9e7f108e173094005fed493f8d7e540977e639b99f8b575b0c857ead",
+        "size": 7491
+      },
+      "after": {
+        "sha256": "39936efccbb782d94f66c78d527e2a40195c4dec8bfbd7eba4c70b78cfca5707",
+        "size": 7563
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/ui_event.cc",
+      "before": {
+        "sha256": "59cd3db308bf67731be5146619b3a4c912c9b17e6be8ab78d3a7faa0daf55514",
+        "size": 3460
+      },
+      "after": {
+        "sha256": "3582ce3aaf01e79331dce4077566b807014a38812a021a5f4200af238d241dc9",
+        "size": 4493
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/events/ui_event.h",
+      "before": {
+        "sha256": "dc69c179ad1caa4c926bf3a5ce57f9422513a1412b1b156627f249af8875c597",
+        "size": 3649
+      },
+      "after": {
+        "sha256": "bac8ceaf148278f7b234f65070539c789143e3624a8773b024fec5158c695cca",
+        "size": 3946
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/execution_context/execution_context.cc",
+      "before": {
+        "sha256": "6337fce01241770fd86b2a88f44f1b15e68e954002b83f81705e3da3b749179e",
+        "size": 27941
+      },
+      "after": {
+        "sha256": "6a68442c1e300a43e17d72c7dbba63a29fce49c6c962625042022d8be85cf44d",
+        "size": 28533
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/execution_context/execution_context.h",
+      "before": {
+        "sha256": "d2e6087df7fd203d003089ee58fa550c6cc0f403220f1f9c72bb56b00bd78b16",
+        "size": 22926
+      },
+      "after": {
+        "sha256": "536ff1ea7bde44a0c81028222bb2d0156e37975fd13c845ab1cbf4cfeef46beb",
+        "size": 22974
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/frame/fullscreen_controller.cc",
+      "before": {
+        "sha256": "92d3db6b9bfb787b3dd495b5304e44476811035fd9d9af2bddff35e23e87b965",
+        "size": 14746
+      },
+      "after": {
+        "sha256": "7d616272c9dd349d37566d1179ff9780a045f5af295b93180346583885e1b6d3",
+        "size": 14811
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc",
+      "before": {
+        "sha256": "0bc0fb1e1ab92c8af48574c23ec177bee912f45659bde50b70621dbd7eb1d62f",
+        "size": 16184
+      },
+      "after": {
+        "sha256": "a4cce849615b2a59258796b91f79738dccf63974345c43071dae00e58a6d66db",
+        "size": 16193
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/highlight/highlight_registry_test.cc",
+      "before": {
+        "sha256": "7efc0ad25ef38b482ea03bf989122f89eec01ba8bc98bcbaed3f8a9793c7598a",
+        "size": 18226
+      },
+      "after": {
+        "sha256": "aea3ad34abcb24b445aacb805dea3a86a9a8bb68327d9edccea2370537021a05",
+        "size": 22492
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/html/lazy_load_image_observer.cc",
+      "before": {
+        "sha256": "d8f5e19b6a9d00acb50a922cad7acbc05b9a608bd3988e05cec2cfb68f286fa5",
+        "size": 7145
+      },
+      "after": {
+        "sha256": "5cd99711807fcdab4d2475cd91ea63cc5d8d0f1749766cbc1e88623a27b97821",
+        "size": 7112
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc",
+      "before": {
+        "sha256": "59b4f6d27ed0e218f7806367ba25e4cb13f3494d1a9e5c7b334fca1ddc48d66c",
+        "size": 5743
+      },
+      "after": {
+        "sha256": "1c080369476e94b3637629f4495f3e75d9056b1170128af8f7837aac1a334a87",
+        "size": 9701
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h",
+      "before": {
+        "sha256": "6d87036382c8c0b3d666a762755799decd3ab27908ca0ca3b11bf4f9cb9ad5d0",
+        "size": 1726
+      },
+      "after": {
+        "sha256": "1924789b08e0ff29fa488dc705988e8a87570fc56277b048080d59136ad34ec2",
+        "size": 1930
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/page/page.cc",
+      "before": {
+        "sha256": "8b691a2a409c8e508d4752d9ad113c4b35785959da34a363cb6e6bce2c9adc92",
+        "size": 60870
+      },
+      "after": {
+        "sha256": "a52956b0007d5e4fa7e90070cf1211a0850f54089ac96375e5b4971c28c059b6",
+        "size": 61013
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/core/scheduler/dom_task_signal.cc",
+      "before": {
+        "sha256": "39d0fce9337fe84ca69dd58157af224d6eb445623772613f1d51ca17923b86c7",
+        "size": 6897
+      },
+      "after": {
+        "sha256": "e435f03ac15f0d414bbf2285ded9f6c0a2a112ea69e8d211bf8e5dfef4d20b1c",
+        "size": 6953
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5",
+      "before": {
+        "sha256": "97c6f2c5c013cf57202b17100102daa17f29475a4efecac6a8a0c3b19f8b1059",
+        "size": 178429
+      },
+      "after": {
+        "sha256": "02cf084e0e9d9158cc1989ba877288b5a07d6b623688ad1537ab6966b717bc9c",
+        "size": 178511
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/wtf/hash_table.h",
+      "before": {
+        "sha256": "0d5db7a7137c9ede6a74fd5abd4040979e438085dbe7ab990a660e6024b49b6c",
+        "size": 73782
+      },
+      "after": {
+        "sha256": "644b913c55f5acec757b7de143f5bae6fb0760e03f1726a9b966cbd2a4ae6bbc",
+        "size": 73800
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/renderer/platform/wtf/linked_hash_set.h",
+      "before": {
+        "sha256": "8224b8ca6bdad547af1685b47ae54ebe71bfee1c59dcd25a61b04c37f95ae9fc",
+        "size": 17482
+      },
+      "after": {
+        "sha256": "627bf7b4a1890a3ea760ca1415de75a7467b7c71cbfa03021076699ef7f0354f",
+        "size": 18061
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/external/wpt/html/dom/documents/dom-tree-accessors/nameditem-insertion-attr-mutation.html",
+      "before": null,
+      "after": {
+        "sha256": "e6d064b4f0f8465abc01f2b94bc886896a51bf686099493c289bf16f5814a929",
+        "size": 1706
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html",
+      "before": null,
+      "after": {
+        "sha256": "ac9eedc2c42aa072fb280630a976bfe5a1c7fef1b61ce89355475d9ac2c8b409",
+        "size": 12557
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_origin.html",
+      "before": null,
+      "after": {
+        "sha256": "17bdd752f9fa4df3d9a7d65ce341294e9c2bb7170212127140d6acf156b3f4a2",
+        "size": 11389
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/external/wpt/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html",
+      "before": null,
+      "after": {
+        "sha256": "ca8bfb3cb75613794748ac3d49e8bad02fa79903bd6d0b6431b87265d60b0be5",
+        "size": 1998
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/inspector-protocol/runtime/runtime-exception-thrown-nested-expected.txt",
+      "before": null,
+      "after": {
+        "sha256": "c535a3d9eede6fbe75db07e296d096c562621e1bf7c41eeaa5791b431ae645d9",
+        "size": 163
+      }
+    },
+    {
+      "path": "chromium/third_party/blink/web_tests/inspector-protocol/runtime/runtime-exception-thrown-nested.js",
+      "before": null,
+      "after": {
+        "sha256": "a234ca87edf71e357488cc51e74367f5ab3d3054523d0e1976e4df76404077af",
+        "size": 1335
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/BUILD.gn",
+      "before": {
+        "sha256": "286249f07ab9d62ad19197c48ae9db99642f585cf18332ea55fb9960c674e17b",
+        "size": 5665
+      },
+      "after": {
+        "sha256": "30ea580878c52ecece3dd3fc1a230c25c64abd74b32f9d86cb52e9078e641301",
+        "size": 6252
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/OWNERS",
+      "before": {
+        "sha256": "c1cb2530612367f47713ff2303819a894f1c2a6e2345a44b8a2850aefc82a278",
+        "size": 19
+      },
+      "after": {
+        "sha256": "375fa9faad0e37c01782d60f84fbd7f2062b203514921a8055874e7211939a1f",
+        "size": 40
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/README.chromium",
+      "before": {
+        "sha256": "6f0dfdf642a0d11a139fc3da67fe64092dd5a5e29f67260677ee978d36dfefb8",
+        "size": 1156
+      },
+      "after": {
+        "sha256": "227ddaffa9d6c90b6fb33b7d141726cc655ee1ce82c1a8aa2c09717434850470",
+        "size": 1156
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/README.md",
+      "before": {
+        "sha256": "77a118b62113cc4a0b69162a1412e25e939d026fed0ce1392e90349f76e95189",
+        "size": 3243
+      },
+      "after": {
+        "sha256": "e45155f191dab9d8999a85060a2ccb0cda94810868fcc816a0dae46d9aa04c97",
+        "size": 4586
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/constants.c",
+      "before": {
+        "sha256": "d3bc1f0582e0f9f4f506518b3d1696510669cd6695b036eb72f4c53d6fb3f7fd",
+        "size": 621
+      },
+      "after": {
+        "sha256": "630f40ca2ac787025175eaf39b9569a60aff6ddec7e5085197e4cb0d43641b0d",
+        "size": 619
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/constants.h",
+      "before": {
+        "sha256": "7eb2a466725e6917a92c0ffa6b58ed2401747ae061f51f7977b62919b08c8e9b",
+        "size": 8010
+      },
+      "after": {
+        "sha256": "c9c898542360e811dc44aa9be270d21ce0d18f3ecf45310f3d9f285f3692a59e",
+        "size": 7977
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/context.c",
+      "before": {
+        "sha256": "ecad01b8542ea42f0f58408cd73ceb2aa24feb814ba2f8c2ace6bb173a8179be",
+        "size": 7965
+      },
+      "after": {
+        "sha256": "c9aa1acb35af38c90c4a38ba168885b649838236b2d57adb5e76d687bdbe252e",
+        "size": 7983
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/context.h",
+      "before": {
+        "sha256": "c7dc4baae59379679c57c9eb7019ac82199c9b42cd73ffba509b29529f5c753c",
+        "size": 4666
+      },
+      "after": {
+        "sha256": "2745ef910928a4acd58e1cb98128a0a228fa1812c61e69538c9d393d405bf047",
+        "size": 4637
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/dictionary.c",
+      "before": {
+        "sha256": "277d9f2e9adbcb9e22b8419d24d6e0b93922c822850ee5cfdb447dc3c8887146",
+        "size": 472005
+      },
+      "after": {
+        "sha256": "0890056e4ae595efab6bbf3bf1fd244332e2cfad3adcb9f5793ee29a8f3a18c5",
+        "size": 1558
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/dictionary.h",
+      "before": {
+        "sha256": "5d1679aea2303fba4ae7afc47f0ab1c5e8b0bb3bba1692ed005da4a6d4c28e49",
+        "size": 1951
+      },
+      "after": {
+        "sha256": "bfb4f010a2279c53a039ec6f095a12ab62c7d49ab138e385a16caf3904341b10",
+        "size": 1922
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/dictionary_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "55b98973df9dcb353bd78b2b573fb7338ab55d98fb5571ad93939095978768e8",
+        "size": 470432
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/platform.c",
+      "before": {
+        "sha256": "8ebefea82392140320e958b21fed517ad7428535c937085ee8d1a4eb20e2290a",
+        "size": 512
+      },
+      "after": {
+        "sha256": "fce95889e6b1d1a91c0baa2ee0f3b83a41b670a4f51a5053185ffbed6bde71fd",
+        "size": 465
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/platform.h",
+      "before": {
+        "sha256": "f4e6181ec1d09021c62ffd797521bd687e6cb856b9a8354a4f3ca55c167c1bc3",
+        "size": 20695
+      },
+      "after": {
+        "sha256": "e7a9b84f71ffe037472729db11e81bee7092f4af5672b21d5bff20f454e84636",
+        "size": 23958
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/shared_dictionary.c",
+      "before": {
+        "sha256": "442345022ae01ede176d228ede9de040aa7bf8f7e1651f4bb9125ba11947f892",
+        "size": 17304
+      },
+      "after": {
+        "sha256": "0cf405b0155230e060b9e0855bb22379037362948828b98338f203be07923d0e",
+        "size": 17347
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/shared_dictionary_internal.h",
+      "before": {
+        "sha256": "d8bab8d1889e1daac8a5e68b2dec32d6bd47c71e863496c3149107e7003d748f",
+        "size": 2412
+      },
+      "after": {
+        "sha256": "e9e343e5d4ddd0f87a9579aab6796dd82af08639abfda122e874a97e896c6b6a",
+        "size": 2409
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/static_init.h",
+      "before": null,
+      "after": {
+        "sha256": "be55ce94cace1a6c9dd9460ae30a5b7942834fd8c1003ffdef56df0b35dbcfd7",
+        "size": 1996
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/transform.c",
+      "before": {
+        "sha256": "9f91d725dd2e6cbfd886ece385bed079edd2288a610031384f985dba38839486",
+        "size": 10677
+      },
+      "after": {
+        "sha256": "47f229a79c3542ea57ec07145d7eaf77300a02816d95695332f9911ea19d6ab3",
+        "size": 10787
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/transform.h",
+      "before": {
+        "sha256": "3a28f38539e661f22b8f7cd6478b76f1916903caa5b6ae708577c62ef3559122",
+        "size": 3209
+      },
+      "after": {
+        "sha256": "b79dd99d1dcc618c1a4284b74dd04adda099fc3f65f906924991a736e09c125c",
+        "size": 3180
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/common/version.h",
+      "before": {
+        "sha256": "b14882569196b08c352df9478b1d566723827d768b7e7f50741bdd08307a3b74",
+        "size": 871
+      },
+      "after": {
+        "sha256": "792d03d8feff8168edf639899f72b71a37e9cbd9f178e3be397ccef29d3346b0",
+        "size": 1723
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/bit_reader.c",
+      "before": {
+        "sha256": "4d65c5d47b38fe6d3eca79d036a7757a661b16ead0a8b386cd41016375940f70",
+        "size": 2260
+      },
+      "after": {
+        "sha256": "6126ebebd3adbc96430c2b75ccaec02b188901f2a17960e6a4606470e71925ec",
+        "size": 2264
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/bit_reader.h",
+      "before": {
+        "sha256": "1f10bd07c44764a69008e8ef1a97287493073e7f39dc7cca3b534bd242fa02c4",
+        "size": 12251
+      },
+      "after": {
+        "sha256": "f23fbb82054c5e4405e2a262df9cf4c4756b3e0e476ac849c0dd8f741018d161",
+        "size": 14792
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/decode.c",
+      "before": {
+        "sha256": "48591f9bafcf49390f5d44c1a201e5121860ffdfdf1066715c315e4e56090159",
+        "size": 101068
+      },
+      "after": {
+        "sha256": "d48bc54c60553238d50db2fcd606522efd447d33a37d6a2d5c2ea1ece22067c3",
+        "size": 109313
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/huffman.c",
+      "before": {
+        "sha256": "a90880cf590b092305721df60549c6f3b35e744d03e78f41e7616a32b459b3c7",
+        "size": 11916
+      },
+      "after": {
+        "sha256": "b7c973c2918c6765c4eb534c3ae314055d535b6d1fafb021cee5f7eae170aae6",
+        "size": 11948
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/huffman.h",
+      "before": {
+        "sha256": "9de651fec2709074cb20afdbd937d4bb2e8f5fcd51909d865196052794ca63dd",
+        "size": 4106
+      },
+      "after": {
+        "sha256": "09f3a1f7608b09df131342c9759f4a63c19b0e784bda5e474ec01eb72699079d",
+        "size": 4080
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/prefix.c",
+      "before": null,
+      "after": {
+        "sha256": "0a31304f440f7bb2017d52b83ae35cb428cbc5ac2fc172c8eec2fea449c2f7cd",
+        "size": 2529
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/prefix.h",
+      "before": {
+        "sha256": "914d6c55edd814e8951f0ff6a43391e99845c25d0b907f5c8c5f0bfa5f38a167",
+        "size": 31611
+      },
+      "after": {
+        "sha256": "fe1f3630f78a0ed3f79146a52d8e480c12d130ccfe9781f03d0edc581c3b9e83",
+        "size": 1250
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/prefix_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "e1ade26b7b1e1e56b1a91af20ef93f81ef7a4ed83e0543fd6d9eb29f5c6d2983",
+        "size": 30933
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/state.c",
+      "before": {
+        "sha256": "a15727c29b45f8a7cd1cf2d27cc4898a417ace121084dfd2ff078e6954c52c9f",
+        "size": 5121
+      },
+      "after": {
+        "sha256": "66a7c3d9c01cda374d33d3693ba45d059ff00b12114a8844ee4f2519ba2af14e",
+        "size": 5871
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/state.h",
+      "before": {
+        "sha256": "6bb00f35a95dfa37e4ef50711660da77c90ad0a6c84272b97df12ff822ef8b9f",
+        "size": 11833
+      },
+      "after": {
+        "sha256": "8937c3799c177eacfaf3c0dba8da8c2558f435d6baffa2d787aec3212eaca041",
+        "size": 12452
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/static_init.c",
+      "before": null,
+      "after": {
+        "sha256": "a4a308e394fe05a124d919977b3f457a06363615a882dce058f329edcf7dc851",
+        "size": 1444
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/dec/static_init.h",
+      "before": null,
+      "after": {
+        "sha256": "a4f13d0e5c770ad92fb2d6b8d4a8f93bfe70b1e97352306636a1119a6f44f270",
+        "size": 840
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/backward_references.c",
+      "before": {
+        "sha256": "1f87706164d926055c6ea9f9d3b00f863772d22a8d091fb58003e56142a8f766",
+        "size": 5614
+      },
+      "after": {
+        "sha256": "4c59bbd520d4a2cfce5c0971e90533fbc6d202af5d3ed50b451b13cc15f98e6f",
+        "size": 6521
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/backward_references.h",
+      "before": {
+        "sha256": "b798b60bffb5e831a5b4e6324cc38a19e787d95b55566771f66f9f540fac95ca",
+        "size": 1300
+      },
+      "after": {
+        "sha256": "ab3af6c955add46840b8e920ae2daf5afb971b7c9ad05ad0720bdfc9aabc298b",
+        "size": 1206
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/backward_references_hq.c",
+      "before": {
+        "sha256": "94c4b7f378633b9e3b348442c9cf4386a0de1d1d6a74033528675e572ab156a4",
+        "size": 36638
+      },
+      "after": {
+        "sha256": "6cfa50eaae8e0e56627c72d61c71c818dcae377bdb6f382abd74831fd0cc39b2",
+        "size": 36740
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/backward_references_hq.h",
+      "before": {
+        "sha256": "c8e92a395ddc46b076426ea07020f5d0857dfd08b2494a69c4cb2a3089bdc977",
+        "size": 3867
+      },
+      "after": {
+        "sha256": "6ffa64b045c878600aa694f92b301cf6ff854e0e79959aeb9e124864789e210d",
+        "size": 3773
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/bit_cost.c",
+      "before": {
+        "sha256": "65fbefbb93865252353624222819a3c74cbad5fcbed3aaea40e3dd9900ac4a8c",
+        "size": 812
+      },
+      "after": {
+        "sha256": "544c6af87753f9e540873c2b7984d73297a53576fc0b352b34121687be2f08e4",
+        "size": 1427
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/bit_cost.h",
+      "before": {
+        "sha256": "4d9f5fe0b8a8af7b4038589fce2e7cbc432e17de46f511b87a8fed8eca365cfd",
+        "size": 1684
+      },
+      "after": {
+        "sha256": "1336cd6c28117921ad0275a39188d17ee91eb96e8b6e362c940df488ab8068a1",
+        "size": 896
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/bit_cost_inc.h",
+      "before": {
+        "sha256": "69cc09f85cc225e6b4207d8a76f4b7fc743e2e3de2f02b754830d46aa22428d1",
+        "size": 4109
+      },
+      "after": {
+        "sha256": "71a2c3736f0039df51ba6b38741356fdbd0792d4f1068adfdaecf0df84f04329",
+        "size": 4115
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/block_splitter.c",
+      "before": {
+        "sha256": "209c7550d5b1ff7334c3c4524135f71dc5cb9782908dd147d8dbf182f3ab9a9b",
+        "size": 7395
+      },
+      "after": {
+        "sha256": "34699e570f752cf0bd2643cb8d6a6b17e79add6856bdaf0b6007927fe509c5b1",
+        "size": 7330
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/block_splitter.h",
+      "before": {
+        "sha256": "03871c90304fd0f51285938d8ba7a6720a153186bcfcf3334aa8b227c9091826",
+        "size": 1673
+      },
+      "after": {
+        "sha256": "f43db7ef733e5c87dd1fe9cef2465e02dde91d0121efae74b2c1c357ed1db267",
+        "size": 1626
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/block_splitter_inc.h",
+      "before": {
+        "sha256": "871dc10f4cf2d3385a4bc25f469e5d44349bc61ae52fdef82a77382fbdf7d196",
+        "size": 18673
+      },
+      "after": {
+        "sha256": "4fd9d95ac3fc08992d6fe3d9cc7855a62417326046bb0666b8ad7196abd3c944",
+        "size": 18879
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/brotli_bit_stream.c",
+      "before": {
+        "sha256": "727a6da5db6b76fcaa36099234f15c1db4f12511a095c6ace4eb72b3608d0ed7",
+        "size": 50749
+      },
+      "after": {
+        "sha256": "ea95e71753a6b1b651e5315013900c5d79eb074245be750d1afc3ec5a8b19982",
+        "size": 50915
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/brotli_bit_stream.h",
+      "before": {
+        "sha256": "7552203b1bd66f8f53e3b404ab21cff1b4d02f753eebf98b208b75e8a5eac6e8",
+        "size": 3476
+      },
+      "after": {
+        "sha256": "747101dc514e7257e06c268bac2de9696fbb36ebc1a05787b67c6a2b52a7376e",
+        "size": 3338
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/cluster.c",
+      "before": {
+        "sha256": "ce9d079d3f58e2aeb99252ea53ddf052d8f88050ad45bda87bfa26cd6c8a0961",
+        "size": 1484
+      },
+      "after": {
+        "sha256": "23d58bc8b628c9d168f8911d9304d4964e0f992f68e6d62daefe7eb837b07cb4",
+        "size": 1458
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/cluster.h",
+      "before": {
+        "sha256": "3d85ac5a157ab97cff8e8fa0117e94e6573650ebbc6b7c6cae9f9c36dda2ebfe",
+        "size": 1023
+      },
+      "after": {
+        "sha256": "fad2c4dea68fa93cfa61fe2234421163b15e0952446c583053a34a4b70b856bc",
+        "size": 997
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/command.c",
+      "before": {
+        "sha256": "f93d033669d672a31a699ab7bd55c829204e85681e12cefdcb4ac3652f0dacd8",
+        "size": 1019
+      },
+      "after": {
+        "sha256": "3f72daa062889ce5e662993095da5477f47815896867476b3f7b34d3a67fbd9d",
+        "size": 1025
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/command.h",
+      "before": {
+        "sha256": "31183ab19798ef8d65c337da8463a461b533fa3d21f31e170a6e2d134fe0a1de",
+        "size": 6891
+      },
+      "after": {
+        "sha256": "2e64e8b9ff12ae9be4c711ad25534f9c93b0fbac82f5a843ac42cc0a8168e1fb",
+        "size": 6937
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compound_dictionary.c",
+      "before": {
+        "sha256": "6c1a0240a3102ea6bbe9ca37aaf5204e232c1c38140b21d26e0e4901fc2f60fc",
+        "size": 6357
+      },
+      "after": {
+        "sha256": "4046dd0040ad51d4a550a747e5c4643d7cf801de426698e7566e8e2fc0c1c9ae",
+        "size": 6651
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compound_dictionary.h",
+      "before": {
+        "sha256": "9ec86a3e7542537356310101fcc7271895793efc0f2c1586e89d5b46a8044933",
+        "size": 1885
+      },
+      "after": {
+        "sha256": "8a1926225d68075c58259260470fe193115748df5419c27b816f86473426cdd5",
+        "size": 2433
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compress_fragment.c",
+      "before": {
+        "sha256": "fa6d1154c34507635e8b251f025f7e63eb6f6311b736f3d478619c743a05acb1",
+        "size": 33254
+      },
+      "after": {
+        "sha256": "0e14cfce93c2a461a5d6be626e9ed30340bab980ccc76f502a23d2c112c7c94f",
+        "size": 32875
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compress_fragment.h",
+      "before": {
+        "sha256": "9af9ef2f7eadfaa1bbc1646212e39dedbce3482c38ce588d1cceb0479f89de24",
+        "size": 3597
+      },
+      "after": {
+        "sha256": "3b91f1b14055d1908fcfd03bdc4a7fc52371233bb1c6ff28755f5248f5726a82",
+        "size": 3571
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compress_fragment_two_pass.c",
+      "before": {
+        "sha256": "dba50febbd7b25e5f34c933907039658106e6c486bdbc5bf339ed72bc63eb444",
+        "size": 27181
+      },
+      "after": {
+        "sha256": "938fc18b7a5f1e41f360a167a31a7297920160f08bff92f04d97788c3d32bfd6",
+        "size": 26806
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/compress_fragment_two_pass.h",
+      "before": {
+        "sha256": "2b9605ddff3abd4cd2a09f69c882e6eea080b60c3bacdd8b8e0953df2dfe2796",
+        "size": 2878
+      },
+      "after": {
+        "sha256": "aae9785aa1003e14b3eeccc263c4e583c48871577a92bf0662de40763c7fb73e",
+        "size": 2852
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/dictionary_hash.c",
+      "before": {
+        "sha256": "be7df2cc9dff4184632ee23a487f1c4d7d52260ec7e74a4d6fa41cd3552c2365",
+        "size": 147154
+      },
+      "after": {
+        "sha256": "1225337a2bad9cc08d72671757682ec90ab99388f00bfa73cd469a5e6e5e9778",
+        "size": 7932
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/dictionary_hash.h",
+      "before": {
+        "sha256": "5832378fc20a2becae2e2e84e823b33fe00f6decec12916ad744a54cab106df4",
+        "size": 646
+      },
+      "after": {
+        "sha256": "a0b125ef70ac49b0d0006aa30a8d226d5f8d1756c82c3c0d50ce08e9ecf4f4a0",
+        "size": 1532
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/dictionary_hash_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "6effa6998dbb024d12766b9240beb549a8ee50fd6fdadf4a61ec8899eb9ac4d4",
+        "size": 146714
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/encode.c",
+      "before": {
+        "sha256": "64bad1a26c25db85be77646441aca803ac219f20bd8e15d86f5c6a981dcdf64d",
+        "size": 87082
+      },
+      "after": {
+        "sha256": "b2647d12cccc3d3852f80637b04b0c4d5849254db0f3496f2e11bcad29eecc32",
+        "size": 78422
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/encoder_dict.c",
+      "before": {
+        "sha256": "e8c3c998d339b06e2424df22f82235793a4d2d081c2d0c033a811ff81233f0b2",
+        "size": 23147
+      },
+      "after": {
+        "sha256": "2c538ce0bf35bce2f05b270a2f165793661fc7a427d91f355c2722a3dd345b11",
+        "size": 23378
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/encoder_dict.h",
+      "before": {
+        "sha256": "d824f4c88ed53ef81032c9715fd9fc703196bd948b74450e4097c3a3e96a0284",
+        "size": 5030
+      },
+      "after": {
+        "sha256": "e300e61e3b464c7e572bf1921547949e3cb0e87f24770ff611c75ef8459f398d",
+        "size": 5020
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/entropy_encode.c",
+      "before": {
+        "sha256": "9f3ec7e55449998af2805fb151e7938d8bf2de17d60fa7aebe81389a0280958a",
+        "size": 14583
+      },
+      "after": {
+        "sha256": "ea15125ed036547e57553a56b04ac50eb91a48424ccc5cf29d13433419fa4723",
+        "size": 14568
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/entropy_encode.h",
+      "before": {
+        "sha256": "9047de319d4388a863ed9cd4bde3546bce3bed148f6edfa46c2b7e2c36f466f5",
+        "size": 4056
+      },
+      "after": {
+        "sha256": "d916681f7aa9fe1ed3ec671be2d5b0687e0ac5c67f0f69dd781084746751899e",
+        "size": 4055
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/entropy_encode_static.h",
+      "before": {
+        "sha256": "c7ddaffa6bc3e3480f6e7296c6ffe355470cda6ed4d35eae00f435a698c7a25e",
+        "size": 32950
+      },
+      "after": {
+        "sha256": "ff27cd498408d797baa4cd6750b8282c4d70100b4c000346e2a888102451debf",
+        "size": 33144
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/fast_log.c",
+      "before": {
+        "sha256": "dd942802bed5f34cbbec595e46407f7b706f304e70e11cd1f616958153c75095",
+        "size": 6024
+      },
+      "after": {
+        "sha256": "7e08232d781a8e4a92f59869a492b0a8982cb3e3c51b2d4be808f59f8643dc88",
+        "size": 6046
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/fast_log.h",
+      "before": {
+        "sha256": "d2fc12f7b6f5f34579f070781166e132487f5e8712d717212395e8c98bd63a47",
+        "size": 1649
+      },
+      "after": {
+        "sha256": "74a76746f3eb2e673411d0563ff22a22575d0be4dcb29da0a5ee2039aed6df43",
+        "size": 1645
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/find_match_length.h",
+      "before": {
+        "sha256": "23179fd76459ab7ef31c7bd43be27596b8d16709001a6d14e34d5a1931aca59b",
+        "size": 2533
+      },
+      "after": {
+        "sha256": "d03ef29e28f89b4b74124d0315e173014cbd724dcff4d3020a9b2aad0d8e60b7",
+        "size": 2167
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash.h",
+      "before": {
+        "sha256": "b4e5a9ad638d84a479b3405977ec0029566fc292e21300bf800fa0ad36b1f066",
+        "size": 23887
+      },
+      "after": {
+        "sha256": "679da462004871e6bbee52649e29b4f7a5615dd9099d5f0b0e8e09ce8b5213f8",
+        "size": 24304
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_base.h",
+      "before": null,
+      "after": {
+        "sha256": "e51ef6971fe4ab11a58eb524013999645b595779b4519dc6c10af4c333a48d9b",
+        "size": 1370
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_forgetful_chain_inc.h",
+      "before": {
+        "sha256": "f0b89b82797e20cacccedfe2aeccdc65f6c728231a153cfc063be14dacf911da",
+        "size": 10971
+      },
+      "after": {
+        "sha256": "3dacf20306b199076c8cd244efd1e03e6623e378d3ea2a0ff05932628e76c407",
+        "size": 11321
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_longest_match64_inc.h",
+      "before": {
+        "sha256": "ba467f6687965a062866f3b7b4025fbffbca26d5f4b1defd7194de80d03d9b55",
+        "size": 10504
+      },
+      "after": {
+        "sha256": "fc3e40fc5bbb8e7bc31fb63ca46a390e80d269375ccbd86883c0da67c993f667",
+        "size": 10659
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_longest_match64_simd_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "2648f19083bacf378bc57bc15ab05274be879891cc0e2e4238f6c3c5401b13ae",
+        "size": 11839
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_longest_match_inc.h",
+      "before": {
+        "sha256": "bb99874f480bd57884c7bcabc24f91b3cb0a4d03c1dff4e85eabf5c354b42a21",
+        "size": 9991
+      },
+      "after": {
+        "sha256": "fbb64fc2765277c829bc846a20253c1622f163117ecc05c86c1428154fd64ade",
+        "size": 10593
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_longest_match_quickly_inc.h",
+      "before": {
+        "sha256": "f3578a04b695d7974744365f61bad5e6664fd5baa3efb985c7f4e77f0e883006",
+        "size": 9340
+      },
+      "after": {
+        "sha256": "7c18eac6a53c13d8ed32d9e5824fe1d2e08234fe32ad09bddaaf2168d6e4f22b",
+        "size": 9520
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/hash_longest_match_simd_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "012c4465103a797296629d8e5afb871b0cd61be74d325279c58b460efd5bb4cc",
+        "size": 11763
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/histogram.c",
+      "before": {
+        "sha256": "cc95ce4153d567384744cd65b9b35208c6721675b950fe477415dd502362ab5d",
+        "size": 3229
+      },
+      "after": {
+        "sha256": "cf8cbd4310f9b41a718ca200bfd8f7c07159729e51a5aeda1f2f809a954260bf",
+        "size": 3261
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/histogram.h",
+      "before": {
+        "sha256": "e0b240e018c5b197e421ee088849a8f283e9bdd8309b9abd025cf23056ecc4f9",
+        "size": 1874
+      },
+      "after": {
+        "sha256": "12a8632ca3b98350bd9aa38a439a21bf63378bcd867ba43076a5bdebf0fb03b6",
+        "size": 1813
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/literal_cost.c",
+      "before": {
+        "sha256": "dc1fda34fee8ce7595d152c95645c0449ca63dd5d854de7686b034afb8b40d8a",
+        "size": 5838
+      },
+      "after": {
+        "sha256": "70b9efae900d89ba610087113bea9225debbae5db21825a9bad0051c1ea5451b",
+        "size": 5877
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/literal_cost.h",
+      "before": {
+        "sha256": "dabe1af4182a601fcce90de2668ead7fff662104c3ad3de93fc4e7378f49470a",
+        "size": 915
+      },
+      "after": {
+        "sha256": "3504da473324e0d2be76c69b5e9d1ce7d97409ff5920bd3928a05c3de2a47009",
+        "size": 889
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/matching_tag_mask.h",
+      "before": null,
+      "after": {
+        "sha256": "3106496cc6baa84f6dab86395002b2638ba64926de7858cd6943afd8b6c7d162",
+        "size": 2343
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/memory.c",
+      "before": {
+        "sha256": "ff09311b8858bdb48b4cf5e0fecab0cd4a2bbc426c36d84b78546c4973a9bef2",
+        "size": 5456
+      },
+      "after": {
+        "sha256": "a491c8110e9e68db26c10e008abfc69c07d6756f2b9c1f56611295aad7a817d2",
+        "size": 5522
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/memory.h",
+      "before": {
+        "sha256": "ee4b51f8d184cf2fa19f90f7d8aa8e95bf03a4e5f8c01b69d1f7ffb4477c63ce",
+        "size": 3955
+      },
+      "after": {
+        "sha256": "01ee4983c81f1b935841d4e2ebe2588cf590ea66dcce493b61c7430da8baaec5",
+        "size": 4296
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/metablock.c",
+      "before": {
+        "sha256": "f98dabc117b21d31839fcc053b568a16d02fe4d9b73579a686725e2322ca41a1",
+        "size": 26697
+      },
+      "after": {
+        "sha256": "8217f29edd2366110cb235e2e3e7e714ba89c256701bfd0b9bb001e83a7b9391",
+        "size": 26696
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/metablock.h",
+      "before": {
+        "sha256": "d730f0bb8a0a8de880801656d7bd7891bffc5b89d3de6d644b369e6c4fae8690",
+        "size": 4011
+      },
+      "after": {
+        "sha256": "f200f4660b5c3670fdde8ed7300bcd7efefdb355e3132bd3b610e3b795061196",
+        "size": 4023
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/metablock_inc.h",
+      "before": {
+        "sha256": "b9b5a44ca557107663bba1720da0a2a15b7a05de1e1682020adc06cde34eebd8",
+        "size": 7642
+      },
+      "after": {
+        "sha256": "e68583ed633b96aacfae43c4e7810ebebc09af4414cddc49506fcb2069cbe343",
+        "size": 7636
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/params.h",
+      "before": {
+        "sha256": "4d804113ecd35d5b4e1c5e915af04c08e664c38edd41f1651be5c36960f2a132",
+        "size": 1184
+      },
+      "after": {
+        "sha256": "55f3508a6d8019192a43110b62d9284277e19b9d301cebe7bed27855952d1b25",
+        "size": 1168
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/prefix.h",
+      "before": {
+        "sha256": "eccda5c3f87affea606d70cdf0ade0ebcbd450388e37bec4c8531d88f606da4e",
+        "size": 1968
+      },
+      "after": {
+        "sha256": "706a1973c2229d03eb350dcc2e6909a94175eb8581a9f890d9bda45fcc0f544d",
+        "size": 1942
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/quality.h",
+      "before": {
+        "sha256": "1a57eea927713bb01398859c1e9add7ff8ce12bcf6afb0c64262435235b4bcfc",
+        "size": 6163
+      },
+      "after": {
+        "sha256": "b6dfb3e8433dfbb97693aa02f551870c7739e7645fcf6d9322631e02ea09c35d",
+        "size": 7864
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/ringbuffer.h",
+      "before": {
+        "sha256": "cbfddf6e5c629dcf540f6740a3dd2d7ccc19a03cf7c13ecced2312073fb2786d",
+        "size": 6008
+      },
+      "after": {
+        "sha256": "f67876b441464cd931fb7db0c84d05fc7ac570c47ca9872751ae9c7c7c4a2455",
+        "size": 5967
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/state.h",
+      "before": null,
+      "after": {
+        "sha256": "c7996820e3f166650e2fb9187c0f94a8a5e21bf353dbdd1c783f22e428904f9e",
+        "size": 3078
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_dict.c",
+      "before": {
+        "sha256": "3998cd03d0a7a3bbb29d571c73e89bc2788177c0d9bee7b7589508b52eac0ef1",
+        "size": 21050
+      },
+      "after": {
+        "sha256": "9810eb7f9ab63a5720bb4a7fd089f3cbe787b10875129f1d1ed1021bc2416724",
+        "size": 20877
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_dict.h",
+      "before": {
+        "sha256": "3d64034e3243e8860b39702f67308b46896159a8d1b5728b749e69da8d9d68b9",
+        "size": 1274
+      },
+      "after": {
+        "sha256": "4362117cf788185ead13cd181a0d7db437a05a2cdc619646f93ff3721d53ca3c",
+        "size": 1215
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_dict_lut.c",
+      "before": null,
+      "after": {
+        "sha256": "c06f693a31fe244858d0ec8268387657800ef42c768571be9e96fef26951d988",
+        "size": 7420
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_dict_lut.h",
+      "before": {
+        "sha256": "e32838a6f4960e407c77c6e9d51ced2411c28bb852e337056691fba8d94c33cc",
+        "size": 469710
+      },
+      "after": {
+        "sha256": "be10d9c9481e915424ea79e29c2e18f5dac9cb4e18a5fb07eeb7a7fb9b1637b2",
+        "size": 1588
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_dict_lut_inc.h",
+      "before": null,
+      "after": {
+        "sha256": "561574bed6ff61709e20a196b611825f239aa79cd1c54c96b96757162edcd3d4",
+        "size": 468804
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_init.c",
+      "before": null,
+      "after": {
+        "sha256": "c62f0f3c81ea6bd198e5dff2f804e78a94ac10bf78cf5c1dbb72b28ab5a0cddd",
+        "size": 1780
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_init.h",
+      "before": null,
+      "after": {
+        "sha256": "f853f6739633044ac6acc27e0ba074b315e230a4f99aac46a98b53880af24441",
+        "size": 840
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/static_init_lazy.cc",
+      "before": null,
+      "after": {
+        "sha256": "4da8a10a27a032d9f347d989e8c271d5ac949091741543880ec7b4ced5e80696",
+        "size": 1095
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/utf8_util.c",
+      "before": {
+        "sha256": "fbc9cbff09159ea252a18b06f140e91157eeee48c0bb9000cfbe1717901a7d75",
+        "size": 2269
+      },
+      "after": {
+        "sha256": "15c394fe3284863e026511f8ba62dfe75148f286f59e2a8fd2f744bc00c8cda9",
+        "size": 2275
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/utf8_util.h",
+      "before": {
+        "sha256": "b2f2342439b189123479460f2b6abf197ffe300863bb56c46a60ecf87bbb256a",
+        "size": 904
+      },
+      "after": {
+        "sha256": "915db224b31b09c311f77776dc5c1a83c73101780349c653551493059212f795",
+        "size": 878
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/enc/write_bits.h",
+      "before": {
+        "sha256": "59963cfbec24ad8e5be8eed69c6a0591b4a32a6060a21280ac447c04720bae36",
+        "size": 2861
+      },
+      "after": {
+        "sha256": "b2af9a0a4da30b47981cc63d29eefb27a85c86e257d7e2c120b7f6ac1efdb060",
+        "size": 2835
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/include/brotli/decode.h",
+      "before": {
+        "sha256": "5d5b07bae9318fcbb3793679e8978b938b563ab7200711c4d3a2de84ec04013d",
+        "size": 15366
+      },
+      "after": {
+        "sha256": "e2f5fdc3ae41e6b7e8986538e421ae79c095541bacf32f2bbfccf8e056405444",
+        "size": 16759
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/include/brotli/encode.h",
+      "before": {
+        "sha256": "f8b660f13f66e07379a24be8e9f49e3af6f3880a64a2418f804bf0e81533635f",
+        "size": 19831
+      },
+      "after": {
+        "sha256": "f1842e38da557efac517a35f1b27d288d464a723ef50316d3d20fe03f6046c06",
+        "size": 20068
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/include/brotli/port.h",
+      "before": {
+        "sha256": "42bd511eb8e07dd1480c895df1bd435e2b667d866fea7a815728e1d69596938d",
+        "size": 11731
+      },
+      "after": {
+        "sha256": "72b484d7a2561f3a9ad35ebd0d4f97f7a2d9863b619782ada5b083a4b6f40df5",
+        "size": 11439
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/include/brotli/shared_dictionary.h",
+      "before": {
+        "sha256": "39a5bec7753208425c872902c5e1d436ae1ae8a65b89356d9fd7ffffc801b63a",
+        "size": 3470
+      },
+      "after": {
+        "sha256": "86230f0aaf533044d85d92f84b5aec8b7e4e231d4b64b098604083e7866e8097",
+        "size": 3535
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/include/brotli/types.h",
+      "before": {
+        "sha256": "96c9330e790aa6fe53f4cdd328d0a4b98e361b82913baa3219db73aadb11272c",
+        "size": 2615
+      },
+      "after": {
+        "sha256": "ebbd136dc411cc8167636d6f54b66ad0c234dc18989265c37a28c242eaae2efd",
+        "size": 2651
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/tools/brotli.c",
+      "before": {
+        "sha256": "a3ce955c4a8e83f9513d3e4be278ac3c20a585163b5012e49e300477d18b3635",
+        "size": 40395
+      },
+      "after": {
+        "sha256": "cb6c8ca6668d324d50cd085fc3ddb3f202afe34fb562b5b583c0d7b0cceccd0c",
+        "size": 52033
+      }
+    },
+    {
+      "path": "chromium/third_party/brotli/tools/brotli.md",
+      "before": {
+        "sha256": "bcf739307a04575fb18f3df435cf5069c11b72e7eb86b37430efdab46d59ae50",
+        "size": 3776
+      },
+      "after": {
+        "sha256": "bcba808fa9fcf028d70e57b0f8ca6bde0fbd65e89620e0ca46447959fd51974d",
+        "size": 4028
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/gn/sksl_tests.gni",
+      "before": {
+        "sha256": "125f4f60595d56106888660e903d2778c10f46ddc688b253985d6932c551b5e5",
+        "size": 37854
+      },
+      "after": {
+        "sha256": "6c88fba9ec95f096f1088cfc7db15f2c0b9571caa0919a3bb3b682e8e743a929",
+        "size": 37898
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/resources/sksl/BUILD.bazel",
+      "before": {
+        "sha256": "98ba451c21c05645c31138ff9b30ca6501c0ea109c40c4ccf8b7b560e287fd42",
+        "size": 46466
+      },
+      "after": {
+        "sha256": "cab8dbce9cd844ad089d054945bb1e6e2bf55277081fcc06d46c828638f2d8a3",
+        "size": 46516
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl",
+      "before": {
+        "sha256": "3e0d40c786a868d67272b951426e245272cbecaba373a5dad400a0f7f82fb0a3",
+        "size": 142
+      },
+      "after": {
+        "sha256": "7de7f61be0b874b077f9b48e2a2e9c57d15fd360845b562687c0edad94c9af87",
+        "size": 129
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts",
+      "before": null,
+      "after": {
+        "sha256": "404f5cf361433242ccc7a2bf63353b1411117ddd198b362982c716de95790a6f",
+        "size": 264
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/gpu/ganesh/gl/GrGLCaps.cpp",
+      "before": {
+        "sha256": "235d98103dfffb1fb0881804b04804b9f3caf1cce42b0a1bbdae59f1b5cff030",
+        "size": 259538
+      },
+      "after": {
+        "sha256": "3eb0789a6b3fd53dcbb1455e066a6ad433ff71b393702d7d3678e95e952079dd",
+        "size": 259529
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/sksl/SkSLParser.cpp",
+      "before": {
+        "sha256": "57d153f679ba7e7060f827e630d6e036aafc0729e6656b114d874f97bf7e33f3",
+        "size": 91546
+      },
+      "after": {
+        "sha256": "687a842bc1300f66a8bd525e6bd6677087e599b83edfc281990d7d4c76db7661",
+        "size": 91846
+      }
+    },
+    {
+      "path": "chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp",
+      "before": {
+        "sha256": "610a76c2d6f382e8fde34ed9e42968261bb7ff8c5bf5928268512a01bf6926e0",
+        "size": 21717
+      },
+      "after": {
+        "sha256": "515b90915ee4ec8e74df277eb03270e4618904df332d91624860d81b90ede3a1",
+        "size": 21843
+      }
+    },
+    {
+      "path": "chromium/tools/metrics/histograms/enums.xml",
+      "before": {
+        "sha256": "2a1453fb684a5754359016c9ace160807cb169d5dca4d5d48aa9130d1cf45aa2",
+        "size": 1388428
+      },
+      "after": {
+        "sha256": "064f3930b9413eb16c090bbc76ba921ab19db0a10ee29ff4a87a18db9cda61db",
+        "size": 1388478
+      }
+    },
+    {
+      "path": "chromium/v8/include/cppgc/heap-consistency.h",
+      "before": {
+        "sha256": "0df4c398bbe23e984fc552ffc6193483d1766eaa99057e9e318a7d51b4c7d836",
+        "size": 12019
+      },
+      "after": {
+        "sha256": "96442dd6631f811b6b5ecbf22c6d06414517aaa3434f70a7692d22942984a31b",
+        "size": 12042
+      }
+    },
+    {
+      "path": "chromium/v8/src/compiler/turboshaft/pipelines.cc",
+      "before": {
+        "sha256": "863c14819f49131d5768281a0e09ad9a6da33cdbcfebeaef016dd06086eb89ad",
+        "size": 6499
+      },
+      "after": {
+        "sha256": "9f03933708488030908dc7d27b432e1ce805ac16b9ab7e7ece60b993c909eae7",
+        "size": 7194
+      }
+    },
+    {
+      "path": "chromium/v8/src/heap/cppgc/marker.h",
+      "before": {
+        "sha256": "f3eb76e35bfdf4864b5ee6e5ec64cd7543a61d9c3bb4871f263358b3b5650b38",
+        "size": 9364
+      },
+      "after": {
+        "sha256": "130d94bb15985faa25ed4a7a404db3b02e2a8a190cf1c14fa50782140830c514",
+        "size": 9770
+      }
+    },
+    {
+      "path": "chromium/v8/src/maglev/maglev-compiler.cc",
+      "before": {
+        "sha256": "3fb503b598cba194f3bbee0937ea243d32dcf34d39ba83bfa9f06ed1156d5e9d",
+        "size": 11585
+      },
+      "after": {
+        "sha256": "a5e43241873888762adcb55c9a2b2873b68eec92cd6eeda2bfdea9ea84ccaafd",
+        "size": 11697
+      }
+    },
+    {
+      "path": "chromium/v8/test/mjsunit/turboshaft/regress-574660146.js",
+      "before": null,
+      "after": {
+        "sha256": "dca3b188041911a2f5190495ddad15ed221a8aa18d7c67de0e520970ceb18e21",
+        "size": 1309
+      }
+    }
+  ],
+  "alreadyCovered": [
+    {
+      "commit": "0c15ef7287a69ad152772ad77e25c3ef15007886",
+      "scope": [
+        "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc",
+        "chromium/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h"
+      ],
+      "reason": "Exact vendor reverse-check succeeds against predecessor2ec source, including move insertion and copy/move assignment safeguards; retained as input but not applied twice."
+    }
+  ],
+  "compileExcluded": [
+    {
+      "commit": "c0b89eef8c1766b3902b14c75671426ba12dfc8f",
+      "reason": "ANGLE Metal backend is not compiled for the Linux target. Source patch is retained/applied for complete vendor-source fidelity; no claim of a Linux Metal runtime repair."
+    }
+  ],
+  "advisoryMappings": {
+    "CVE-2026-76027": [
+      "c2129805543e04b57059da7f540a4bab20be4642"
+    ],
+    "CVE-2026-76029": [
+      "ccf9bb2b18e54adc73a00e95662d630212753176"
+    ],
+    "CVE-2026-76031": [
+      "a21ce95c24ce3964416f09ae1862f53f319eb4d0",
+      "93f574f14f95614b97b5006c9bd8801e1537f31b"
+    ],
+    "CVE-2026-119260": [
+      "d473602c676cc7010c45f02f470df7e1817791e1"
+    ],
+    "CVE-2026-119261": [
+      "961c7e83d9434470c588f210a1bb5375f2970d73"
+    ],
+    "CVE-2026-119262": [
+      "18321f161f295cf0c3617456a321a1dee8761f71"
+    ],
+    "CVE-2026-119263": [
+      "b5bf5c298efb0218986f98c41b0c9279a4e8839d"
+    ],
+    "CVE-2026-119265": [
+      "e2075db3e7a43bdc805061b991c8c4a90ab0047b"
+    ],
+    "CVE-2026-119266": [
+      "9d98906b751989a200ff24d26a4d849a80367b13"
+    ],
+    "CVE-2026-119267": [
+      "f795cb525d53c99ee2efdebad49bc2323c146844"
+    ],
+    "CVE-2026-119268": [
+      "23dd0d13e63baaf7e8cce1132604a0bc2f8a440b"
+    ],
+    "CVE-2026-119269": [
+      "a21ce95c24ce3964416f09ae1862f53f319eb4d0"
+    ],
+    "CVE-2026-119270": [
+      "de2718436b301a9593589ea0451faaa47ffc1512"
+    ],
+    "CVE-2026-119271": [
+      "aa789d9bd566b9865add4070dc6777b3266c64e9"
+    ]
+  },
+  "adaptations": [
+    "CacheStorage adds upstream has_range_requested proto field19 without importing unrelated missing timing_allow_passed field18; existing response constructor/API is retained.",
+    "ExecutionContext header adjusts only old HeapVector closing-angle spelling.",
+    "Quota obsolete migration removal uses exact existing old method and member preimages; CacheStorage legacy hash-helper deletion preserves old spelling in its preimage.",
+    "Cross-origin relatedTarget pair is ordered93f574 thena21ce9. Existing target() and AtomicString storage contexts are retained, with the upstream stable runtime feature and null-context followup.",
+    "V8 cppgc marker header uses old cppgc/marker.h path; intended write-barrier and retracing logic is otherwise upstream.",
+    "Highlight registry uses existing AbstractRange* by-value iteration instead of the newer NodeRange API; regression helper uses the existing AbstractRange interface."
+  ],
+  "bundledDependencyChanges": [
+    {
+      "component": "Brotli",
+      "upstreamVendorCommit": "fad69ec9843b37d725e8f0e5aa8cb05a10e85f24",
+      "beforeVersion": "1.0.9",
+      "afterVersion": "1.2.0",
+      "beforeRevision": "9801a2c5d6c67c467ffad676ac301379bb877fc3",
+      "afterRevision": "cfa184a997ac19454d5a3ae97f6d600aac2445a6",
+      "license": "MIT",
+      "licenseFile": "chromium/third_party/brotli/LICENSE",
+      "licenseTextChangedByVendorPatch": false,
+      "metadataFile": "chromium/third_party/brotli/README.chromium",
+      "buildDescriptionChanged": true
+    }
+  ],
+  "regressionCoverage": {
+    "feasibleTestSourceFiles": 17,
+    "nativeRegressionsCompiledOrRunDuringPreparation": false,
+    "trimmedMainUpstreamHunks": [
+      {
+        "file": "chromium-c2129805543e04b57059da7f540a4bab20be4642.patch",
+        "path": "third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js",
+        "reason": "Old-file preimage missing from trimmed Qt archive; no preimage or dependencies fabricated."
+      },
+      {
+        "file": "chromium-c2129805543e04b57059da7f540a4bab20be4642.patch",
+        "path": "third_party/blink/web_tests/external/wpt/fetch/range/sw-416.https.window.js",
+        "reason": "Old-file preimage missing from trimmed Qt archive; no preimage or dependencies fabricated."
+      },
+      {
+        "file": "chromium-c2129805543e04b57059da7f540a4bab20be4642.patch",
+        "path": "third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js",
+        "reason": "Old-file preimage missing from trimmed Qt archive; no preimage or dependencies fabricated."
+      }
+    ],
+    "trimmedPeerUpstreamHunks": "Retained old-file hunks whose files are absent from trimmed Qt source; cannot apply without restoring corresponding upstream test preimages.",
+    "harnessLimit": "The Qt source trim lacks the complete WPT/inspector runner and some Skia/cppgc golden/test preimages. Original21 exports retain the omitted hunks; no absent dependencies or test results were fabricated."
+  },
+  "coverage": "Fourteen previously unresolved public-associated repair families and seven newer Qt vendor exports through43bcb at the fixed cutoff are represented. One vendor repair is already present; ANGLE Metal is source-only on Linux. This does not claim every private issue mechanic or all Chromium156 fixes, and does not change the Chromium major version. Candidate source application alone is not runtime acceptance."
+}

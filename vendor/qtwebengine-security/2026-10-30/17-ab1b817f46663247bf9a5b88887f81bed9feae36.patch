@@ -1,0 +1,33 @@
+From ab1b817f46663247bf9a5b88887f81bed9feae36 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 16 Sep 2026 22:30:37 -0400
+Subject: [PATCH] [Backport] CVE-2026-113273: Memory corruption in ANGLE
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8414095:
+Translator: Fix off-by-one error in variable-size check
+
+Bug: chromium:525685715
+Bug: chromium:561999377
+Change-Id: I67146644ea6da349c5f8208d479e222cbc5eca24
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8414095
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/783830
+Reviewed-by: Moss Heim <moss.heim@qt.io>
+---
+ .../src/compiler/translator/ValidateTypeSizeLimitations.cpp     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+index 01acbfe4e060..e042ade7a0ac 100644
+--- a/chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp
++++ b/chromium/third_party/angle/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+@@ -134,7 +134,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+             }
+         }
+ 
+-        if (variableSize > kMaxVariableSizeInBytes)
++        if (variableSize >= kMaxVariableSizeInBytes)
+         {
+             error(location, "Size of declared variable exceeds implementation-defined limit",
+                   variable.name());

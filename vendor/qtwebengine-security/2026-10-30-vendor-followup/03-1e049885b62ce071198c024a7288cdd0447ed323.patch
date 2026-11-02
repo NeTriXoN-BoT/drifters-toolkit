@@ -1,0 +1,159 @@
+From 1e049885b62ce071198c024a7288cdd0447ed323 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 14 Oct 2026 15:37:46 +0200
+Subject: [PATCH] [Backport] CVE-2026-118320: Memory corruption in V8
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8576038:
+Synchronize concurrent GetPrototypeTransition in TryUpdateNoLock
+
+Make TransitionsAccessor::GetPrototypeTransition an instance method on
+TransitionsAccessor and guard prototype transition cache lookups with
+full_transition_array_access() when accessed concurrently from
+MapUpdater::TryUpdateNoLock.
+
+This pairs with the full_transition_array_access() lock already held in
+TransitionsAccessor::PutPrototypeTransition during compaction and new
+entry publication, preventing concurrent readers from observing
+partially-initialized maps or in-progress array compactions.
+
+Fixed: 568894515
+
+TAG=agy
+CONV=d848b9e2-cbea-4f48-a8e4-dec738f151e6
+
+Change-Id: Ib04a65ac07c2c588cb9e3aecc412068e2902b9aa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8576038
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110759}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/784837
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/objects/map-updater.cc    |  5 ++--
+ chromium/v8/src/objects/transitions-inl.h |  7 ++++++
+ chromium/v8/src/objects/transitions.cc    | 29 +++++++++--------------
+ chromium/v8/src/objects/transitions.h     | 10 +++++---
+ 4 files changed, 28 insertions(+), 23 deletions(-)
+
+diff --git a/chromium/v8/src/objects/map-updater.cc b/chromium/v8/src/objects/map-updater.cc
+index ca8f3df2f4aa..7b2f3dc61166 100644
+--- a/chromium/v8/src/objects/map-updater.cc
++++ b/chromium/v8/src/objects/map-updater.cc
+@@ -371,8 +371,9 @@ std::optional<Tagged<Map>> MapUpdater::TryUpdateNoLock(Isolate* isolate,
+ 
+   if (v8_flags.move_prototype_transitions_first &&
+       root_map->prototype() != old_map->prototype()) {
+-    auto maybe_transition = TransitionsAccessor::GetPrototypeTransition(
+-        isolate, root_map, old_map->prototype());
++    auto maybe_transition =
++        TransitionsAccessor(isolate, root_map, IsConcurrent(cmode))
++            .GetPrototypeTransition(old_map->prototype());
+     if (!maybe_transition) {
+       return {};
+     }
+diff --git a/chromium/v8/src/objects/transitions-inl.h b/chromium/v8/src/objects/transitions-inl.h
+index 4ebece1bed8d..8e27c8e2bde9 100644
+--- a/chromium/v8/src/objects/transitions-inl.h
++++ b/chromium/v8/src/objects/transitions-inl.h
+@@ -408,6 +408,13 @@ MaybeHandle<Map> TransitionsAccessor::SearchSpecial(Isolate* isolate,
+   return MaybeHandle<Map>(result, isolate);
+ }
+ 
++std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
++    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++  // This helper is supposed to be used only from the main thread.
++  DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
++  return TransitionsAccessor(isolate, map).GetPrototypeTransition(prototype);
++}
++
+ int TransitionArray::number_of_transitions() const {
+   if (length() < kFirstIndex) return 0;
+   return get(kTransitionLengthIndex).ToSmi().value();
+diff --git a/chromium/v8/src/objects/transitions.cc b/chromium/v8/src/objects/transitions.cc
+index ded48b68737d..0c0d4228aa28 100644
+--- a/chromium/v8/src/objects/transitions.cc
++++ b/chromium/v8/src/objects/transitions.cc
+@@ -414,8 +414,8 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+ 
+   const int header = TransitionArray::kProtoTransitionHeaderSize;
+ 
+-  DirectHandle<WeakFixedArray> cache(GetPrototypeTransitions(isolate, *map),
+-                                     isolate);
++  DirectHandle<WeakFixedArray> cache(
++      TransitionsAccessor(isolate, *map).GetPrototypeTransitions(), isolate);
+   int capacity = cache->length() - header;
+   int transitions = TransitionArray::NumberOfPrototypeTransitions(*cache) + 1;
+ 
+@@ -455,11 +455,13 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+   return true;
+ }
+ 
+-// static
+ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+-    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++    Tagged<Object> prototype) {
+   DisallowGarbageCollection no_gc;
+-  Tagged<WeakFixedArray> cache = GetPrototypeTransitions(isolate, map);
++  if (encoding() != kFullTransitionArray) return {};
++  base::MutexGuardIf guard(isolate_->full_transition_array_access(),
++                           concurrent_access_);
++  Tagged<WeakFixedArray> cache = GetPrototypeTransitions();
+   int length = TransitionArray::NumberOfPrototypeTransitions(cache);
+   for (int i = 0; i < length; i++) {
+     Tagged<MaybeObject> target =
+@@ -476,20 +478,11 @@ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+   return {};
+ }
+ 
+-// static
+-Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions(
+-    Isolate* isolate, Tagged<Map> map) {
+-  Tagged<MaybeObject> raw_transitions =
+-      map->raw_transitions(isolate, kAcquireLoad);
+-  if (GetEncoding(isolate, raw_transitions) != kFullTransitionArray) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
+-  }
+-  Tagged<TransitionArray> transition_array =
+-      GetTransitionArray(isolate, raw_transitions);
+-  if (!transition_array->HasPrototypeTransitions()) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
++Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions() {
++  if (!HasPrototypeTransitions()) {
++    return ReadOnlyRoots(isolate_).empty_weak_fixed_array();
+   }
+-  return transition_array->GetPrototypeTransitions();
++  return transitions()->GetPrototypeTransitions();
+ }
+ 
+ // static
+diff --git a/chromium/v8/src/objects/transitions.h b/chromium/v8/src/objects/transitions.h
+index 04857762c78d..7520750618f8 100644
+--- a/chromium/v8/src/objects/transitions.h
++++ b/chromium/v8/src/objects/transitions.h
+@@ -189,8 +189,13 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static bool PutPrototypeTransition(Isolate* isolate, DirectHandle<Map>,
+                                      DirectHandle<Object> prototype,
+                                      DirectHandle<Map> target_map);
+-  static std::optional<Tagged<Map>> GetPrototypeTransition(
++
++  std::optional<Tagged<Map>> GetPrototypeTransition(Tagged<Object> prototype);
++  // Convenient helper for calling from the main thread, for other cases
++  // use the instance method above.
++  static inline std::optional<Tagged<Map>> GetPrototypeTransition(
+       Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype);
++
+   bool HasPrototypeTransitions();
+ 
+   // During the first-time Map::Update and Map::TryUpdate, the migration target
+@@ -270,8 +275,7 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static void SetPrototypeTransitions(
+       Isolate* isolate, DirectHandle<Map> map,
+       DirectHandle<WeakFixedArray> proto_transitions);
+-  static Tagged<WeakFixedArray> GetPrototypeTransitions(Isolate* isolate,
+-                                                        Tagged<Map> map);
++  Tagged<WeakFixedArray> GetPrototypeTransitions();
+ 
+   static void InsertHelper(Isolate* isolate, DirectHandle<Map> map,
+                            DirectHandle<Name> name, DirectHandle<Map> target,
