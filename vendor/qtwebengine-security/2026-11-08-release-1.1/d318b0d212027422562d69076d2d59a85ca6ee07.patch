@@ -1,0 +1,68 @@
+From d318b0d212027422562d69076d2d59a85ca6ee07 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 28 Jul 2026 17:49:04 +0200
+Subject: [PATCH] [Backport] CVE-2026-79197: Use after free in V8 (3/4)
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8159283:
+[debug] Deoptimize blackboxed OSR frames when stepping
+
+When stepping out (Debug::PrepareStep) or stepping on throw
+(Debug::PrepareStepOnThrow) across a blackboxed stack frame, V8 skips
+FloodWithOneShot for that function. Consequently, the only mechanism
+that deoptimizes frames during stack unwinding is the explicit
+Deoptimizer::DeoptimizeFunction loop in PrepareStep and
+PrepareStepOnThrow.
+
+When DeoptimizeFunction is called without passing the frame's Code
+object, it defaults to function->code(isolate), which points to the
+function's default entrypoint code rather than any OSR machine code
+attached to the stack frame. As a result, blackboxed OSR frames are
+never deoptimized, and subsequent calls from their catch or return
+blocks execute in optimized code without checking for step-in
+breakpoints.
+
+Pass frame->LookupCode() / js_frame->LookupCode() at both call sites
+so blackboxed OSR frames are correctly deoptimized to bytecode when
+stepping.
+
+TAG=agy
+CONV=978a8699-6f5a-469d-a61e-d8cbf7aa4c0d
+
+Bug: 531297707
+Change-Id: I762465fa4492d7fb6715c6c955b22c38f248cfad
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8159283
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108940}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786519
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/debug/debug.cc | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/v8/src/debug/debug.cc b/chromium/v8/src/debug/debug.cc
+index f9fac9fd5a7..964e8927ba5 100644
+--- a/chromium/v8/src/debug/debug.cc
++++ b/chromium/v8/src/debug/debug.cc
+@@ -1385,7 +1385,8 @@ void Debug::PrepareStepOnThrow() {
+     if (last_step_action() == StepInto) {
+       // Deoptimize frame to ensure calls are checked for step-in.
+       Deoptimizer::DeoptimizeFunction(frame->function(),
+-                                      LazyDeoptimizeReason::kDebugger);
++                                      LazyDeoptimizeReason::kDebugger,
++                                      frame->LookupCode());
+     }
+     FrameSummaries summaries = frame->Summarize();
+     for (size_t i = summaries.size(); i != 0; i--, current_frame_count--) {
+@@ -1581,7 +1582,8 @@ void Debug::PrepareStep(StepAction step_action) {
+         if (last_step_action() == StepInto) {
+           // Deoptimize frame to ensure calls are checked for step-in.
+           Deoptimizer::DeoptimizeFunction(js_frame->function(),
+-                                          LazyDeoptimizeReason::kDebugger);
++                                          LazyDeoptimizeReason::kDebugger,
++                                          js_frame->LookupCode());
+         }
+         HandleScope inner_scope(isolate_);
+         std::vector<Handle<SharedFunctionInfo>> infos;

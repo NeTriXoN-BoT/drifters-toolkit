@@ -338,8 +338,8 @@ class Parser {
                 const auto offset = metadata.tags[0].payload + 4 + index * 4;
                 const auto number = f32(data, offset); const bool finite = std::isfinite(number);
                 std::string key = name; std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return char(std::tolower(c)); });
-                effects.push_back({{"attribute-" + key + "-effect-" + std::to_string(index), name + " / UseEffectLevels[" + std::to_string(index) + "]",
-                    "Infusion metadata", "FloatProperty", finite ? "Advanced: typed infusion metadata, not a verified current or maximum attribute value. The separate native attribute state is preserved."
+                effects.push_back({{"attribute-" + key + "-effect-" + std::to_string(index), name + " / Infusion entry " + std::to_string(index + 1) + " (UseEffectLevels[" + std::to_string(index) + "])",
+                    "Infusion metadata", "FloatProperty", finite ? "Stored infusion-effect entry " + std::to_string(index + 1) + " of " + std::to_string(count) + " for " + name + ". The brackets are zero-based list positions, not duplicate fields or stat levels. The game-specific role of this position is not yet mapped. This is not a current or maximum stat control; the separate native attribute state is preserved."
                         : "Read-only: this stored float is not finite; its original bits are preserved.",
                     finite ? json(number) : json("Non-finite Float32"), -double(std::numeric_limits<float>::max()), double(std::numeric_limits<float>::max()), finite, finite, false}, offset});
             }

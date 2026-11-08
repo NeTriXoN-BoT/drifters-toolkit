@@ -1,8 +1,9 @@
 param([switch]$Tests, [switch]$CliOnly, [switch]$NexusReviewer, [switch]$InterfaceSmoke, [switch]$LocalEdition, [string]$OutputDirectory = 'out', [string]$SaveCodecHelper, [string]$PrivateSavePreviewHelper = '')
 $ErrorActionPreference = 'Stop'
 if ($NexusReviewer -and $InterfaceSmoke) { throw 'Reviewer and internal interface-test builds must be built separately.' }
-# The local edition (public release while Nexus API access is pending) never contacts the Nexus API.
+# Public builds use browser downloads and never contact the Nexus API.
 if ($LocalEdition -and ($NexusReviewer -or $Tests)) { throw 'Build the local edition separately from tests and reviewer builds.' }
+$LocalEdition = !$NexusReviewer -and !$Tests
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $compilerRoot = Join-Path $projectRoot 'vendor\llvm-mingw-20261006-ucrt-x86_64\bin'
 $compiler = Join-Path $compilerRoot 'x86_64-w64-mingw32-clang++.exe'
@@ -40,7 +41,7 @@ try {
     $common = @('-std=c++17','-O2','-DNDEBUG','-DUNICODE','-D_UNICODE','-D_WIN32_WINNT=0x0A00','-fms-extensions','-static','-Ivendor','-Isrc',"-ffile-prefix-map=$projectRoot=.")
     $common += $reviewerOptions
     $archivePrefix = $env:DRIFTER_ARCHIVE_PREFIX
-    if (!$archivePrefix) { $archivePrefix = Join-Path ([IO.Path]::GetTempPath()) 'drifter-archive-static-windows-3.8.10-v4' }
+    if (!$archivePrefix) { $archivePrefix = Join-Path ([IO.Path]::GetTempPath()) 'drifter-archive-static-windows-3.8.11-v5' }
     python scripts/bootstrap_archive.py --download --prefix $archivePrefix --cc $cCompiler --cxx $compiler
     if ($LASTEXITCODE -ne 0) { throw 'Pinned archive decoder build failed. Install CMake/Ninja or set DRIFTER_CMAKE and DRIFTER_NINJA to the developer tools.' }
     $common += @('-DLIBARCHIVE_STATIC','-DLZMA_API_STATIC',('-I' + (Join-Path $archivePrefix 'include')))
@@ -58,6 +59,10 @@ try {
     if ($SaveCodecHelper) { Copy-Item -LiteralPath $SaveCodecHelper -Destination (Join-Path $out 'DriftersToolkitSaveCodec.exe') -Force }
     foreach ($folder in @('catalog','config')) { Copy-Item -LiteralPath $folder -Destination $out -Recurse -Force }
     if ($Tests) {
+        & $compiler @common -Wall -Wextra tests/drop_import_tests.cpp src/mod_archive.cpp @archiveLibraries -o (Join-Path $out 'drop_import_tests.exe') -lbcrypt
+        if ($LASTEXITCODE -ne 0) { throw 'Native drop validation test build failed' }
+        & (Join-Path $out 'drop_import_tests.exe')
+        if ($LASTEXITCODE -ne 0) { throw 'Native drop validation tests failed' }
         & $compiler @common -Wall -Wextra tests/mod_archive_tests.cpp src/mod_archive.cpp @archiveLibraries -o (Join-Path $out 'mod_archive_tests.exe') -lbcrypt
         if ($LASTEXITCODE -ne 0) { throw 'Archive decoder test build failed' }
         & (Join-Path $out 'mod_archive_tests.exe')
@@ -136,7 +141,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Bounded JSON test build failed' }
         & (Join-Path $out 'bounded_json_tests.exe')
         if ($LASTEXITCODE -ne 0) { throw 'Bounded JSON tests failed' }
-        foreach ($suite in @('library_meta','renderer_snapshot')) {
+        foreach ($suite in @('library_meta','renderer_snapshot','asset_properties','windows_child_processes')) {
             & $compiler @common -Wall -Wextra "tests/$($suite)_tests.cpp" -o (Join-Path $out "$($suite)_tests.exe")
             if ($LASTEXITCODE -ne 0) { throw "$suite test build failed" }
             & (Join-Path $out "$($suite)_tests.exe")

@@ -76,6 +76,9 @@ void advancedTypedFields() {
     const auto effect = findField("attribute-health-effect-0"), boolean = findField("controller-flag-ShownStaminaTutorial");
     check(effect.advanced && !effect.gameplayVerified && effect.type == "FloatProperty" && effect.value == 100.0f,
           "Infusion metadata was not explicitly advanced/unverified Float32");
+    check(effect.label.find("Infusion entry 1 (UseEffectLevels[0])") != std::string::npos &&
+          effect.reason.find("not yet mapped") != std::string::npos,
+          "Infusion entries need a distinct position and an honest gameplay explanation");
     check(boolean.advanced && boolean.type == "BoolProperty" && boolean.value == true,
           "Controller boolean lost its typed false/true representation");
     check(findField("player-skill-points").gameplayVerified && !findField("player-skill-points").advanced,

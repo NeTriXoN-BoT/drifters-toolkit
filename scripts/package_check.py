@@ -171,6 +171,23 @@ def verify_rebuilt_runtime_bindings(qt,files,expected,locally_modified=False):
             raise RuntimeError('A repaired WebEngine resource changed during staging: '+name)
         seen.add(name)
 
+def maintained_libraries(proof, files, expected, locally_modified=False):
+    """Check relocated library bytes and retain every maintained source notice."""
+    from bootstrap_linux_dependencies import load_lock, verify_bindings
+    verify_bindings(proof)
+    required = {'licenses/maintained-' + p['name'] + '-copyright' for p in load_lock()['packages']}
+    for name in required:
+        if not files.get(name):raise RuntimeError('A maintained library copyright notice is missing: ' + name)
+    for binding in proof['runtimeBindings']:
+        name = binding['path']
+        if name not in expected or name not in files:
+            raise RuntimeError('A maintained library is missing from the runtime inventory: ' + name)
+        actual = {'size':len(files[name]), 'sha256':hashlib.sha256(files[name]).hexdigest()}
+        if not locally_modified and actual != binding['staged']:
+            raise RuntimeError('A maintained library differs from its relocated build identity: ' + name)
+    return required
+
+
 def verify_portable(files):
     from generate_portable_manifest import render
     manifest=json_object(files['runtime-manifest.json'],'runtime-manifest.json')
@@ -216,7 +233,7 @@ def verify_portable(files):
                 'declaredSecurityVersion':webengine['declaredSecurityVersion'],
                 'patches':[{key:entry[key] for key in ('commit','sha256','size')} for entry in webengine['patches']],
                 'criticalAdvisories':webengine['criticalAdvisories']}
-        if (not isinstance(security,dict) or set(security)-{'continuation'}!={*pinned,'outputs','upstreamFollowup','incrementalDelta','residualDelta','vendorFollowup'}
+        if (not isinstance(security,dict) or set(security)-{'continuation'}!={*pinned,'outputs','upstreamFollowup','incrementalDelta','residualDelta','vendorFollowup','release11'}
                 or any(security[key]!=value for key,value in pinned.items())):
             raise RuntimeError('The exact completed vendor WebEngine security build identity is missing or changed.')
         if 'continuation' in security:
@@ -230,10 +247,13 @@ def verify_portable(files):
         residual=verify_residual(security.get('residualDelta'))
         from qt_webengine_vendor_followup import verify_public as verify_vendor_followup
         vendor_followup=verify_vendor_followup(security.get('vendorFollowup'))
+        from qt_webengine_release_1_1 import verify_public as verify_release_1_1
+        release_1_1=verify_release_1_1(security.get('release11'))
         if (incremental['priorOutputs']!=followup['outputs']
                 or residual['priorOutputs']!=incremental['outputs']
                 or vendor_followup['priorOutputs']!=residual['outputs']
-                or vendor_followup['outputs']!=security.get('outputs')):
+                or release_1_1['priorOutputs']!=vendor_followup['outputs']
+            or release_1_1['outputs']!=security.get('outputs')):
             raise RuntimeError('The incremental WebEngine repairs and runtime history disagree.')
         outputs=security['outputs'];output_names=set()
         if not isinstance(outputs,list) or not 1<=len(outputs)<=1024:raise RuntimeError('The updated WebEngine output inventory is missing.')
@@ -296,6 +316,8 @@ def verify_portable(files):
         installed_files({name[len('usr/bin/'):]:body for name,body in files.items() if name.startswith('usr/bin/')}, 'linux')
         required.update({codec_worker,codec_pointer})
         required.update(verify_provenance(provenance.get('saveCodec'),files,'linux'))
+    if 'linuxDependencies' in provenance:
+        required.update(maintained_libraries(provenance['linuxDependencies'],files,expected,manifest.get('locallyModified') is True))
     common={name for name in files if re.fullmatch(r'licenses/common/(?:Apache-2\.0|Artistic|BSD|CC0-1\.0|GFDL(?:-1\.[123])?|GPL(?:-[123])?|LGPL(?:-(?:2|2\.1|3))?|MPL-(?:1\.1|2\.0))',name)}
     if set(files)!=(set(expected)|required|common):raise RuntimeError('The portable bundle has missing or unlisted files.')
 

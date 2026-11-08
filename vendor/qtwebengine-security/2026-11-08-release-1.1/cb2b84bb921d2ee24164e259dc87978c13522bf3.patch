@@ -1,0 +1,351 @@
+From cb2b84bb921d2ee24164e259dc87978c13522bf3 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Thu, 22 Oct 2026 15:33:17 -0700
+Subject: [PATCH] [Backport] CVE-2026-76031: Use after free in Input (1/2)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8611718:
+Don't send a cross-origin relatedTarget on a PointerEvent boundary event, and add more general defense-in-depth for relatedTarget.
+
+This prevents exposing a Node from another origin as the relatedTarget
+on pointerout, pointerover, pointerleave, and pointerenter events.
+
+The relatedTarget is instead null, except that when the two documents
+have an inner/outer relationship in the frame hierarchy, the events in
+the outer document use the frame owner element (e.g., iframe) in that
+document that contains the inner document as the relatedTarget.
+
+Same-origin cross-document boundary events retain the existing behavior
+of exposing the related target Node across documents, which is tested in
+a tentative WPT.  It's possible that we should also change this
+behavior, though, depending on how other engines behave.
+
+This also includes a second defense-in-depth change to check
+relatedTarget for all event types (MouseEvent, PointerEvent, and
+FocusEvent) that report it to script (not just this particular
+dispatching path) and set it to null if it is a cross-origin node.
+
+Both of these behavior changes are guarded by the
+`ClearCrossOriginRelatedTarget` runtime-enabled feature (status:
+stable).
+
+As a followup (to roll out via the normal release branch and not be
+merged to older branches) I intend to change the cross-origin check to
+be just a cross-document check, which will match the behavior of other
+browser engines.  This two-stage change will reduce the compatibility
+risk of the change that needs merging.
+
+Fixed: 572556403
+Bug: 574379564, 574843953
+Force-WPT-Export: true
+Change-Id: I123aff9643f43fd2de45dae1586f4d2cb2d635a9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611718
+Reviewed-by: Mustaq Ahmed <mustaq@chromium.org>
+Commit-Queue: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725257}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785332
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../blink/renderer/core/events/focus_event.cc |  1 +
+ .../blink/renderer/core/events/mouse_event.cc |  6 +-
+ .../blink/renderer/core/events/mouse_event.h  |  2 +-
+ .../renderer/core/events/pointer_event.cc     |  1 +
+ .../blink/renderer/core/events/ui_event.cc    | 23 ++++++
+ .../blink/renderer/core/events/ui_event.h     |  7 ++
+ .../core/input/boundary_event_dispatcher.cc   | 77 +++++++++++++++++++
+ .../core/input/boundary_event_dispatcher.h    |  4 +
+ .../platform/runtime_enabled_features.json5   |  7 ++
+ 9 files changed, 125 insertions(+), 3 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/events/focus_event.cc b/chromium/third_party/blink/renderer/core/events/focus_event.cc
+index 72b492c0e658..e843393dd634 100644
+--- a/chromium/third_party/blink/renderer/core/events/focus_event.cc
++++ b/chromium/third_party/blink/renderer/core/events/focus_event.cc
+@@ -72,6 +72,7 @@ void FocusEvent::Trace(Visitor* visitor) const {
+ }
+ 
+ DispatchEventResult FocusEvent::DispatchEvent(EventDispatcher& dispatcher) {
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+   return dispatcher.Dispatch();
+ }
+diff --git a/chromium/third_party/blink/renderer/core/events/mouse_event.cc b/chromium/third_party/blink/renderer/core/events/mouse_event.cc
+index 1d70c26cee21..81c2b55c6491 100644
+--- a/chromium/third_party/blink/renderer/core/events/mouse_event.cc
++++ b/chromium/third_party/blink/renderer/core/events/mouse_event.cc
+@@ -24,10 +24,12 @@
+ 
+ #include "third_party/blink/public/common/input/web_pointer_properties.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_mouse_event_init.h"
++#include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/events/event_dispatcher.h"
+ #include "third_party/blink/renderer/core/dom/events/event_path.h"
+ #include "third_party/blink/renderer/core/event_interface_names.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+@@ -133,7 +135,6 @@ MouseEvent::MouseEvent()
+     : position_type_(PositionType::kPosition),
+       button_(0),
+       buttons_(0),
+-      related_target_(nullptr),
+       synthetic_event_type_(kRealOrIndistinguishable) {}
+ 
+ MouseEvent::MouseEvent(const AtomicString& event_type,
+@@ -145,13 +146,13 @@ MouseEvent::MouseEvent(const AtomicString& event_type,
+     : UIEventWithKeyState(event_type, initializer, platform_time_stamp),
+       screen_x_(initializer->screenX()),
+       screen_y_(initializer->screenY()),
++      related_target_(initializer->relatedTarget()),
+       movement_delta_(initializer->movementX(), initializer->movementY()),
+       position_type_(synthetic_event_type == kPositionless
+                          ? PositionType::kPositionless
+                          : PositionType::kPosition),
+       button_(initializer->button()),
+       buttons_(initializer->buttons()),
+-      related_target_(initializer->relatedTarget()),
+       synthetic_event_type_(synthetic_event_type),
+       menu_source_type_(menu_source_type) {
+   InitCoordinates(initializer->clientX(), initializer->clientY(),
+@@ -386,6 +387,7 @@ void MouseEvent::Trace(Visitor* visitor) const {
+ }
+ 
+ DispatchEventResult MouseEvent::DispatchEvent(EventDispatcher& dispatcher) {
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   // TODO(mustaq): Move click-specific code to `PointerEvent::DispatchEvent`.
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+ 
+diff --git a/chromium/third_party/blink/renderer/core/events/mouse_event.h b/chromium/third_party/blink/renderer/core/events/mouse_event.h
+index 37f187f77d89..069e25ef4750 100644
+--- a/chromium/third_party/blink/renderer/core/events/mouse_event.h
++++ b/chromium/third_party/blink/renderer/core/events/mouse_event.h
+@@ -201,6 +201,7 @@ class CORE_EXPORT MouseEvent : public UIEventWithKeyState {
+   double offset_x_ = 0;
+   double offset_y_ = 0;
+ 
++  Member<EventTarget> related_target_;
+   bool has_cached_relative_position_ = false;
+ 
+  private:
+@@ -232,7 +233,6 @@ class CORE_EXPORT MouseEvent : public UIEventWithKeyState {
+   PositionType position_type_;
+   int16_t button_;
+   uint16_t buttons_;
+-  Member<EventTarget> related_target_;
+   SyntheticEventType synthetic_event_type_;
+ 
+   // Only used for contextmenu events.
+diff --git a/chromium/third_party/blink/renderer/core/events/pointer_event.cc b/chromium/third_party/blink/renderer/core/events/pointer_event.cc
+index 80e971641711..fcbd1402a804 100644
+--- a/chromium/third_party/blink/renderer/core/events/pointer_event.cc
++++ b/chromium/third_party/blink/renderer/core/events/pointer_event.cc
+@@ -199,6 +199,7 @@ DispatchEventResult PointerEvent::DispatchEvent(EventDispatcher& dispatcher) {
+ 
+   DCHECK(!target() || target() != relatedTarget());
+ 
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+ 
+   return dispatcher.Dispatch();
+diff --git a/chromium/third_party/blink/renderer/core/events/ui_event.cc b/chromium/third_party/blink/renderer/core/events/ui_event.cc
+index b95fa8d362c1..1876415e37af 100644
+--- a/chromium/third_party/blink/renderer/core/events/ui_event.cc
++++ b/chromium/third_party/blink/renderer/core/events/ui_event.cc
+@@ -22,8 +22,12 @@
+ 
+ #include "third_party/blink/renderer/core/events/ui_event.h"
+ 
++#include "third_party/blink/renderer/core/dom/node.h"
+ #include "third_party/blink/renderer/core/event_interface_names.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/input/input_device_capabilities.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ 
+ namespace blink {
+ 
+@@ -101,4 +105,23 @@ void UIEvent::Trace(Visitor* visitor) const {
+   Event::Trace(visitor);
+ }
+ 
++void UIEvent::ClearCrossOriginRelatedTarget(
++    const Node& target,
++    Member<EventTarget>& related_target) {
++  if (!RuntimeEnabledFeatures::ClearCrossOriginRelatedTargetEnabled() ||
++      !related_target) {
++    return;
++  }
++  const ExecutionContext* target_context = target.GetExecutionContext();
++  const ExecutionContext* related_context =
++      related_target->GetExecutionContext();
++  if (target_context && related_context && target_context != related_context) {
++    const SecurityOrigin* target_origin = target_context->GetSecurityOrigin();
++    const SecurityOrigin* related_origin = related_context->GetSecurityOrigin();
++    if (!target_origin->CanAccess(related_origin)) {
++      related_target = nullptr;
++    }
++  }
++}
++
+ }  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/events/ui_event.h b/chromium/third_party/blink/renderer/core/events/ui_event.h
+index 20576ee6b91f..32d47b7d178f 100644
+--- a/chromium/third_party/blink/renderer/core/events/ui_event.h
++++ b/chromium/third_party/blink/renderer/core/events/ui_event.h
+@@ -33,6 +33,7 @@
+ namespace blink {
+ 
+ class InputDeviceCapabilities;
++class Node;
+ 
+ // FIXME: Get rid of this type alias.
+ using AbstractView = DOMWindow;
+@@ -89,6 +90,12 @@ class CORE_EXPORT UIEvent : public Event {
+ 
+   void Trace(Visitor*) const override;
+ 
++ protected:
++  // Defense in depth: an event must never hand an EventTarget of a
++  // cross-origin ExecutionContext to the target's context via `relatedTarget`.
++  void ClearCrossOriginRelatedTarget(const Node& target,
++                                     Member<EventTarget>& related_target);
++
+  private:
+   Member<AbstractView> view_;
+   int detail_;
+diff --git a/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc b/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
+index a597ad934cfc..af2f9522665d 100644
+--- a/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
++++ b/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
+@@ -6,12 +6,44 @@
+ 
+ #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+ #include "third_party/blink/renderer/core/dom/node.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
++#include "third_party/blink/renderer/core/frame/frame.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/html/html_frame_owner_element.h"
+ #include "third_party/blink/renderer/core/input/event_handling_util.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ 
+ namespace blink {
+ 
+ namespace {
+ 
++HTMLFrameOwnerElement* FindFrameOwnerIfNested(
++    const ExecutionContext& possible_outer_context,
++    const ExecutionContext& possible_inner_context) {
++  const auto* possible_outer_window =
++      DynamicTo<LocalDOMWindow>(possible_outer_context);
++  const auto* possible_inner_window =
++      DynamicTo<LocalDOMWindow>(possible_inner_context);
++  if (!possible_outer_window || !possible_inner_window) {
++    return nullptr;
++  }
++  const Frame* possible_outer_frame = possible_outer_window->GetFrame();
++  const Frame* possible_inner_frame = possible_inner_window->GetFrame();
++  if (!possible_outer_frame || !possible_inner_frame) {
++    return nullptr;
++  }
++  const Frame* child_frame = possible_inner_frame;
++  while (child_frame && child_frame->Parent() != possible_outer_frame) {
++    child_frame = child_frame->Parent();
++  }
++  if (!child_frame) {
++    return nullptr;
++  }
++  return DynamicTo<HTMLFrameOwnerElement>(child_frame->Owner());
++}
++
+ void BuildAncestorChain(EventTarget* target,
+                         HeapVector<Member<Node>, 20>* ancestors) {
+   if (!event_handling_util::IsInDocument(target))
+@@ -59,6 +91,51 @@ void BoundaryEventDispatcher::SendBoundaryEvents(
+     EventTarget* exited_target,
+     bool original_exited_target_removed,
+     EventTarget* entered_target) {
++  // An EventTarget must never be exposed to a cross-origin ExecutionContext
++  // through `relatedTarget` (e.g. the touch pointer stream is owned by the
++  // local-root frame's PointerEventManager, which hit-tests through every
++  // same-process child frame).
++  // When the contexts have an inner/outer relationship in the frame hierarchy,
++  // the event in the outer document uses the frame owner (e.g. iframe) element
++  // that lives in that context as its relatedTarget. In other cases (e.g. for
++  // the event in the inner document, or sibling/cousin frames), the related
++  // target is null.
++  if (RuntimeEnabledFeatures::ClearCrossOriginRelatedTargetEnabled() &&
++      exited_target && entered_target) {
++    const ExecutionContext* exited_context =
++        exited_target->GetExecutionContext();
++    const ExecutionContext* entered_context =
++        entered_target->GetExecutionContext();
++    if (exited_context && entered_context &&
++        exited_context != entered_context) {
++      const SecurityOrigin* exited_origin = exited_context->GetSecurityOrigin();
++      const SecurityOrigin* entered_origin =
++          entered_context->GetSecurityOrigin();
++      if (!exited_origin->CanAccess(entered_origin) ||
++          !entered_origin->CanAccess(exited_origin)) {
++        EventTarget* exited_related_target =
++            FindFrameOwnerIfNested(*exited_context, *entered_context);
++        EventTarget* entered_related_target =
++            FindFrameOwnerIfNested(*entered_context, *exited_context);
++        SendBoundaryEventsSameOrigin(exited_target,
++                                     original_exited_target_removed,
++                                     exited_related_target);
++        SendBoundaryEventsSameOrigin(entered_related_target,
++                                     /*original_exited_target_removed=*/false,
++                                     entered_target);
++        return;
++      }
++    }
++  }
++
++  SendBoundaryEventsSameOrigin(exited_target, original_exited_target_removed,
++                               entered_target);
++}
++
++void BoundaryEventDispatcher::SendBoundaryEventsSameOrigin(
++    EventTarget* exited_target,
++    bool original_exited_target_removed,
++    EventTarget* entered_target) {
+   if (exited_target == entered_target && !original_exited_target_removed) {
+     return;
+   }
+diff --git a/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h b/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
+index 448af6c2ea9e..116edbd3fe20 100644
+--- a/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
++++ b/chromium/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
+@@ -38,6 +38,10 @@ class BoundaryEventDispatcher {
+                         bool check_for_listener) = 0;
+ 
+  private:
++  void SendBoundaryEventsSameOrigin(EventTarget* exited_target,
++                                    bool original_exited_target_removed,
++                                    EventTarget* entered_target);
++
+   AtomicString over_event_;
+   AtomicString out_event_;
+   AtomicString enter_event_;
+diff --git a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 7b7c85ef31f7..ad4cfc62775f 100644
+--- a/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/chromium/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -1269,6 +1269,13 @@
+       name: "CSSCrossFade",
+       status: "experimental",
+     },
++    {
++      // Killswitch for preventing cross-origin relatedTarget on boundary
++      // events.
++      // https://issues.chromium.org/issues/574379564
++      name: "ClearCrossOriginRelatedTarget",
++      status: "stable",
++    },
+     {
+       name: "CSSCustomMedia",
+       status: "test",

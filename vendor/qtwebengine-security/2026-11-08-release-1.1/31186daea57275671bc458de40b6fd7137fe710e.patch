@@ -1,0 +1,31 @@
+From 31186daea57275671bc458de40b6fd7137fe710e Mon Sep 17 00:00:00 2001
+From: Anu Aliyas <anu.aliyas@qt.io>
+Date: Wed, 4 Nov 2026 12:29:44 +0100
+Subject: [PATCH] [fixup][Backport] Dependency for CVE-2026-118334
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Added missing include file to resolve the
+compilation error.
+
+Task-number: QTBUG-152008
+Change-Id: I7105e75ecf7af80509ae584218f2218a2467531b
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786126
+Reviewed-by: Michael Brüning <michael.bruning@qt.io>
+---
+ .../blink/renderer/platform/wtf/cross_thread_copier_base.h       | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h b/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+index cb826b421a7..bd016b7a032 100644
+--- a/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
++++ b/chromium/third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h
+@@ -33,6 +33,7 @@
+ 
+ #include "base/files/file.h"
+ #include "base/files/file_error_or.h"
++#include "base/functional/callback.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "mojo/public/cpp/base/big_buffer.h"

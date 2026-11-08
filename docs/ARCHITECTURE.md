@@ -59,6 +59,6 @@ Build-generated manifests bind the native application to its shipped interface, 
 
 Windows uses the separately serviced WebView2 Runtime. The Linux AppImage bundles its Qt/Chromium and other runtime dependencies, retaining their notices, matching sources and library-replacement instructions. Rebuilding a development executable against system Qt does not reproduce that portable runtime.
 
-Nexus API code exists behind native platform adapters, but public **Local Edition** blocks API traffic while approval and live testing are pending. The current user workflow is manual website download followed by local import. Reports and diagnostic previews exclude common private data and require review before sharing; there is no automatic report-upload service.
+Nexus API code remains behind native platform adapters for explicitly selected reviewer and development builds. Public **Local Edition** blocks API traffic. Its workflow is a normal browser download followed by local detection and reviewed import, without an account connection or API key. Reports and diagnostic previews exclude common private data and require review before sharing; there is no automatic report-upload service.
 
 See [BUILDING.md](../BUILDING.md) for build inputs, [CONTRIBUTING.md](../CONTRIBUTING.md) for change expectations and [THIRD_PARTY.md](../THIRD_PARTY.md) for component boundaries.

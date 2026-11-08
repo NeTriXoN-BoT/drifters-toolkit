@@ -1,0 +1,69 @@
+From 8535a56a09b59838a92dc4d9eb57f434a324c3b2 Mon Sep 17 00:00:00 2001
+From: Michal Klocek <michal.klocek@qt.io>
+Date: Thu, 5 Nov 2026 16:44:03 +0100
+Subject: [PATCH] [fixup][roll][brotli] CVE-2026-111497: HTTP2Shell
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+git log --pretty=format:'* %Cred%h%Creset  %s' --abbrev-commit v1.2.0..v1.2.1
+
+outputs:
+
+* db24a98  prepare for release
+* b418fa8  Detect and report invalid stream earlier.
+
+b418fa8 we already have, db24a98 just bumps the version and CHANGLOG,
+so just bump the version too.
+
+Change-Id: Ie5a567ed58cc008b28f733e3691c84ab3b47b5cd
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786493
+Reviewed-by: Michael Brüning <michael.bruning@qt.io>
+---
+ chromium/third_party/brotli/README.chromium  | 5 ++---
+ chromium/third_party/brotli/common/version.h | 4 ++--
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/brotli/README.chromium b/chromium/third_party/brotli/README.chromium
+index bee4db5fa3e..5e547f63bf1 100644
+--- a/chromium/third_party/brotli/README.chromium
++++ b/chromium/third_party/brotli/README.chromium
+@@ -1,14 +1,13 @@
+ Name: Brotli
+ URL: https://github.com/google/brotli
+-Version: cfa184a997ac19454d5a3ae97f6d600aac2445a6
++Version: N/A
+ Revision: cfa184a997ac19454d5a3ae97f6d600aac2445a6
+ Update Mechanism: Manual
+ License: MIT
+ License File: LICENSE
+ Security Critical: yes
+ Shipped: yes
+-CPEPrefix: cpe:/a:google:brotli
+-
++CPEPrefix: cpe:/a:google:brotli:1.2.1
+ Description:
+ Brotli is a generic byte-level compression algorithm that is used at the
+ byte-compression level in WOFF 2.0 font file format. This library is used
+diff --git a/chromium/third_party/brotli/common/version.h b/chromium/third_party/brotli/common/version.h
+index 0d6fcc50a02..720a48f938d 100644
+--- a/chromium/third_party/brotli/common/version.h
++++ b/chromium/third_party/brotli/common/version.h
+@@ -19,7 +19,7 @@
+ 
+ #define BROTLI_VERSION_MAJOR 1
+ #define BROTLI_VERSION_MINOR 2
+-#define BROTLI_VERSION_PATCH 0
++#define BROTLI_VERSION_PATCH 1
+ 
+ #define BROTLI_VERSION BROTLI_MAKE_HEX_VERSION(                     \
+   BROTLI_VERSION_MAJOR, BROTLI_VERSION_MINOR, BROTLI_VERSION_PATCH)
+@@ -33,7 +33,7 @@
+  */
+ 
+ #define BROTLI_ABI_CURRENT  3
+-#define BROTLI_ABI_REVISION 0
++#define BROTLI_ABI_REVISION 1
+ #define BROTLI_ABI_AGE      2
+ 
+ #if BROTLI_VERSION_MAJOR != (BROTLI_ABI_CURRENT - BROTLI_ABI_AGE)

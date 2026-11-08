@@ -89,8 +89,8 @@ inline constexpr bool LocalEdition = true;
 inline constexpr bool LocalEdition = false;
 #endif
 inline constexpr const char* LocalEditionMessage =
-    "Nexus account features are not part of this version yet. They arrive with an update once Nexus Mods approves "
-    "the toolkit's API access. Until then, download mods on the Nexus website and import them here.";
+    "Nexus downloads use your browser in this version. Use Manual download on the mod's page, then import the "
+    "completed file. The toolkit does not need a Nexus account connection or API key.";
 inline nlohmann::json localEditionNexusResponse(const nlohmann::json& request) {
     if (request.is_object() && request.value("action", "") == "nexusStatus")
         return {{"ok", true},

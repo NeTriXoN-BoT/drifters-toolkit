@@ -1,0 +1,160 @@
+From 4a532233dbdc63e97514233595508ba655e16748 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Wed, 12 Nov 2025 08:37:08 -0800
+Subject: [PATCH] [backport] Dependency for CVE-2026-121044
+
+Move ParserModeOverridingScope optimization from SVGElement to CSSParser
+
+Transform the local GetParserContext() helper function into a helper
+class (LocalCSSParserContext) that performs the same setup. Move the
+logic for setting up a ParserModeOverridingScope when the parser mode
+does not match the one from the StyleSheetContents' parser context from
+SVGElement::CustomStyleForLayoutObject into the helper class.
+
+In preparation for eliminating custom-style callbacks on SVGElement.
+
+Bug: 40550039
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7133393
+Task-number: QTBUG-152028
+Change-Id: Ic1480366ba50fecc5dba493ebc412e079751c2f5
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786530
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/core/css/parser/css_parser.cc    | 74 +++++++++++--------
+ .../blink/renderer/core/svg/svg_element.cc    | 11 ---
+ 2 files changed, 44 insertions(+), 41 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc b/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
+index 66f357dcbd18..97397894d8c2 100644
+--- a/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
++++ b/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
+@@ -132,35 +132,45 @@ MutableCSSPropertyValueSet::SetResult CSSParser::ParseValue(
+       static_cast<StyleSheetContents*>(nullptr), execution_context);
+ }
+ 
+-static inline const CSSParserContext* GetParserContext(
+-    SecureContextMode secure_context_mode,
+-    StyleSheetContents* style_sheet,
+-    const ExecutionContext* execution_context,
+-    CSSParserMode parser_mode) {
+-  if (style_sheet) {
+-    if (style_sheet->ParserContext()->GetMode() == parser_mode) {
+-      // We can reuse this, to save on the construction.
+-      return style_sheet->ParserContext();
+-    } else {
+-      // This can happen when parsing e.g. SVG attributes in the context of
+-      // an HTML document.
+-      CSSParserContext* mutable_context =
+-          MakeGarbageCollected<CSSParserContext>(style_sheet->ParserContext());
++namespace {
++
++// Prepares a CSSParserContext based on the specified parameters.
++class LocalCSSParserContext {
++  STACK_ALLOCATED();
++
++ public:
++  LocalCSSParserContext(SecureContextMode secure_context_mode,
++                        StyleSheetContents* style_sheet,
++                        const ExecutionContext* execution_context,
++                        CSSParserMode parser_mode) {
++    if (style_sheet) {
++      context_ = style_sheet->ParserContext();
++      if (context_->GetMode() != parser_mode) {
++        // This can happen when parsing e.g. SVG attributes in the context of
++        // an HTML document.
++        overriding_scope_.emplace(*context_, parser_mode);
++      }
++    } else if (auto* window = DynamicTo<LocalDOMWindow>(execution_context)) {
++      // Create a parser context using document if it exists so it can check
++      // for origin trial enabled property/value.
++      auto* mutable_context =
++          MakeGarbageCollected<CSSParserContext>(*window->document());
+       mutable_context->SetMode(parser_mode);
+-      return mutable_context;
++      context_ = mutable_context;
++    } else {
++      context_ = MakeGarbageCollected<CSSParserContext>(parser_mode,
++                                                        secure_context_mode);
+     }
+-  } else if (IsA<LocalDOMWindow>(execution_context)) {
+-    // Create parser context using document if it exists so it can check for
+-    // origin trial enabled property/value.
+-    CSSParserContext* mutable_context = MakeGarbageCollected<CSSParserContext>(
+-        *To<LocalDOMWindow>(execution_context)->document());
+-    mutable_context->SetMode(parser_mode);
+-    return mutable_context;
+-  } else {
+-    return MakeGarbageCollected<CSSParserContext>(parser_mode,
+-                                                  secure_context_mode);
+   }
+-}
++
++  const CSSParserContext* GetParserContext() const { return context_; }
++
++ private:
++  std::optional<CSSParserContext::ParserModeOverridingScope> overriding_scope_;
++  const CSSParserContext* context_;
++};
++
++}  // namespace
+ 
+ MutableCSSPropertyValueSet::SetResult CSSParser::ParseValue(
+     MutableCSSPropertyValueSet* declaration,
+@@ -175,10 +185,12 @@ MutableCSSPropertyValueSet::SetResult CSSParser::ParseValue(
+     return MutableCSSPropertyValueSet::kParseError;
+   }
+ 
+-  CSSPropertyID resolved_property = ResolveCSSPropertyID(unresolved_property);
+   CSSParserMode parser_mode = declaration->CssParserMode();
+-  const CSSParserContext* context = GetParserContext(
++  const LocalCSSParserContext local_parser_context(
+       secure_context_mode, style_sheet, execution_context, parser_mode);
++  const CSSParserContext* context = local_parser_context.GetParserContext();
++
++  CSSPropertyID resolved_property = ResolveCSSPropertyID(unresolved_property);
+ 
+   // See if this property has a specific fast-path parser.
+   const CSSValue* value =
+@@ -214,7 +226,7 @@ MutableCSSPropertyValueSet::SetResult CSSParser::ParseValue(
+ }
+ 
+ // NOTE: This follows pretty much the exact same structure as ParseValue(),
+-// above.ParseValue(), above.ParseValue(), above.ParseValue(), above.
++// above.
+ unsigned CSSParser::ParseForPresentationStyle(
+     HeapVector<CSSPropertyValue, 8>& result,
+     CSSPropertyID resolved_property,
+@@ -230,8 +242,10 @@ unsigned CSSParser::ParseForPresentationStyle(
+   SecureContextMode secure_context_mode =
+       execution_context ? execution_context->GetSecureContextMode()
+                         : SecureContextMode::kInsecureContext;
+-  const CSSParserContext* context = GetParserContext(
++
++  const LocalCSSParserContext local_parser_context(
+       secure_context_mode, context_sheet, execution_context, parser_mode);
++  const CSSParserContext* context = local_parser_context.GetParserContext();
+ 
+   // Fast-path parser.
+   const CSSValue* value =
+diff --git a/chromium/third_party/blink/renderer/core/svg/svg_element.cc b/chromium/third_party/blink/renderer/core/svg/svg_element.cc
+index 9535ca730d8b..7c1a44bd832b 100644
+--- a/chromium/third_party/blink/renderer/core/svg/svg_element.cc
++++ b/chromium/third_party/blink/renderer/core/svg/svg_element.cc
+@@ -882,17 +882,6 @@ void SVGElement::AddAnimatedPropertyToPresentationAttributeStyle(
+ 
+ const ComputedStyle* SVGElement::CustomStyleForLayoutObject(
+     const StyleRecalcContext& style_recalc_context) {
+-  // If ResolveStyle() needs to create presentation attribute style for the
+-  // SVG object, those values need to be parsed, and we want that to happen in
+-  // SVG mode using the element sheet (which is a fake stylesheet used for
+-  // things like inline style). We don't need to switch the parser mode here
+-  // for correctness, but if we don't, CSSParser::ParseValue() will create a
+-  // new parser context due to mismatch. So override it temporarily here
+-  // to gain a tiny bit of performance.
+-  CSSParserContext::ParserModeOverridingScope scope(
+-      *GetDocument().ElementSheet().Contents()->ParserContext(),
+-      kSVGAttributeMode);
+-
+   SVGElement* corresponding_element = CorrespondingElement();
+   if (!corresponding_element) {
+     return GetDocument().GetStyleResolver().ResolveStyle(this,

@@ -19,7 +19,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = Path(__file__).with_name('archive_sources_lock.json')
-RECIPE_REVISION = 4
+RECIPE_REVISION = 5
 LICENSES = {'libarchive': ('COPYING',), 'zlib': ('LICENSE',), 'bzip2': ('LICENSE',),
             'xz': ('COPYING', 'COPYING.0BSD'), 'zstd': ('LICENSE', 'COPYING'), 'lz4': ('lib/LICENSE',)}
 

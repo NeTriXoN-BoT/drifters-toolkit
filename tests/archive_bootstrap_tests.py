@@ -35,7 +35,7 @@ class ArchiveBootstrap(unittest.TestCase):
     def test_source_pins_are_fixed_and_cached_originals_match(self):
         rows = archive.verify_sources(ROOT / 'vendor/archive-sources')
         self.assertEqual([row['dependency'] for row in rows], ['libarchive', 'zlib', 'bzip2', 'xz', 'zstd', 'lz4'])
-        self.assertEqual(rows[0]['version'], '3.8.10')
+        self.assertEqual(rows[0]['version'], '3.8.11')
         self.assertTrue(all(row['url'].startswith('https://') and len(row['sha256']) == 64 for row in rows))
 
     def test_pinned_bytes_are_checked_before_tar_parsing(self):

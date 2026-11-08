@@ -34,8 +34,7 @@ an entire source archive for the libraries bundled in a particular prebuilt
 Linux AppImage. When distributing a runtime, retain its exact matching source
 companions, licenses, source manifests and applicable library replacement
 materials. Do not replace that requirement with a link to unrelated or newer
-application source. [SOURCE_BASELINE.json](../SOURCE_BASELINE.json) records the
-1.0.9 application and SaveCodec companion identities.
+application source. The matching source downloads are attached to each release.
 
 The application source's library-replacement instructions predate this public
 MIT release. Their statement about the scope of library-specific permission

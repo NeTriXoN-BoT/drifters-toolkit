@@ -1,16 +1,14 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.9",
+  "version": "1.1.0",
   "items": [
-    "Timed messages now update their displayed seconds while the loader is visible but unfocused. Hidden or minimised windows keep the expiry deadline, and the display catches up when restored. Deliberate reading pauses still apply while the loader is focused.",
-    "Changelog versions keep their existing note panels when switching. The picker returns focus before closing its options, and fits smaller windows and larger text. Changelog and What’s new use unnumbered paragraphs, and What’s new now follows the current release.",
-    "Interface recovery ignores replies from an older interface session while allowing file actions already started to finish. A bounded recovery log in Diagnostics records the renderer version, failure type and exit code when available, without repeating the earlier file actions.",
-    "Combine mods now accepts larger selections through the native review too. There is no fixed eight-package limit; the existing checks on total size, assets and memory still apply.",
-    "Command-line profile launches stay attached until the selected game exits, then restore the original packages. An interrupted monitor or an uncertain game launch preserves the recovery record. Pending launches keep their waiting status until the game is actually detected.",
-    "Command-line profiles can be created from the current setup or started empty, renamed and deleted after review. Inactive local packages are shown as Stored only, matching My mods.",
-    "Update cleanup verifies the old release signature before removing files that are no longer shipped. A missing or changed old release record leaves those files alone while allowing a verified new release to finish installing.",
-    "The Field guide now explains PAK-only, native-only and combined PAK/ASI mods, with examples from Bleed Out and Headshot Only Freakers. Required components are distinguished from optional extensions. Windows, Proton, version checks and the limits of PAK profiles are covered.",
-    "Linux: the bundled browser engine includes another six reviewed upstream security fixes and their required changes. Packaging requires the rebuilt engine and its matching source bundle. The AppImage extraction fallback now removes its temporary files after closing and reports a cleanup failure if anything could not be removed.",
-    "⬇ To update: download the new ZIP for your system and leave it in your Downloads folder. The toolkit offers “Install and restart”. ⬇"
+    "The updated DTML icon is now used by the app, taskbar and sidebar. The sidebar also links to the open-source GitHub project.",
+    "Closing the toolkit now waits for the current file operation, then exits. Windows browser helpers are tracked by this app instance, given time to close normally and cleaned up if they hang. Closing during a profile session offers a clear recovery choice instead of silently minimizing.",
+    "Drop PAK files onto Workshop to open an editable draft. Drop .sav files onto Saves to import them as a separate backup. My mods keeps the normal package review before installation.",
+    "Shared saves can be imported as backups and reviewed before restoring. A selected current slot also has Import into this slot, with a complete safety backup before replacement.",
+    "Advanced infusion fields now have numbered labels, raw names and descriptions explaining that the entries are separate list positions. Their exact in-game effects remain unverified.",
+    "Workshop explains Bool, Float, whole-number, text and named-choice properties. Supported tagged DataTable and CurveTable rows and quaternion/transform components can now be edited. Unknown native data still needs a suitable external editor.",
+    "Repeated notifications are suppressed, at most three are shown together, and longer messages have more reading time. Timers pause while hidden, hovered or keyboard-focused. Successful save imports select the backup without another popup.",
+    "The public interface uses browser downloads and local file detection without Nexus sign-in or API keys. Download on a mod’s Nexus page, then import the completed file. The Field guide explains this workflow without promising future account features."
   ]
 }

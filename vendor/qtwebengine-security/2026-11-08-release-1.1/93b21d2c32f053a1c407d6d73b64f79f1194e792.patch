@@ -1,0 +1,35 @@
+From 93b21d2c32f053a1c407d6d73b64f79f1194e792 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@chromium.org>
+Date: Tue, 6 Oct 2026 17:14:50 +0000
+Subject: [PATCH] [Backport] CVE-2026-121047: Buffer overflow in Media
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8523942:
+avformat/mov: keep frag_index.current on its fragment in update_frag_index()
+
+Bug: 566251701
+Change-Id: I1f5da04b71eb3785e3e224bbd27837970a1f5d4b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8523942
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786532
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/third_party/ffmpeg/libavformat/mov.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/chromium/third_party/ffmpeg/libavformat/mov.c b/chromium/third_party/ffmpeg/libavformat/mov.c
+index 244f25cc2b9..a8706fea3ca 100644
+--- a/chromium/third_party/ffmpeg/libavformat/mov.c
++++ b/chromium/third_party/ffmpeg/libavformat/mov.c
+@@ -1783,6 +1783,9 @@ static int update_frag_index(MOVContext *c, int64_t offset)
+     if (index < c->frag_index.nb_items)
+         memmove(c->frag_index.item + index + 1, c->frag_index.item + index,
+                 (c->frag_index.nb_items - index) * sizeof(*c->frag_index.item));
++    if (index <= c->frag_index.current) {
++        c->frag_index.current++;
++    }
+ 
+     item = &c->frag_index.item[index];
+     item->headers_read = 0;

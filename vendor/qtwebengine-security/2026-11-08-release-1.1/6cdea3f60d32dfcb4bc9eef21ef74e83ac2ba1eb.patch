@@ -1,0 +1,87 @@
+From 6cdea3f60d32dfcb4bc9eef21ef74e83ac2ba1eb Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 29 Jul 2026 17:09:49 +0200
+Subject: [PATCH] [Backport] CVE-2026-79197: Use after free in V8 (4/4)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8167220:
+[deoptimizer] Make DeoptimizeFunction code parameter non-optional
+
+Remove the default value `= {}` from the `code` parameter of
+`Deoptimizer::DeoptimizeFunction`. This prevents call sites from
+accidentally omitting `frame->LookupCode()` when deoptimizing from
+a stack frame, eliminating the footgun that caused OSR stack
+frames to be missed when stepping in the debugger.
+
+Update `Runtime_DeoptimizeFunction`, `Runtime_DeoptimizeNow`, and
+`Runtime_DeoptimizeFunctionOSR` in `src/runtime/runtime-test.cc` to
+explicitly pass `function->code(isolate)`.
+
+TAG=agy
+CONV=28d5fd78-5476-4ae1-ba1e-1a3831bb533c
+
+Bug: 531297707
+Change-Id: Ib9e2128016ff30301dd71e795dace6cc29043346
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8167220
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108941}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786520
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/deoptimizer/deoptimizer.cc | 2 +-
+ chromium/v8/src/deoptimizer/deoptimizer.h  | 2 +-
+ chromium/v8/src/runtime/runtime-test.cc    | 6 ++++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/chromium/v8/src/deoptimizer/deoptimizer.cc b/chromium/v8/src/deoptimizer/deoptimizer.cc
+index 032b1c653b80..a750a9e49167 100644
+--- a/chromium/v8/src/deoptimizer/deoptimizer.cc
++++ b/chromium/v8/src/deoptimizer/deoptimizer.cc
+@@ -475,7 +475,7 @@ void Deoptimizer::DeoptimizeFunction(Tagged<JSFunction> function,
+   TimerEventScope<TimerEventDeoptimizeCode> timer(isolate);
+   TRACE_EVENT0("v8", "V8.DeoptimizeCode");
+   function->ResetIfCodeFlushed(isolate);
+-  if (code.is_null()) code = function->code(isolate);
++  DCHECK(!code.is_null());
+ 
+   if (CodeKindCanDeoptimize(code->kind())) {
+     // Mark the code for deoptimization and unlink any functions that also
+diff --git a/chromium/v8/src/deoptimizer/deoptimizer.h b/chromium/v8/src/deoptimizer/deoptimizer.h
+index 586112f4f30e..3ea8b2b6a752 100644
+--- a/chromium/v8/src/deoptimizer/deoptimizer.h
++++ b/chromium/v8/src/deoptimizer/deoptimizer.h
+@@ -100,7 +100,7 @@ class Deoptimizer : public Malloced {
+   // instead of the function code (e.g. OSR code not installed on function).
+   static void DeoptimizeFunction(Tagged<JSFunction> function,
+                                  LazyDeoptimizeReason reason,
+-                                 Tagged<Code> code = {});
++                                 Tagged<Code> code);
+ 
+   // Deoptimize all code in the given isolate.
+   V8_EXPORT_PRIVATE static void DeoptimizeAll(Isolate* isolate);
+diff --git a/chromium/v8/src/runtime/runtime-test.cc b/chromium/v8/src/runtime/runtime-test.cc
+index 89187f1123ab..45abbcc2f490 100644
+--- a/chromium/v8/src/runtime/runtime-test.cc
++++ b/chromium/v8/src/runtime/runtime-test.cc
+@@ -229,7 +229,8 @@ RUNTIME_FUNCTION(Runtime_DeoptimizeFunction) {
+   }
+ 
+   if (function->HasAttachedOptimizedCode(isolate)) {
+-    Deoptimizer::DeoptimizeFunction(*function, LazyDeoptimizeReason::kTesting);
++    Deoptimizer::DeoptimizeFunction(*function, LazyDeoptimizeReason::kTesting,
++                                    function->code(isolate));
+   }
+ 
+   return ReadOnlyRoots(isolate).undefined_value();
+@@ -246,7 +247,8 @@ RUNTIME_FUNCTION(Runtime_DeoptimizeNow) {
+   if (function.is_null()) return CrashUnlessFuzzing(isolate);
+ 
+   if (function->HasAttachedOptimizedCode(isolate)) {
+-    Deoptimizer::DeoptimizeFunction(*function, LazyDeoptimizeReason::kTesting);
++    Deoptimizer::DeoptimizeFunction(*function, LazyDeoptimizeReason::kTesting,
++                                    function->code(isolate));
+   }
+ 
+   return ReadOnlyRoots(isolate).undefined_value();

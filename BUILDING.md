@@ -39,7 +39,7 @@ Node.js is needed for the interface tests. Do not run Windows builds concurrentl
 
 ## Linux development
 
-Use a C++17 compiler, Python 3.11 or newer, CMake 3.24 or newer, Ninja, pkg-config, OpenSSL development files, libsecret development files and Qt 6.4 or newer. The CLI needs Qt Core, Network and WebSockets; the GUI additionally needs Widgets, WebEngineWidgets, WebChannel and DBus. Qt’s matching development tools and runtime plugins must be available. Node.js enables the interface tests.
+Use a C++17 compiler, Python 3.11 or newer, CMake 3.24 or newer, Ninja, pkg-config, OpenSSL development files and Qt 6.4 or newer. The public CLI needs Qt Core and Network; the GUI additionally needs Widgets, WebEngineWidgets, WebChannel and DBus. Qt’s matching development tools and runtime plugins must be available. Reviewer builds and the native account-backend tests additionally need Qt WebSockets and libsecret development files. Node.js enables the interface tests.
 
 The Debian build-dependency list is in [scripts/Dockerfile.appimage-build](scripts/Dockerfile.appimage-build). A system-Qt development build is useful for code changes; it does not reproduce the distributed AppImage.
 
@@ -74,18 +74,21 @@ You can modify and rebuild the decoder under its own licence. Rebuild the applic
 
 The public AppImage uses the pinned Qt 6.11.3 base, the project’s recorded WebEngine repairs, OpenSSL 3.5.9 and the matching dependency source companion. It requires the complete proof chain enforced by the packaging scripts. A system-Qt build is not a substitute for those inputs.
 
-The base recipe is in [docs/MODERN_QT_BUILD.md](docs/MODERN_QT_BUILD.md). For 1.0.9, also follow the recorded security layers in:
+The base recipe is in [docs/MODERN_QT_BUILD.md](docs/MODERN_QT_BUILD.md). For 1.1.0, also follow the recorded security layers in:
 
 - [26 October base repairs](docs/QT_WEBENGINE_SECURITY_2026-10-26.md)
 - [28 October follow-up](docs/QT_WEBENGINE_SECURITY_2026-10-28.md)
 - [30 October incremental repairs](docs/QT_WEBENGINE_SECURITY_2026-10-30.md)
 - [30 October residual repairs](docs/QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md)
 - [1 November vendor follow-up](docs/QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md)
+- [8 November release repairs](docs/QT_WEBENGINE_SECURITY_2026-11-08.md)
 
-These files describe successive inputs, so earlier examples and version labels are historical. The current packaging gate requires `QTWEBENGINE-SECURITY-VENDOR-FOLLOWUP-PROVENANCE.json` and its inherited proofs. Runtime ZIPs and corresponding-source companions are separate outputs.
+Build the other maintained libraries using [docs/LINUX_DEPENDENCIES.md](docs/LINUX_DEPENDENCIES.md), then supply that verified prefix through `--dependencies-prefix` when staging. Its source lock includes exact distribution archives, upstream repairs and output identities. The public package uses Qt/XDG portal dialogs and omits the unused GTK and Nexus account/keyring dependency chains.
+
+These files describe successive inputs, so earlier examples and version labels are historical. The current packaging gate requires `QTWEBENGINE-SECURITY-RELEASE-1-1-PROVENANCE.json` and its inherited proofs. Runtime ZIPs and corresponding-source companions are separate outputs.
 
 ## Before a pull request
 
 Run the tests that cover the changed behavior and give the exact commands and results in your pull request. Use synthetic packages and disposable saves for automated tests. Tests that need original mod downloads explicitly skip when those files are absent; a portable source checkout does not include game assets or other authors’ downloads.
 
-Keep public builds in Local Edition while Nexus approval and live testing are pending. Leave reviewer, private interface-test and private save-editor flags off in ordinary builds. Local builds are unsigned development copies; the official updater accepts the author’s signed release ZIPs.
+Public builds default to Local Edition and use browser downloads. Leave reviewer, private interface-test and private save-editor flags off in ordinary builds. Local builds are unsigned development copies; the official updater accepts the author’s signed release ZIPs.

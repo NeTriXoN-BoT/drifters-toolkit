@@ -305,6 +305,10 @@
         handleWindowVisibility(result);
         return;
       }
+      if (result.event === 'filesDropped') {
+        importDroppedFile(result.files, result.dropToken);
+        return;
+      }
       if (result.event === 'droppedImport') {
         handleDroppedImport(result);
         return;
@@ -1332,8 +1336,13 @@
   function setStatus(text) {
     $('#footer-status').textContent = text;
   }
+  const toastHistory = new Map();
   function toast(message, type = 'success', action = null) {
     recordRecentActivity(message, { type });
+    const key = type + ':' + String(message), now = Date.now(), last = toastHistory.get(key);
+    if (!action && last !== undefined && now - last < (type === 'error' ? 5000 : 15000)) return;
+    toastHistory.delete(key); toastHistory.set(key, now);
+    while (toastHistory.size > 128) toastHistory.delete(toastHistory.keys().next().value);
     const el = document.createElement('div');
     el.className = `toast ${type}`;
     el.setAttribute('role', type === 'error' ? 'alert' : 'status');
@@ -1344,12 +1353,22 @@
         el.remove();
         action.run();
       };
-    $('#toasts').append(el);
+    const region = $('#toasts');
+    region.append(el);
+    while (region.children?.length > 3) region.firstElementChild.remove();
+    const duration = Math.min(20000, Math.max(type === 'error' ? 10000 : action ? 10000 : type === 'warning' ? 7000 : 3500, String(message).length * 45));
+    let remaining = duration, previous = Date.now(), hovered = false;
+    el.addEventListener('pointerenter', () => { hovered = true; });
+    el.addEventListener('pointerleave', () => { hovered = false; });
     const expire = () => {
-      if (noticeInteractionVisible() && el.contains?.(document.activeElement)) setTimeout(expire, 1500);
-      else el.remove();
+      if (!el.isConnected) return;
+      const at = Date.now();
+      if (!document.hidden && !state.nativeWindowHidden && !hovered && !(noticeInteractionVisible() && el.contains?.(document.activeElement))) remaining -= Math.min(500, Math.max(0, at - previous));
+      previous = at;
+      if (remaining <= 0) el.remove();
+      else setTimeout(expire, Math.min(500, remaining));
     };
-    setTimeout(expire, type === 'error' ? 12000 : action ? 10000 : 6500);
+    setTimeout(expire, 500);
   }
 
   function recordRecentActivity(message, options = {}) {
@@ -2614,14 +2633,18 @@
   }
   // Dropping a downloaded PAK or ZIP onto the window adds it like Import mod: the same review opens first.
   const supportedImportName = (name) => /\.(pak|zip|zipx|7z|rar|tar|tgz|tbz2?|txz|tzst|gz|bz2|xz|lzma|lz|zst|zstd|lz4|cab|cpio|lha|lzh|ar|z)$/i.test(name || '');
-  async function importDroppedFile(files) {
-    if (state.preview || state.busy) return false;
-    const chosen = [...(files || [])].filter((file) => supportedImportName(file?.name));
-    if (!chosen.length) {
-      toast('Drop PAK files or supported mod archives. Installers cannot be imported.', 'warning');
-      return false;
+  async function importDroppedFile(files, dropToken = null) {
+    if (state.preview || state.busy || state.loading || state.nativeDropActivity?.running) return false;
+    if ($('#modal').open) { toast('Close the current review before dropping more files.', 'info'); return false; }
+    const target = state.view === 'workshop' ? 'workshop' : state.view === 'saves' ? 'saves' : 'mods',
+      accepts = (file) => target === 'workshop' ? /\.pak$/i.test(file?.name || '') : target === 'saves' ? /\.sav$/i.test(file?.name || '') : supportedImportName(file?.name),
+      chosen = [...(files || [])];
+    if (!chosen.length || chosen.length > 64 || chosen.some((file) => !accepts(file))) {
+      toast(target === 'workshop' ? 'Drop PAK files here to open a Workshop draft.' : target === 'saves' ? 'Drop .sav files here to keep them as a separate backup.' : 'Drop PAK files or supported mod archives here.', 'info'); return false;
     }
-    const result = await run('importDropped', {}, { refresh: false, progress: 'Checking your mod files…', objects: chosen });
+    if (target === 'workshop') return browseWorkshop(chosen, dropToken);
+    if (target === 'saves') return importSaveFiles(chosen, dropToken);
+    const result = await run('importDropped', { target, ...(dropToken ? { dropToken } : {}) }, { refresh: false, progress: 'Checking your mod files…', objects: dropToken ? undefined : chosen });
     if (result) await showImportResult(result);
     return !!result;
   }
@@ -2910,7 +2933,7 @@
   }
   function nexusAccountMarkup() {
     if (localEdition())
-      return `<button class="account-card" id="sidebar-nexus-local" title="Nexus account features arrive with an update"><span class="account-avatar disconnected">${icon('user')}</span><span class="account-copy"><strong>Nexus features</strong><small>Coming with an update</small><span class="account-connect">Learn more ${icon('info')}</span></span></button>`;
+      return `<button class="account-card" id="sidebar-toolkit-source" title="Open the toolkit’s source code on GitHub"><span class="account-avatar disconnected">${icon('code')}</span><span class="account-copy"><strong>Open source</strong><small>Drifter’s Toolkit on GitHub</small><span class="account-connect">View source ${icon('external')}</span></span></button>`;
     const account = state.nexus;
     if (!account.connected)
       return `<button class="account-card" id="sidebar-nexus-connect" title="${browserLoginAvailable() ? 'Connect your Nexus Mods account in your browser' : 'Connect your Nexus Mods account'}"><span class="account-avatar disconnected">${icon('user')}</span><span class="account-copy"><strong>Not connected</strong><small>Nexus Mods account</small><span class="account-connect">${browserLoginAvailable() ? 'Connect in browser' : 'Connect account'} ${icon('external')}</span></span></button>`;
@@ -2947,8 +2970,8 @@
     if (connect) connect.onclick = connectNexus;
     const settings = $('#sidebar-nexus-settings');
     if (settings) settings.onclick = () => navigate('settings');
-    const local = $('#sidebar-nexus-local');
-    if (local) local.onclick = localEditionInfo;
+    const source = $('#sidebar-toolkit-source');
+    if (source) source.onclick = () => run('openModdingResource', { resourceId: 'toolkit-source' }, { refresh: false });
     const version = $('#build-version');
     if (version) version.onclick = () => showChangelog();
   }
@@ -4096,7 +4119,7 @@
           ? 'Conflicting mods'
           : 'Something needs a look'
         : `${issues.length} things need a look`,
-      `<p>The last scan found ${issues.length === 1 ? 'this' : 'these'}:</p><ul class="finder-mods">${shown.map((issue) => `<li>${escape(issue.message)}</li>`).join('')}</ul>${issues.length > shown.length ? `<p class="field-note">And ${issues.length - shown.length} more. Conflicts and Diagnostics list all of them.</p>` : ''}<p class="field-note">This list opens by itself only when something new turns up. The notice button at the top shows it again.</p>`,
+      `<p>The last scan found ${issues.length === 1 ? 'this' : 'these'}:</p><ul class="finder-mods">${shown.map((issue) => `<li>${escape(issue.message)}</li>`).join('')}</ul>${issues.length > shown.length ? `<p class="field-note">And ${issues.length - shown.length} more. Conflicts and Diagnostics list all of them.</p>` : ''}<p class="field-note">New findings stay on the notice button at the top. Open them when you are ready to review them.</p>`,
       // Conflicts are fixed on the Conflicts page; everything else is checked by Diagnostics.
       `<button class="button" data-modal-close>Close</button>${conflicts ? `<button class="button ${others ? '' : 'primary'}" id="issues-conflicts">Review conflicts</button>` : ''}${others ? '<button class="button primary" id="issues-diagnostics">Run diagnostics</button>' : ''}`
     );
@@ -4137,9 +4160,14 @@
       (state.view === 'settings' && !force)
     )
       return false;
-    const next = state.noticeQueue[0];
+    // Background findings remain on the notice button. They should not open
+    // a chain of dialogs as the user navigates or closes another review.
+    const passive = new Set(['issues', 'game-updated', 'whats-new', 'updated']),
+      index = force ? 0 : state.noticeQueue.findIndex((notice) => !passive.has(notice.type));
+    if (index < 0) return false;
+    const next = state.noticeQueue[index];
     if (state.profileSession.active && next.type !== 'error') return false;
-    state.noticeQueue.shift();
+    state.noticeQueue.splice(index, 1);
     updateNoticeBadge();
     if (next.type === 'issues') {
       showIssueSummary();
@@ -4536,7 +4564,7 @@
     const actions = !blocked
       ? button('Refresh', 'save-backups-refresh', 'refresh') + button('Import saves as backup…', 'save-import', 'folder') + button('Back up now', 'backup-saves', 'save', 'primary')
       : '';
-    return `${header('SAVES', 'Your game saves', 'Browse the game’s current saves or keep a separate backup for later.', actions)}${previewNote()}<div class="saves-context"><div><span class="field-label">Selected installation</span><code>${escape(game || (snapshot.platform === 'linux' ? 'Choose a game installation so the toolkit can find its Proton saves.' : 'Choose your Days Gone installation in Settings.'))}</code>${location ? `<span class="field-label sg-location-label">Save location</span>${location.resolved === true && typeof location.path === 'string' ? `<code>${escape(location.path)}</code>` : `<p class="field-note">${escape(location.reason || 'The save location has not been identified safely yet.')}</p>`}` : ''}</div><button type="button" class="button small" data-view="${game ? 'folders' : 'settings'}">${icon('folder')}${game ? 'Check folders' : 'Choose game folder'}</button></div><div id="saves-game-status" role="status">${savesGameStatus()}</div><div class="sg-tabs" aria-label="Save collections"><button type="button" class="button" data-saves-tab="current" aria-pressed="${state.savesTab === 'current'}">${icon('save')}Current saves</button><button type="button" class="button" data-saves-tab="backups" aria-pressed="${state.savesTab === 'backups'}">${icon('folder')}Backups</button></div>${state.savesTab === 'backups' ? renderSaveBackupsPanel() : renderCurrentSavesPanel()}`;
+    return `${header('SAVES', 'Your game saves', 'Import shared .sav files as a backup, then review a restore. Select a current slot to import into that slot instead.', actions)}${previewNote()}<div class="saves-context"><div><span class="field-label">Selected installation</span><code>${escape(game || (snapshot.platform === 'linux' ? 'Choose a game installation so the toolkit can find its Proton saves.' : 'Choose your Days Gone installation in Settings.'))}</code>${location ? `<span class="field-label sg-location-label">Save location</span>${location.resolved === true && typeof location.path === 'string' ? `<code>${escape(location.path)}</code>` : `<p class="field-note">${escape(location.reason || 'The save location has not been identified safely yet.')}</p>`}` : ''}</div><button type="button" class="button small" data-view="${game ? 'folders' : 'settings'}">${icon('folder')}${game ? 'Check folders' : 'Choose game folder'}</button></div><div id="saves-game-status" role="status">${savesGameStatus()}</div><div class="sg-tabs" aria-label="Save collections"><button type="button" class="button" data-saves-tab="current" aria-pressed="${state.savesTab === 'current'}">${icon('save')}Current saves</button><button type="button" class="button" data-saves-tab="backups" aria-pressed="${state.savesTab === 'backups'}">${icon('folder')}Backups</button></div>${state.savesTab === 'backups' ? renderSaveBackupsPanel() : renderCurrentSavesPanel()}`;
   }
   function setSavesTab(tab) {
     if (!['current', 'backups'].includes(tab)) return;
@@ -5461,7 +5489,7 @@
     record.mode = 'edit';
     const filters = [['editable', 'Editable', editableCount], ['read-only', 'Read-only', readonlyCount], ['all', 'All values', entries.length]],
       toolbar = `<div class="save-editor-browser"><label class="save-editor-search" for="save-editor-search">${icon('search')}<span class="sr-only">Search save values</span><input class="input" id="save-editor-search" type="search" maxlength="256" value="${escape((record.inspectorQuery || '').slice(0, 256))}" placeholder="Find a value, group or type…" autocomplete="off" spellcheck="false"></label><div class="save-editor-filters" role="group" aria-label="Save value filter">${filters.map(([key, label, count]) => `<button type="button" class="button" id="save-editor-filter-${key}" aria-pressed="${saveEditorInspector(record).filter === key}">${label}<span>${count}</span></button>`).join('')}</div></div>`;
-    const advancedMarkup = advancedCount ? `<label class="save-editor-advanced-choice" for="save-editor-advanced"><input type="checkbox" id="save-editor-advanced" ${record.advancedEnabled === true ? 'checked' : ''}><span><strong>Advanced fields <span>${advancedCount}</span></strong><small>Allow editing of schema-checked fields that have not been tested in the game. Names such as UseEffectLevels are kept as recorded; they are not a promise of current or maximum stats.</small></span></label>` : '';
+    const advancedMarkup = advancedCount ? `<label class="save-editor-advanced-choice" for="save-editor-advanced"><input type="checkbox" id="save-editor-advanced" ${record.advancedEnabled === true ? 'checked' : ''}><span><strong>Advanced fields <span>${advancedCount}</span></strong><small>Show extra fields whose storage format is known but whose effect in the game is unverified. Infusion entries are separate list positions, numbered from zero in the raw name. Read each entry’s description before changing it.</small></span></label>` : '';
     modal(canEdit ? 'Edit save' : 'Inspect save', `<div class="save-editor-dialog" id="save-editor-content">${state.currentSaves?.saveEditorDevelopment === true ? '<div class="banner warning"><p><strong>Save-editor test build.</strong> Use a save with Skills unlocked, load that exact slot after editing and check the value in the game. A safety backup is made before applying.</p></div>' : ''}<h3>${escape(record.session.saveName)}</h3><p>${canEdit ? 'Change supported values or inspect the data identified in this save. Changes stay in a temporary draft until you review and apply them.' : 'These entries are read-only. Browse the identified values and their protection reasons; no change is made to this save.'}</p>${toolbar}${advancedMarkup}<h4 class="sr-only" id="save-editor-results-heading" tabindex="-1">Save values</h4><div class="save-editor-fields" id="save-editor-inspector">${saveEditorInspectorBody(record)}</div><p class="field-note save-editor-protected">Protected and read-only progress stays unchanged. Its entries explain what is known and why editing is restricted. Unknown blocks are preserved.</p>${record.session.inspectorTruncated === true ? '<p class="field-note">This save contains more data than the bounded inspector can show. Values outside this view stay unchanged.</p>' : ''}${canEdit ? '<p class="field-note">Use a save with Skills unlocked and load this exact slot through Load Game after applying.</p><p class="field-note">The full current-save set is backed up before applying. Other slots and protected progress stay unchanged.</p>' : '<p class="field-note">Inspection is a read-only snapshot. Reopen it after the game saves to read the new data. To make supported edits, close this inspection and choose Edit save after closing the game.</p>'}<p class="field-note" role="status" id="save-editor-status"></p></div>`, '<button type="button" class="button" id="save-editor-close">Close draft</button><button type="button" class="button" id="save-editor-revert">Revert pending value</button><button type="button" class="button primary" id="save-editor-review">Review changes…</button>');
     bindSaveEditorClose(record);
     const generation = record.modalGeneration;
@@ -5716,11 +5744,11 @@
     return true;
   }
   let saveImportGeneration = 0;
-  async function importSaveFiles() {
+  async function importSaveFiles(files = null, dropToken = null) {
     if (state.busy || state.nativeDropActivity?.running) return false;
     const context = saveManagementContext(), generation = ++saveImportGeneration,
       modalGeneration = modalContentGeneration, originalView = state.view;
-    const result = await run('saveImportBrowse', {}, { refresh: false, activity: true, progress: 'Keeping the selected saves in a separate backup…',
+    const result = await run(files ? 'importDropped' : 'saveImportBrowse', files ? { target: 'saves', ...(dropToken ? { dropToken } : {}) } : {}, { objects: files && !dropToken ? files : undefined, refresh: false, activity: true, progress: 'Keeping the selected saves in a separate backup…',
       onError: () => context !== saveManagementContext() || generation !== saveImportGeneration || modalGeneration !== modalContentGeneration });
     if (context !== saveManagementContext() || generation !== saveImportGeneration || !result || result.cancelled || result.imported !== true) return false;
     await loadSaveBackups();
@@ -5730,7 +5758,7 @@
     state.savesTab = 'backups';
     if (state.view === 'saves') render();
     if (modalGeneration === modalContentGeneration && state.view === originalView)
-      modal('Save files imported', '<p>The selected files are stored in a separate backup. Your current game saves have not changed.</p><p>Choose <strong>Review restore…</strong> when you want to use them. Copying and verifying files cannot confirm that a save matches your game version or account.</p>');
+      toast('Saves imported as a separate backup. Choose Review restore to use them.', 'success');
     return true;
   }
   let saveRestoreGeneration = 0;
@@ -6455,17 +6483,17 @@
   }
   function localEditionInfo() {
     modal(
-      'Nexus features are on the way',
-      '<p>This version of Drifter’s Toolkit does not connect to Nexus Mods yet. Signing in, checking for new mod versions and downloading from inside the toolkit need Nexus Mods to approve the toolkit’s API access first. They arrive with an update once that happens.</p><p>Until then, download mods on the Nexus website as usual, then choose <strong>Import mod</strong>. Everything else works the same.</p>',
+      'Download in your browser',
+      '<p>Open a mod’s Nexus page in your browser and use <strong>Manual download</strong>. Sign in on the website if it asks. The toolkit does not need your Nexus account or API key.</p><p>Keep the toolkit open to detect completed downloads, or choose <strong>Import mod</strong> and select the file. You can also drop it onto My mods. Drop a PAK onto Workshop to edit a draft instead.</p>',
       `<button class="button" data-modal-close>Close</button><button class="button primary" id="local-open-nexus">${icon('external')}Open Nexus Mods</button>`
     );
     $('#local-open-nexus').onclick = () => run('openNexus', {}, { refresh: false });
   }
   function renderLocalNexusPanel() {
-    return `<section class="panel settings-full"><div class="panel-heading"><div><h2>Nexus Mods</h2><p>Account features arrive with an update.</p></div>${icon('lock')}</div><div class="panel-body"><p>This version does not connect to Nexus Mods yet. Signing in, release checks and downloads inside the toolkit need Nexus Mods to approve the toolkit’s API access first. Until then, download mods on the Nexus website and import them.</p><div class="inline-actions">${button('Open Nexus Mods', 'nexus', 'external', 'small')}${button('Import mod', 'import', 'plus', 'small')}</div></div></section>`;
+    return `<section class="panel settings-full"><div class="panel-heading"><div><h2>Browser downloads</h2><p>Download on Nexus, then import here.</p></div>${icon('lock')}</div><div class="panel-body"><p>Use Manual download on the mod’s Nexus page. Completed local downloads can be detected by the toolkit, or imported with the button below. Your browser handles website sign-in; no Nexus account connection is needed in the toolkit.</p><div class="inline-actions">${button('Open Nexus Mods', 'nexus', 'external', 'small')}${button('Import mod', 'import', 'plus', 'small')}</div></div></section>`;
   }
   function renderLocalDownloads() {
-    return `${header('NEXUS DOWNLOADS', 'Download on Nexus, import here.', 'This version imports the files you download on the Nexus website. In-app downloads arrive with an update.', button('Open Nexus page', 'nexus', 'external') + button('Import mod', 'import', 'plus', 'primary'))}${previewNote()}<div class="banner neutral">${icon('info')}<p><strong>Nexus account features are on the way.</strong> Signing in, checking for new versions and downloading from inside the toolkit need Nexus Mods to approve the toolkit’s API access first. Until then, use <strong>Manual download</strong> on a mod’s Files tab, then <strong>Import mod</strong>. The toolkit checks each file before it can be enabled.</p></div><div class="empty-state">${icon('download')}<h3>Import what you downloaded.</h3><p>Choose the PAK file or the ZIP you downloaded. The author’s releases are recognised automatically; other authors’ PAK mods are added as local imports.</p><div class="inline-actions justify-center">${button('Open Nexus page', 'nexus', 'external')}${button('Import mod', 'import', 'plus', 'primary')}</div></div>`;
+    return `${header('NEXUS DOWNLOADS', 'Download on Nexus, import here.', 'Use Manual download on a mod’s page, then import the completed file. No toolkit sign-in is needed.', button('Open Nexus page', 'nexus', 'external') + button('Import mod', 'import', 'plus', 'primary'))}${previewNote()}<div class="banner neutral">${icon('info')}<p><strong>Downloads use your browser.</strong> Open a mod’s page and use <strong>Manual download</strong> on a mod’s Files tab, then <strong>Import mod</strong>. The toolkit checks each file before it can be enabled.</p></div><div class="empty-state">${icon('download')}<h3>Import what you downloaded.</h3><p>Choose the PAK file or the ZIP you downloaded. The author’s releases are recognised automatically; other authors’ PAK mods are added as local imports.</p><div class="inline-actions justify-center">${button('Open Nexus page', 'nexus', 'external')}${button('Import mod', 'import', 'plus', 'primary')}</div></div>`;
   }
   function switchValue(selector, fallback) {
     const control = $(selector);
@@ -7678,6 +7706,38 @@
     if (editor === 'enum') return `<select class="input" id="workshop-field-${id}" data-workshop-field="${id}" ${disabled}>${field.choices.map((choice, index) => `<option value="${index}" ${choice.value === value ? 'selected' : ''}>${escape(choice.label)}</option>`).join('')}</select>`;
     return `<input class="input" type="text" inputmode="${editor === 'integer' ? 'numeric' : editor === 'number' ? 'decimal' : 'text'}" id="workshop-field-${id}" data-workshop-field="${id}" value="${escape(workshopFieldValue(field))}" maxlength="${editor === 'text' ? field.maxLength : 80}" spellcheck="false" autocomplete="off" ${disabled}>`;
   }
+  function workshopPropertyHelp(field) {
+    const type = field.type || '', name = String(field.name || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_/]+/g, ' '),
+      kind = type === 'BoolProperty' ? 'Bool is an on/off switch: checked is true, unchecked is false.'
+        : /Float|Double/.test(type) ? 'A decimal number. It may store an amount, duration, scale or multiplier.'
+        : /Int|Byte/.test(type) ? 'A whole number. It may store a count, index or numbered choice.'
+        : field.editor === 'enum' ? 'A named choice already stored in this asset.'
+        : field.editor === 'text' ? 'Text stored in this asset; its encoded length must stay the same.' : 'A component of the selected property.',
+      clue = /damage/i.test(name) ? 'The name suggests a damage setting.'
+        : /cooldown|duration|delay|interval/i.test(name) ? 'The name suggests timing; the asset does not establish its units.'
+        : /recoil|spread/i.test(name) ? 'The name suggests weapon recoil or shot spread.'
+        : /speed/i.test(name) ? 'The name suggests a speed setting; check whether this is a base value or multiplier.'
+        : /health|stamina|focus/i.test(name) ? 'The name refers to a player or actor attribute.'
+        : /distance|radius|range/i.test(name) ? 'The name suggests a distance or area setting; its units depend on the game code.' : '';
+    const rawName = String(field.name || ''), leaf = rawName.split('/').at(-1),
+      knownWeaponFields = {
+        MinAccuracyRadius: 'Lower bound of the weapon’s shot-accuracy cone.',
+        MaxAccuracyRadius: 'Upper bound of the weapon’s shot-accuracy cone.',
+        NumDegreesIncRadiusPerShot: 'How much the shot cone widens with each shot (firing bloom).',
+        fWeaponSway: 'Weapon aim sway for the normal stance.',
+        fWeaponSwayCrouching: 'Weapon aim sway while crouching.',
+        fSwayPitchMagMult: 'Vertical aim-sway multiplier for the normal stance.',
+        fSwayPitchMagMultCrouching: 'Vertical aim-sway multiplier while crouching.',
+        MinRecoilAngle: 'Lower bound of shot-recoil movement for this direction.',
+        MaxRecoilAngle: 'Upper bound of shot-recoil movement for this direction.',
+        CameraShakeRightLeftAngle: 'Horizontal camera-shake angle when firing.',
+        CameraShakeUpDownAngle: 'Vertical camera-shake angle when firing.'
+      },
+      known = /(?:^|\/)WeaponConfig(?:Override)?\//.test(rawName) ? knownWeaponFields[leaf] :
+        leaf === 'VehicleMoveSlowlySpeed' && /BillsBike\.uasset$/i.test(state.workshopAsset?.path || '')
+          ? 'Bike speed used when slow movement is requested. Scripted riding can use it as well as camp riding.' : '';
+    return [known || clue, kind, known ? '' : 'A name is a clue; exact behaviour needs a game test.', field.hint || ''].filter(Boolean).join(' ');
+  }
   function renderWorkshopDetail() {
     const asset = state.workshopAsset;
     if (!asset || asset.id !== state.workshopSelection) return `<div class="empty-state compact">${icon('report')}<h2>${state.workshopLoading ? 'Reading the selected asset' : 'Choose an asset'}</h2><p>Select a package path to see its supported properties and source files.</p></div>`;
@@ -7689,7 +7749,7 @@
       sources = ids.map((id, index) => ({ id, name: names[index] || 'Source package' })),
       blocked = workshopBlocked(), mergeBlocked = state.workshopMerge?.asset === asset.id && state.workshopMerge.conflicts?.length > 0;
     const sourceChoice = sources.length > 1 && !asset.removed ? `<section class="workshop-source-choice"><h3>Source versions</h3><p>Choosing a source keeps that complete asset family, including its companion data. It does not combine the other version’s edits.</p><div class="workshop-source-buttons">${sources.map((source) => `<button type="button" class="button small" data-workshop-source="${escape(source.id)}" ${blocked || workshopPending() || asset.selectedSource === source.id ? 'disabled' : ''}>${icon(asset.selectedSource === source.id ? 'check' : 'layers')}${escape(source.name)}${asset.selectedSource === source.id ? ' · Selected' : ''}</button>`).join('')}</div>${asset.selectedSource ? `<p class="field-note"><strong>Kept:</strong> ${escape(sources.find((source) => source.id === asset.selectedSource)?.name || 'Selected source')}. <strong>Other versions excluded:</strong> ${sources.filter((source) => source.id !== asset.selectedSource).map((source) => escape(source.name)).join(', ')}. Their edits are not included by this source choice.</p>` : ''}${/\.uasset$/i.test(asset.path) ? `<button type="button" class="button small" id="workshop-baseline" ${blocked || workshopPending() || asset.replaced ? 'disabled' : ''}>${icon('layers')}Compare with original asset…</button><p class="field-note">Choose the matching unmodified .uasset exported from your game. The comparison checks all ${sources.length} opened versions against that original. Opaque changes and separate companion data need a complete source choice.</p>` : ''}</section>` : '';
-    const properties = asset.editable === true && allFields.length ? `<label class="field-label" for="workshop-property-search">Find a property</label><input id="workshop-property-search" class="input full-width" type="search" placeholder="Search names, objects or types…" maxlength="240" value="${escape(state.workshopPropertySearch)}"><p class="field-note">${matchingFields.length} matching properties${matchingFields.length > fields.length ? ' · Showing the first 256; narrow the search to find more' : ''}</p><div class="workshop-properties" id="workshop-properties">${fields.map((field) => `<div class="workshop-property"><label for="workshop-field-${escape(field.id)}"><strong>${escape(field.label || field.name || field.id)}</strong><small>${escape(field.type.replace('Property', ''))}${typeof field.hint === 'string' ? ' · ' + escape(field.hint.slice(0, 512)) : ''}</small></label><div class="workshop-property-input">${renderWorkshopFieldControl(field, mergeBlocked)}<button type="button" class="button small" data-workshop-reset="${escape(field.id)}" title="${escape(Object.hasOwn(field, 'originalValue') ? 'Opened source: ' + String(field.originalValue) : 'Reset to the opened source value')}" aria-label="Reset ${escape(field.name || field.id)} to its opened source value" ${blocked || mergeBlocked || workshopPending() || field.changed !== true ? 'disabled' : ''}>Reset</button></div></div>`).join('') || '<p class="field-note">No properties match that search.</p>'}</div><p class="field-note">${mergeBlocked ? 'Resolve the conflicting values below before editing properties.' : 'Values are validated in the temporary draft as you type. Reset restores the opened source value; Undo reverses the last draft change.'}</p>`
+    const properties = asset.editable === true && allFields.length ? `<label class="field-label" for="workshop-property-search">Find a property</label><input id="workshop-property-search" class="input full-width" type="search" placeholder="Search names, objects or types…" maxlength="240" value="${escape(state.workshopPropertySearch)}"><p class="field-note">${matchingFields.length} matching properties${matchingFields.length > fields.length ? ' · Showing the first 256; narrow the search to find more' : ''}</p><div class="workshop-properties" id="workshop-properties">${fields.map((field) => `<div class="workshop-property"><div class="workshop-property-copy"><label for="workshop-field-${escape(field.id)}"><strong>${escape(field.label || field.name || field.id)}</strong><small>${escape(field.type.replace('Property', ''))}</small></label><details class="workshop-property-help"><summary>What does this do?</summary><p>${escape(workshopPropertyHelp(field))}</p></details></div><div class="workshop-property-input">${renderWorkshopFieldControl(field, mergeBlocked)}<button type="button" class="button small" data-workshop-reset="${escape(field.id)}" title="${escape(Object.hasOwn(field, 'originalValue') ? 'Opened source: ' + String(field.originalValue) : 'Reset to the opened source value')}" aria-label="Reset ${escape(field.name || field.id)} to its opened source value" ${blocked || mergeBlocked || workshopPending() || field.changed !== true ? 'disabled' : ''}>Reset</button></div></div>`).join('') || '<p class="field-note">No properties match that search.</p>'}</div><p class="field-note">${mergeBlocked ? 'Resolve the conflicting values below before editing properties.' : 'Values are validated in the temporary draft as you type. Reset restores the opened source value; Undo reverses the last draft change.'}</p>`
       : `<div class="workshop-readonly"><h3>Property editing is unavailable for this asset</h3><p>${escape(asset.reason || 'Its data layout has not been verified by the supported asset reader. You can inspect its package path and choose a complete source version.')}</p></div>`;
     return `<div class="workshop-detail-heading"><span class="eyebrow">SELECTED ASSET</span><h2>${escape(asset.path)}</h2><span class="workshop-meta">${asset.removed ? 'Removed from this draft' : formatBytes(Number(asset.bytes) || 0)}${asset.replaced ? ' · Replaced file' : asset.edited ? ' · Edited draft' : asset.added ? ' · Added file' : ''}</span></div>${renderWorkshopFileTools(asset)}${sourceChoice}${properties}${renderWorkshopMerge()}`;
   }
@@ -7878,13 +7938,13 @@
     if (current === entry) entry.valid = false;
     paintWorkshop(); return false;
   }
-  async function browseWorkshop() {
+  async function browseWorkshop(files = null, dropToken = null) {
     if (workshopBlocked() || workshopPending()) return false;
     const open = async () => {
       const context = workshopContext(), generation = ++workshopGeneration;
       state.workshopWorking = true; state.workshopError = ''; paintWorkshop();
       try {
-        const result = await run('workshopBrowse', {}, { refresh: false, activity: true, progress: 'Reading the selected PAK files…',
+        const result = await run(files ? 'importDropped' : 'workshopBrowse', files ? { target: 'workshop', ...(dropToken ? { dropToken } : {}) } : {}, { objects: files && !dropToken ? files : undefined, refresh: false, activity: true, progress: 'Reading the selected PAK files…',
           onError: (error) => { if (context === workshopContext() && generation === workshopGeneration) state.workshopError = errorText(error); return true; } });
         if (context !== workshopContext() || generation !== workshopGeneration || !result || result.cancelled) return false;
         acceptWorkshopSession(result.session); state.workshopLoaded = true; return true;

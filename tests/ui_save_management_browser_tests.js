@@ -55,7 +55,7 @@ async function main() {
         ui.state.setupPrompted = true; ui.state.noticeQueue = []; ui.state.preview = false;
         Object.assign(ui.state.snapshot, { platform: mode.platform, edition: 'local', accountContext: 'synthetic-layout',
           gameRunning: false, saveLocation: { resolved: true }, diagnostics: [] });
-        Object.assign(ui.state.snapshot.settings, { autoScale: false, interfaceScale: 100, fontScale: mode.font,
+        Object.assign(ui.state.snapshot.settings, { gamePath: '/Synthetic/DaysGone', autoScale: false, interfaceScale: 100, fontScale: mode.font,
           colorMode: mode.color, highContrast: !!mode.contrast, reducedMotion: true, seasonalThemes: false });
         const current = { context: 'synthetic-save-account', signature: 'stable', status: 'ready', saves: [
           { id, name: 'Deacon_At_The_Forest_Camp_' + 'LongSaveName_'.repeat(6) + '.sav', size: 2048,
@@ -77,9 +77,9 @@ async function main() {
           saveEditorOpen: { supported: true, session: editor() }, saveEditorSet: { session: editor(1, 4) },
           saveEditorReview: { ...replacement, operation: 'edit-current-save', token: 'synthetic-editor-review', changes: [{ label: 'Unspent skill points', before: 2, after: 4 }] },
           saveEditorApply: { replaced: true, safetyBackupId: backupId }, saveEditorClose: { closed: true, session: null },
-          currentSaveDeleteReview: { token: 'synthetic-current-token', id, name: current.saves[0].name,
+          currentSaveDeleteReview: { token: 'synthetic-current-token', id, operation: 'delete-current-save', safetyBackupRequired: true, name: current.saves[0].name,
             warnings: ['A safety backup is required before deleting this selected file.'] },
-          backupDeleteReview: { token: 'synthetic-backup-token', id: backupId, warnings: ['This backup is pinned and linked to a profile.'] },
+          backupDeleteReview: { token: 'synthetic-backup-token', id: backupId, operation: 'delete-backup', warnings: ['This backup is pinned and linked to a profile.'] },
           saveImportBrowse: { imported: true, id: backupId, files: 12, bytes: 4096 } };
         ui.applyAppearance(); ui.navigate('saves');
       }, mode);
@@ -90,11 +90,11 @@ async function main() {
           footerVisible: !control || rect.top >= 0 && rect.bottom <= innerHeight + 1 };
       }, footer);
       let checks = await layout(); assert.equal(checks.bodyOverflow, false, mode.name + ': current saves wrap');
-      assert(await page.locator('[data-current-save-edit]').isDisabled(), 'Release capability defaults to disabled');
-      assert((await page.locator('#save-editor-availability').textContent()).includes('disabled in this version'));
+      assert(await page.locator('[data-current-save-edit]').isDisabled(), 'A native inventory without editing capability keeps the control disabled');
+      assert((await page.locator('#save-editor-availability').textContent()).includes('not available in this build'));
       await page.locator('#save-editor-availability').scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(output, mode.name + '-current-saves.png') });
-      // Only the synthetic future-editor fixture opts in; production native inventory remains false.
+      // The next synthetic inventory opts in to the supported editor capability.
       await page.evaluate(() => {
         window.lifecycleProbe.state.currentSaves.saveEditorAvailable = true;
         window.lifecycleReplies.currentSavesList.saveEditorAvailable = true;
@@ -103,8 +103,9 @@ async function main() {
       await page.locator('[data-current-save-edit]').click();
       await page.locator('#save-editor-review').waitFor();
       checks = await layout('#save-editor-review'); assert(!checks.dialogOverflow && checks.footerVisible);
-      await page.locator('.save-editor-protected summary').click();
+      await page.locator('#save-editor-filter-read-only').click();
       assert((await page.locator('#save-editor-content').textContent()).includes('Player level'));
+      await page.locator('#save-editor-filter-editable').click();
       await page.locator('[data-save-editor-field]').fill('4');
       await page.waitForFunction(() => window.lifecycleProbe.state.saveEditor?.session.revision === 1 && !window.lifecycleProbe.state.saveEditor.pending);
       assert.equal(await page.locator('[data-save-editor-field]').inputValue(), '4');

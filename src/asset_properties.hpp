@@ -175,6 +175,7 @@ struct Parser {
     std::vector<std::string> names;
     std::vector<std::int32_t> importNames;
     std::vector<Export> exports;
+    std::vector<std::size_t> exportFlags;
     std::size_t tags = 0, fieldMetadataBytes = 0;
     bool metadataExceeded = false;
     explicit Parser(const Bytes& data) : d(data) {}
@@ -234,6 +235,7 @@ struct Parser {
         std::vector<std::pair<std::size_t, std::size_t>> payloads;
         for (std::int32_t n = 0; n < ec; ++n) {
             const auto at = static_cast<std::size_t>(eo) + n * 72;
+            exportFlags.push_back(at + 20);
             const auto name = i32(d, at + 12), number = i32(d, at + 16), size = i32(d, at + 24), offset = i32(d, at + 28);
             need(name >= 0 && static_cast<std::size_t>(name) < names.size() && number >= 0 && size >= 0 && offset >= 0,
                  "An asset export name or payload range is invalid.");
@@ -249,7 +251,7 @@ struct Parser {
         for (const auto& e : exports) { ref(e.classIndex); ref(e.outer); }
     }
     bool properties(std::size_t start, std::size_t end, const std::string& object, const std::string& prefix,
-                    std::size_t exportIndex, unsigned depth, bool exactEnd, std::vector<Field>& output) {
+                    std::size_t exportIndex, unsigned depth, bool exactEnd, std::vector<Field>& output, std::size_t* consumed = nullptr) {
         need(depth <= 8, "Nested property data exceeds the editor's depth limit.");
         auto p = start;
         std::set<std::string> seen;
@@ -257,7 +259,7 @@ struct Parser {
             need(++tags <= 100000, "The asset property count exceeds the editor's limit.");
             const auto tag = p;
             const auto name = fname(p, end);
-            if (name == "None") return !exactEnd || p == end;
+            if (name == "None") { if (consumed) *consumed = p; return !exactEnd || p == end; }
             const auto type = fname(p, end);
             need(p <= end && end - p >= 8, "A property tag is truncated.");
             const auto size = i32(d, p), array = i32(d, p + 4); p += 8;
@@ -320,7 +322,9 @@ struct Parser {
             };
             if (type == "StructProperty") {
                 std::vector<std::string> components; std::string componentType = "FloatProperty"; size_t width = 4;
-                if (structure == "Vector" && size == 12) components = {"X", "Y", "Z"};
+                if (structure == "Quat" && size == 16) components = {"X", "Y", "Z", "W"};
+                else if (structure == "Transform" && size == 40) components = {"Rotation/X", "Rotation/Y", "Rotation/Z", "Rotation/W", "Translation/X", "Translation/Y", "Translation/Z", "Scale/X", "Scale/Y", "Scale/Z"};
+                else if (structure == "Vector" && size == 12) components = {"X", "Y", "Z"};
                 else if (structure == "Vector2D" && size == 8) components = {"X", "Y"};
                 else if (structure == "Vector4" && size == 16) components = {"X", "Y", "Z", "W"};
                 else if (structure == "Rotator" && size == 12) components = {"Pitch", "Yaw", "Roll"};
@@ -381,7 +385,34 @@ inline Document parse(const Bytes& source) {
             const auto object = parser.names[e.name] + (e.number ? " [" + std::to_string(e.number) + "]" : "");
             std::vector<Field> fields;
             try {
-                if (parser.properties(e.offset, e.offset + e.size, object, {}, n, 0, false, fields)) {
+                std::size_t afterProperties = 0;
+                if (parser.properties(e.offset, e.offset + e.size, object, {}, n, 0, false, fields, &afterProperties)) {
+                    if (kind == "DataTable" || kind == "CurveTable") {
+                        // UE4 legacy DataTable/CurveTable: UObject properties, optional
+                        // object GUID, then named rows of tagged struct properties.
+                        // A table is accepted only if every row reaches its terminator
+                        // and the complete native payload has been consumed.
+                        auto at = afterProperties; const auto end = e.offset + e.size;
+                        if (!(detail::u32(source, parser.exportFlags.at(n)) & 0x10u)) {
+                            detail::need(at <= end && end - at >= 4, "The table object GUID flag is truncated.");
+                            const auto guid = detail::u32(source, at); at += 4;
+                            detail::need(guid <= 1 && (guid == 0 || end - at >= 16), "The table object GUID is invalid.");
+                            if (guid) at += 16;
+                        }
+                        detail::need(at <= end && end - at >= 4, "The table row count is truncated.");
+                        const auto count = detail::i32(source, at); at += 4;
+                        detail::need(count >= 0 && count <= 4096, "The table row count exceeds the editor's limit.");
+                        std::set<std::string> rowNames;
+                        for (int row = 0; row < count; ++row) {
+                            const auto rowName = parser.fname(at, end);
+                            detail::need(rowName != "None" && rowNames.insert(rowName).second, "Table row names are ambiguous.");
+                            std::size_t next = 0;
+                            detail::need(parser.properties(at, end, object, "Rows/" + rowName + "/", n, 1, false, fields, &next) && next > at,
+                                         "A table row does not have a supported tagged layout.");
+                            at = next;
+                        }
+                        detail::need(at == end, "The table has unsupported trailing data.");
+                    }
                     detail::need(result.fields.size() + fields.size() <= detail::maxFields, "The asset has too many editable fields.");
                     result.fields.insert(result.fields.end(), fields.begin(), fields.end()); ++result.taggedExports;
                 }
@@ -392,7 +423,7 @@ inline Document parse(const Bytes& source) {
         for (std::size_t n = 1; n < result.fields.size(); ++n)
             detail::need(result.fields[n - 1].offset + result.fields[n - 1].size <= result.fields[n].offset, "Editable asset fields overlap.");
         result.supported = true;
-        if (result.fields.empty()) result.reason = "No supported existing scalar, vector, colour or bounded text fields were found. Other asset data is read-only.";
+        if (result.fields.empty()) result.reason = "No supported property values were found. This may be a texture, mesh, bytecode or a native format that needs an external editor. Export it for a suitable tool, then use Replace file to bring the edited asset back into this draft.";
     } catch (const std::exception& error) { result.reason = error.what(); result.fields.clear(); result.supported = false; }
     return result;
 }

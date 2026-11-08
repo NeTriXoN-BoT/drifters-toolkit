@@ -1,0 +1,63 @@
+From 45076fc30a7d0bb82aa3eff9b9dc0217535c5d9a Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 22 Jul 2026 12:57:52 +0200
+Subject: [PATCH] [Backport] CVE-2026-79197: Use after free in V8 (1/4)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8131283:
+[debug] Deoptimize topmost optimized frame on debugger break
+
+When the debugger pauses, it can execute arbitrary JS (e.g. via
+evaluation or inspector listeners). This JS can modify heap state,
+such as detaching ArrayBuffers.
+
+If the execution stack contains optimized frames, they might be using
+load-eliminated values (like backing store pointers or array lengths)
+that are now invalidated by the heap modifications.
+
+To prevent use-after-free or out-of-bounds accesses when resuming,
+deoptimize the topmost optimized JS frame when handling a debug break.
+We only need to deoptimize the topmost frame because any caller frames
+are at a call site, which acts as a memory serialization barrier,
+forcing them to reload all heap state upon return anyway.
+
+TAG=agy
+CONV=be1ec857-0c4b-479c-ba1b-e84d8741da83
+
+Bug: 531297707
+Change-Id: I5e46963660eaa228a68422490e7495ec6f0d9f8a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8131283
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108890}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786517
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/debug/debug.cc | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/chromium/v8/src/debug/debug.cc b/chromium/v8/src/debug/debug.cc
+index e9fc2c4dda6..9aa5a2026ae 100644
+--- a/chromium/v8/src/debug/debug.cc
++++ b/chromium/v8/src/debug/debug.cc
+@@ -2859,6 +2859,19 @@ void Debug::HandleDebugBreak(IgnoreBreakMode ignore_break_mode,
+       DirectHandle<JSFunction> function(frame->function(), isolate_);
+       DirectHandle<SharedFunctionInfo> shared(function->shared(), isolate_);
+ 
++      // If the top frame is optimized, deoptimize it. A debugger pause can
++      // execute arbitrary JS (e.g. via evaluation or inspector listeners),
++      // which can modify heap state (like detaching typed arrays). We must
++      // deoptimize the execution stack to discard any load-eliminated values
++      // (like backing store pointers or array lengths) that could be
++      // invalidated. We only need to deoptimize the topmost frame because any
++      // caller frames are at a call site, which acts as a memory serialization
++      // barrier, forcing them to reload all heap state upon return anyway.
++      if (frame->is_optimized()) {
++        Deoptimizer::DeoptimizeFunction(*function,
++                                        LazyDeoptimizeReason::kDebugger);
++      }
++
+       // kScheduled and kOOM breaks are triggered by the stack check. While we
+       // could pause here, the JSFunction didn't have time yet to create and
+       // push its context. Instead, we step into the function and pause at the

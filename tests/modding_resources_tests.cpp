@@ -8,6 +8,7 @@ int main() {
     };
     try {
         for (const auto& pair : {
+                 std::pair{"toolkit-source", "https://github.com/NeTriXoN-BoT/drifters-toolkit"},
                  std::pair{"asi-loader", "https://github.com/ThirteenAG/Ultimate-ASI-Loader"},
                  std::pair{"asi-loader-releases", "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases"},
                  std::pair{"daydg", "https://www.nexusmods.com/daysgone/mods/1038"},

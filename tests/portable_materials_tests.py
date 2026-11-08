@@ -15,10 +15,19 @@ import portable_materials as materials
 import package_portable_linux as portable
 import bootstrap_qt_sources as qt_sources
 import bootstrap_openssl as openssl
+import bootstrap_linux_dependencies as linux_dependencies
 
 class Materials(unittest.TestCase):
     def setUp(self):
         self.owner=tempfile.TemporaryDirectory(prefix='drifter-source-policy-');self.root=Path(self.owner.name)
+        body=b'complete maintained source fixture'
+        self.maintained={'file':'maintained_1.tar.xz','url':'https://deb.debian.org/fixture',
+                        'size':len(body),'sha256':hashlib.sha256(body).hexdigest()}
+        self.write('complete/'+self.maintained['file'],body)
+        lock={'packages':[{'name':'sample','version':'1','sources':[self.maintained],
+                          'libraries':['libsample.so.1'],'patches':[]}]}
+        self.library_lock=patch.object(linux_dependencies,'load_lock',return_value=lock)
+        self.library_lock.start();self.addCleanup(self.library_lock.stop)
     def tearDown(self):self.owner.cleanup()
     def write(self,name,body=b'fixture'):
         path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(body);return path
@@ -77,7 +86,7 @@ class Materials(unittest.TestCase):
             # Correct upstream archive pins alone cannot waive the updated-engine
             # gate; this SDK fixture intentionally has no completed build proof.
             with self.assertRaises((RuntimeError,FileNotFoundError)):portable.qt_inputs(prefix,proof,archive.parent)
-            with patch('qt_webengine_vendor_followup.verify_build',return_value={}),patch('qt_webengine_vendor_followup.public_provenance',return_value={'fixture':True}):
+            with patch('qt_webengine_release_1_1.verify_build',return_value={}),patch('qt_webengine_release_1_1.public_provenance',return_value={'fixture':True}):
                 sdk,paths,record=portable.qt_inputs(prefix,proof,archive.parent);self.assertEqual(record['version'],'6.11.3')
                 self.assertEqual(record['webengineSecurity'],{'fixture':True})
             archive.write_bytes(b'modified')
@@ -119,6 +128,8 @@ class Materials(unittest.TestCase):
         for name in ('sample_1.dsc','sample_1.tar.xz'):
             self.write('complete/'+name,b'complete exact Debian fixture '+name.encode())
             records.append(materials.row(base,name,'debian:sample','1','APT authenticated source=sample=1'))
+        records.append({**materials.row(base,self.maintained['file'],'linux-dependency:sample','1'),
+                        'originalFile':self.maintained['file']})
         lock=base/'source-materials.json';lock.write_text(json.dumps({'schemaVersion':1,'files':records}))
         application=self.write('app.zip',b'complete app fixture');instructions=self.write('BUILD.txt',b'build and replace libraries fixture')
         output=self.root/'complete-source.tar';descriptor=materials.pack([lock],application,instructions,output)
@@ -147,7 +158,18 @@ class Materials(unittest.TestCase):
         import qt_webengine_vendor_followup as vendor_followup
         security['vendorFollowup']={**vendor_followup.identity(vendor_followup.verify_inputs()),'outputs':outputs,
                                    'priorOutputs':residual_outputs,'baselineProof':{'sha256':'1'*64,'size':44626}}
-        provenance={'qt':{'version':'6.11.3','webengineSecurity':security},'openssl':{'version':'3.5.9','source':ssl},'archiveDecoders':public_provenance(),'packages':[{'sourcePackage':'sample','sourceVersion':'1'}]}
+        vendor_outputs=[{**row,'sha256':'2'*64} for row in outputs]
+        security['vendorFollowup']['outputs']=vendor_outputs
+        import qt_webengine_release_1_1 as release_1_1
+        security['release11']={**release_1_1.identity(release_1_1.verify_inputs()),'outputs':outputs,
+                               'priorOutputs':vendor_outputs,'baselineProof':{'sha256':'3'*64,'size':44626}}
+        library={'size':17,'sha256':'9'*64}
+        maintained={'schemaVersion':1,'sourceLock':materials.identity(linux_dependencies.LOCK),
+                    'recipe':materials.identity(ROOT/'scripts/bootstrap_linux_dependencies.py'),
+                    'outputs':[{'name':'libsample.so.1','package':'sample',**library}],
+                    'runtimeBindings':[{'name':'libsample.so.1','path':'usr/lib/libsample.so.1',
+                                        'original':library,'staged':library}]}
+        provenance={'qt':{'version':'6.11.3','webengineSecurity':security},'openssl':{'version':'3.5.9','source':ssl},'archiveDecoders':public_provenance(),'packages':[{'sourcePackage':'sample','sourceVersion':'1'}],'linuxDependencies':maintained}
         return output,descriptor,provenance,{'schemaVersion':1,'qtVersion':'6.11.3','archives':pins},ssl
 
     def test_complete_source_closure_is_verified_from_actual_tar_members(self):
@@ -172,7 +194,10 @@ class Materials(unittest.TestCase):
             for mutate in (lambda value:value.update(recipeRevision=1),lambda value:value.pop('compatibilityBackports'),lambda value:value['sourceInventories'].pop('final'),lambda value:value.pop('upstreamFollowup'),lambda value:value['upstreamFollowup']['upstream'].pop(),lambda value:value['upstreamFollowup']['lock'].update(sha256='0'*64)):
                 stale=json.loads(json.dumps(provenance));mutate(stale['qt']['webengineSecurity'])
                 with self.assertRaises(RuntimeError):materials.verify_companion(output,descriptor,stale)
-            for mutate in (lambda value:value.pop('vendorFollowup'),
+            for mutate in (lambda value:value.pop('release11'),
+                           lambda value:value['release11']['upstream'].pop(),
+                           lambda value:value['release11']['priorOutputs'][0].update(sha256='0'*64),
+                           lambda value:value.pop('vendorFollowup'),
                            lambda value:value['vendorFollowup']['upstream'].pop(),
                            lambda value:value['vendorFollowup']['lock'].update(sha256='0'*64),
                            lambda value:value['vendorFollowup']['priorOutputs'][0].update(sha256='0'*64),
@@ -235,10 +260,11 @@ class Materials(unittest.TestCase):
         import qt_webengine_incremental as incremental
         import qt_webengine_residual as residual
         import qt_webengine_vendor_followup as vendor_followup
+        import qt_webengine_release_1_1 as release_1_1
         output,descriptor,provenance,pinned,ssl=self.complete_companion()
         with patch.object(qt_sources,'source_lock',return_value=pinned),patch.object(openssl,'SOURCE',ssl):
             manifest=materials.verify_companion(output,descriptor,provenance)
-            for label,module in (('incremental',incremental),('residual',residual),('vendor-followup',vendor_followup)):
+            for label,module in (('incremental',incremental),('residual',residual),('vendor-followup',vendor_followup),('release-1-1',release_1_1)):
                 self.assertIn('qtwebengine-'+label+'-security',manifest['components'])
                 data=module.verify_inputs()
                 for index,row in enumerate((data['upstream'][-1],data['adapter'])):
@@ -254,7 +280,7 @@ class Materials(unittest.TestCase):
                                 target.addfile(member,io.BytesIO(encoded))
                             else:target.addfile(member,source.extractfile(member))
                     missing_descriptor={**descriptor,'file':missing.name,**materials.identity(missing)}
-                    with self.assertRaisesRegex(RuntimeError,label):
+                    with self.assertRaisesRegex(RuntimeError,'1.1' if label=='release-1-1' else label):
                         materials.verify_companion(missing,missing_descriptor,provenance)
 
     def test_current_qt_sources_lock_matches_sdk_and_rejects_changed_policy(self):

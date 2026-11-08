@@ -1,0 +1,114 @@
+From ba16a374b74c3cdee1b400153df6acc9db883d1a Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Tue, 20 Oct 2026 14:50:22 -0400
+Subject: [PATCH] [Backport] CVE-2026-119261: Improper input validation in Skia
+
+Cherry-pick of patch originally reviewed on
+https://skia-review.googlesource.com/c/skia/+/1400318:
+Reject invalid types when parsing
+
+When parsing runtime effects, we alias private types to fInvalid to
+ensure they are not used or referenced as variable names. This ensures
+we emit errors for those types anywhere they are encountered, moving the
+check from variable declarations to the parser.
+
+Bug: 574213633
+Change-Id: I6a27aead1ed83315e137752c5ef124e2f2020df4
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1400318
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785266
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ chromium/third_party/skia/gn/sksl_tests.gni           |  1 +
+ chromium/third_party/skia/resources/sksl/BUILD.bazel  |  1 +
+ .../skia/resources/sksl/errors/Ossfuzz56373.sksl      |  1 -
+ .../sksl/runtime_errors/InvalidTypeInStruct.rts       | 11 +++++++++++
+ chromium/third_party/skia/src/sksl/SkSLParser.cpp     |  6 ++++++
+ .../skia/src/sksl/ir/SkSLVarDeclarations.cpp          |  3 ++-
+ 6 files changed, 21 insertions(+), 2 deletions(-)
+ create mode 100644 chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts
+
+diff --git a/chromium/third_party/skia/gn/sksl_tests.gni b/chromium/third_party/skia/gn/sksl_tests.gni
+index 86291d527264..1f76f9c26c37 100644
+--- a/chromium/third_party/skia/gn/sksl_tests.gni
++++ b/chromium/third_party/skia/gn/sksl_tests.gni
+@@ -1013,6 +1013,7 @@ sksl_rte_error_tests = [
+   "runtime_errors/InvalidColorFilterFeatures.rtcf",
+   "runtime_errors/InvalidColorFilterMain.rtcf",
+   "runtime_errors/InvalidShaderMain.rts",
++  "runtime_errors/InvalidTypeInStruct.rts",
+   "runtime_errors/InvalidUniformTypes.rts",
+   "runtime_errors/InvalidUniformTypesES3.rts",
+   "runtime_errors/LoopConditionErrors.rts",
+diff --git a/chromium/third_party/skia/resources/sksl/BUILD.bazel b/chromium/third_party/skia/resources/sksl/BUILD.bazel
+index 84843c256f86..c1e45688e6f7 100644
+--- a/chromium/third_party/skia/resources/sksl/BUILD.bazel
++++ b/chromium/third_party/skia/resources/sksl/BUILD.bazel
+@@ -696,6 +696,7 @@ skia_filegroup(
+         "runtime_errors/InvalidColorFilterFeatures.rtcf",
+         "runtime_errors/InvalidColorFilterMain.rtcf",
+         "runtime_errors/InvalidShaderMain.rts",
++        "runtime_errors/InvalidTypeInStruct.rts",
+         "runtime_errors/InvalidUniformTypes.rts",
+         "runtime_errors/InvalidUniformTypesES3.rts",
+         "runtime_errors/LoopConditionErrors.rts",
+diff --git a/chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl b/chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl
+index f369f9d690fb..276b355ae025 100644
+--- a/chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl
++++ b/chromium/third_party/skia/resources/sksl/errors/Ossfuzz56373.sksl
+@@ -4,5 +4,4 @@ void main(){}
+ 
+ /*%%*
+ expected a type, found 'bufferThree'
+-invalid type
+ *%%*/
+diff --git a/chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts b/chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts
+new file mode 100644
+index 000000000000..5cae8b87f83c
+--- /dev/null
++++ b/chromium/third_party/skia/resources/sksl/runtime_errors/InvalidTypeInStruct.rts
+@@ -0,0 +1,11 @@
++// In runtime effects, private types like sampler2D are aliases of the invalid type.
++// See kPrivateTypes in SkSLModuleLoader.cpp for the exhaustive list.
++struct S { sampler2D x; };
++struct T { texture2D x; };
++
++void main() {}
++
++/*%%*
++invalid type
++invalid type
++*%%*/
+diff --git a/chromium/third_party/skia/src/sksl/SkSLParser.cpp b/chromium/third_party/skia/src/sksl/SkSLParser.cpp
+index 6e73d044ce8b..a923d2e18c20 100644
+--- a/chromium/third_party/skia/src/sksl/SkSLParser.cpp
++++ b/chromium/third_party/skia/src/sksl/SkSLParser.cpp
+@@ -1291,6 +1291,12 @@ const Type* Parser::type(Modifiers* modifiers) {
+         this->error(type, "expected a type, found '" + std::string(this->text(type)) + "'");
+         return fCompiler.context().fTypes.fInvalid.get();
+     }
++    if (result->matches(*fCompiler.context().fTypes.fInvalid)) {
++        // In runtime effects, reserved type names (e.g. sampler2D and texture2D) are aliases of the
++        // invalid type. Reject the type whenever it is used.
++        this->error(type, "invalid type");
++        return result;
++    }
+     Token bracket;
+     while (this->checkNext(Token::Kind::TK_LBRACKET, &bracket)) {
+         if (this->checkNext(Token::Kind::TK_RBRACKET)) {
+diff --git a/chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp b/chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp
+index 1959a00e9a82..0cc2c50db1a4 100644
+--- a/chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp
++++ b/chromium/third_party/skia/src/sksl/ir/SkSLVarDeclarations.cpp
+@@ -297,7 +297,8 @@ bool VarDeclaration::ErrorCheckAndCoerce(const Context& context,
+                                          const Type* baseType,
+                                          std::unique_ptr<Expression>& value) {
+     if (baseType->matches(*context.fTypes.fInvalid)) {
+-        context.fErrors->error(var.fPosition, "invalid type");
++        // Parser::type() has already reported the error (e.g. a reserved type name like sampler2D
++        // in a runtime effect). Skip the declaration so it doesn't cause further errors.
+         return false;
+     }
+     if (baseType->isVoid()) {

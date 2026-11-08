@@ -1,0 +1,1100 @@
+{
+  "schemaVersion": 1,
+  "recipeRevision": 2,
+  "baseline": "Debian 12 x86-64; glibc <= 2.35",
+  "packages": [
+    {
+      "name": "zlib",
+      "version": "1:1.3.dfsg+really1.3.2-4",
+      "libraries": [
+        "libz.so.1"
+      ],
+      "sources": [
+        {
+          "file": "sources/zlib/zlib_1.3.dfsg+really1.3.2-4.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib_1.3.dfsg+really1.3.2-4.debian.tar.xz",
+          "size": 18988,
+          "sha256": "ee9db06d87b2d810b9edd8485b8b39433b18eb30d93f9e1d40fe8dbd40eda7a1"
+        },
+        {
+          "file": "sources/zlib/zlib_1.3.dfsg+really1.3.2-4.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib_1.3.dfsg+really1.3.2-4.dsc",
+          "size": 3931,
+          "sha256": "5735985df9244ebceb03e606342d3d0bf2fd76284f3ccc939a266b43b559a8e1"
+        },
+        {
+          "file": "sources/zlib/zlib_1.3.dfsg+really1.3.2.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/z/zlib/zlib_1.3.dfsg+really1.3.2.orig.tar.gz",
+          "size": 1295859,
+          "sha256": "7b6903eb019983987b7112eccf90f1703f1c6c0e0cede36564bf611d19ca579d"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--shared"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "test"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version": "3.54.1-2",
+      "libraries": [
+        "libsqlite3.so.0",
+        "libsqlite3.so"
+      ],
+      "sources": [
+        {
+          "file": "sources/sqlite3/sqlite3_3.54.1-2.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_3.54.1-2.debian.tar.xz",
+          "size": 32344,
+          "sha256": "ec8e9bb58db16bd661c6f44426855536831f3a004ac1aa8292d24db2ac504999"
+        },
+        {
+          "file": "sources/sqlite3/sqlite3_3.54.1-2.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_3.54.1-2.dsc",
+          "size": 2648,
+          "sha256": "4112cab5cabf3892c5ad01bf0768e7784ea204afe2249e564d30d994979443ef"
+        },
+        {
+          "file": "sources/sqlite3/sqlite3_3.54.1.orig-www.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_3.54.1.orig-www.tar.xz",
+          "size": 6403124,
+          "sha256": "67906ee141109bebe43cdcf197892806397dabc79f5cd7f05f1278f47b0c5e25"
+        },
+        {
+          "file": "sources/sqlite3/sqlite3_3.54.1.orig.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_3.54.1.orig.tar.xz",
+          "size": 8871620,
+          "sha256": "faeff7682200b3dd58c8f0f229892a7271c73c1fdabc86e7315eb31eb7cb6e83"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--disable-readline",
+            "--disable-editline"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "glib2.0",
+      "version": "2.90.1-2",
+      "libraries": [
+        "libglib-2.0.so.0",
+        "libgthread-2.0.so.0",
+        "libgmodule-2.0.so.0"
+      ],
+      "sources": [
+        {
+          "file": "sources/glib2.0/glib2.0_2.90.1-2.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/glib2.0_2.90.1-2.debian.tar.xz",
+          "size": 144036,
+          "sha256": "39c268b3c49abac7e1cc5c0c13b7cabf19c419532ccb17e4523012461a2c7fcd"
+        },
+        {
+          "file": "sources/glib2.0/glib2.0_2.90.1-2.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/glib2.0_2.90.1-2.dsc",
+          "size": 4923,
+          "sha256": "899871dc1a0b96c0689d18cf87ceb096143e87da060c7ead318010566ce8f7fb"
+        },
+        {
+          "file": "sources/glib2.0/glib2.0_2.90.1.orig-unicode-data.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/glib2.0_2.90.1.orig-unicode-data.tar.xz",
+          "size": 666552,
+          "sha256": "4b55352323696c72187f855981ed1f7d1594a53f257f7803a928749cab9f9f44"
+        },
+        {
+          "file": "sources/glib2.0/glib2.0_2.90.1.orig.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/glib2.0_2.90.1.orig.tar.xz",
+          "size": 5871112,
+          "sha256": "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "setup",
+            "{build}",
+            "{source}",
+            "--prefix={prefix}",
+            "--libdir=lib",
+            "--buildtype=release",
+            "--wrap-mode=nodownload",
+            "-Dtests=false",
+            "-Dinstalled_tests=false",
+            "-Dintrospection=disabled",
+            "-Dlibmount=disabled",
+            "-Dselinux=disabled",
+            "-Dsysprof=disabled",
+            "-Ddocumentation=false",
+            "-Dman-pages=disabled",
+            "-Dnls=disabled",
+            "-Dglib_debug=disabled"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "compile",
+            "-C",
+            "{build}",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "install",
+            "-C",
+            "{build}",
+            "--destdir={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "dbus",
+      "version": "1.16.2-8",
+      "libraries": [
+        "libdbus-1.so.3"
+      ],
+      "sources": [
+        {
+          "file": "sources/dbus/dbus_1.16.2-8.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.16.2-8.debian.tar.xz",
+          "size": 72244,
+          "sha256": "6e1d4aa490ec93fc5851c3820e3b8624befe87523d9ad1912901e18174e6ff7e"
+        },
+        {
+          "file": "sources/dbus/dbus_1.16.2-8.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.16.2-8.dsc",
+          "size": 4194,
+          "sha256": "5c1af588919b6b94f8d98c677f74d5027a3c448ee645cb919b72b76bccb3ea40"
+        },
+        {
+          "file": "sources/dbus/dbus_1.16.2.orig.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.16.2.orig.tar.xz",
+          "size": 1115644,
+          "sha256": "0ba2a1a4b16afe7bceb2c07e9ce99a8c2c3508e5dec290dbb643384bd6beb7e2"
+        },
+        {
+          "file": "sources/dbus/dbus_1.16.2.orig.tar.xz.asc",
+          "url": "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.16.2.orig.tar.xz.asc",
+          "size": 833,
+          "sha256": "108723e6bb2b0655abcb8ec7b06d27918bd7ac215f835ba086b45f9780cb529b"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "setup",
+            "{build}",
+            "{source}",
+            "--prefix={prefix}",
+            "--libdir=lib",
+            "--buildtype=release",
+            "--wrap-mode=nodownload",
+            "-Dsystemd=disabled",
+            "-Dselinux=disabled",
+            "-Dapparmor=disabled",
+            "-Dlibaudit=disabled",
+            "-Dmessage_bus=false",
+            "-Dmodular_tests=disabled",
+            "-Dinstalled_tests=false",
+            "-Dxml_docs=disabled",
+            "-Ddoxygen_docs=disabled",
+            "-Dtools=false"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "compile",
+            "-C",
+            "{build}",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "{tools}/bin/meson",
+            "install",
+            "-C",
+            "{build}",
+            "--destdir={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "freetype",
+      "version": "2.14.3+dfsg-3",
+      "libraries": [
+        "libfreetype.so.6"
+      ],
+      "sources": [
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg-3.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg-3.debian.tar.xz",
+          "size": 45428,
+          "sha256": "3f0e24e23973f3b51a579ccac9b2612f41f871df23853267bd967bf8de66dd60"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg-3.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg-3.dsc",
+          "size": 4011,
+          "sha256": "7cf37005c2db2768b8246508ad484338c0a9910b31ab6dc45a2078ebd7c84f50"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg.orig-ft2demos.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg.orig-ft2demos.tar.xz",
+          "size": 347960,
+          "sha256": "1ac96a066c39108f2b0cc8aa805106ed2c38146c8913dc2396dc242e91e35686"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg.orig-ft2demos.tar.xz.asc",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg.orig-ft2demos.tar.xz.asc",
+          "size": 833,
+          "sha256": "74bead81fdcba908b05cd704915a0c15ec80d83c7955d215491904994e1ae6d8"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg.orig-ft2docs.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg.orig-ft2docs.tar.xz",
+          "size": 2176200,
+          "sha256": "66a988d8bbb58f83efafe555678ac172f70f0b060cf61424fe5460157470fd21"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg.orig-ft2docs.tar.xz.asc",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg.orig-ft2docs.tar.xz.asc",
+          "size": 833,
+          "sha256": "15a6d7a4b8418f31ff3f9246d67329a739a9db53fe0fe0d424cf15e58f0b1348"
+        },
+        {
+          "file": "sources/freetype/freetype_2.14.3+dfsg.orig.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/f/freetype/freetype_2.14.3+dfsg.orig.tar.xz",
+          "size": 2247556,
+          "sha256": "dc1bec263a6fffa436029efe6428f601d6b1a0b800837508ee3e49bbab8f1006"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--with-harfbuzz=no",
+            "--with-bzip2=no",
+            "--with-png=yes",
+            "--with-brotli=yes",
+            "--with-zlib=yes"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "alsa-lib",
+      "version": "1.2.16.1-2",
+      "libraries": [
+        "libasound.so.2"
+      ],
+      "sources": [
+        {
+          "file": "sources/alsa-lib/alsa-lib_1.2.16.1-2.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/alsa-lib_1.2.16.1-2.debian.tar.xz",
+          "size": 34748,
+          "sha256": "ad24529b3a5d2ac02b2035b7152d3f9cd865268468b59c15faef1920af85ea75"
+        },
+        {
+          "file": "sources/alsa-lib/alsa-lib_1.2.16.1-2.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/alsa-lib_1.2.16.1-2.dsc",
+          "size": 2939,
+          "sha256": "b276460332cb208244b8ca85be2606a4d3bab6423b55f8a155907f8fb5816fa2"
+        },
+        {
+          "file": "sources/alsa-lib/alsa-lib_1.2.16.1.orig.tar.bz2",
+          "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/alsa-lib_1.2.16.1.orig.tar.bz2",
+          "size": 1130309,
+          "sha256": "f740db7f488255944ffd4428416ee3390a96742856916433df468c281436480e"
+        },
+        {
+          "file": "sources/alsa-lib/alsa-lib_1.2.16.1.orig.tar.bz2.asc",
+          "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/alsa-lib_1.2.16.1.orig.tar.bz2.asc",
+          "size": 833,
+          "sha256": "264de7f0dcfbd920388a3130d603f8984e3a17cb6067e564b0be8e6e41cd9d84"
+        }
+      ],
+      "patches": [
+        {
+          "commit": "81c4a89eb445f8e991ca80ab55b5649530c0aacd",
+          "url": "https://github.com/alsa-project/alsa-lib/commit/81c4a89eb445f8e991ca80ab55b5649530c0aacd.patch",
+          "sha256": "6a71f236356ddc828fa7b05808da05e960b6b1e32c11c9c3239686b860423170",
+          "size": 1555,
+          "file": "vendor/linux-dependency-patches/alsa-multi-binding-bounds.patch"
+        },
+        {
+          "commit": "807e4ded9511e7e3cd17b915ea3cda1faf6611e6",
+          "url": "https://github.com/alsa-project/alsa-lib/commit/807e4ded9511e7e3cd17b915ea3cda1faf6611e6.patch",
+          "sha256": "9f06ecd1c1ed52f112d0c7304ecaa8598016d774a3d0831fd97fe4640c7b16e9",
+          "size": 1532,
+          "file": "vendor/linux-dependency-patches/alsa-route-channel-bounds.patch"
+        }
+      ],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--disable-topology",
+            "--disable-alisp",
+            "--disable-python",
+            "--with-configdir=/usr/share/alsa",
+            "--with-plugindir=/usr/lib/x86_64-linux-gnu/alsa-lib"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "libx11",
+      "version": "2:1.8.14-1",
+      "libraries": [
+        "libX11.so.6",
+        "libX11-xcb.so.1"
+      ],
+      "sources": [
+        {
+          "file": "sources/libx11/libx11_1.8.14-1.diff.gz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11_1.8.14-1.diff.gz",
+          "size": 77209,
+          "sha256": "d8a820cabaceedcdf0d74318133eab8d3f4bc69d1f7b08f8a8af1eab94cb77c2"
+        },
+        {
+          "file": "sources/libx11/libx11_1.8.14-1.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11_1.8.14-1.dsc",
+          "size": 2243,
+          "sha256": "caf77758cf76511d937b4f876d254f28ea05fd83a35f09fa09e597942094bbcc"
+        },
+        {
+          "file": "sources/libx11/libx11_1.8.14.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11_1.8.14.orig.tar.gz",
+          "size": 3223041,
+          "sha256": "ebb8a58549ddde50aa2e742b3b256557f451053d173be8dbfc2e8ac078eee1d6"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--without-xmlto",
+            "--without-fop",
+            "--disable-specs",
+            "--enable-xkb"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "libxi",
+      "version": "2:1.8.4-1",
+      "libraries": [
+        "libXi.so.6"
+      ],
+      "sources": [
+        {
+          "file": "sources/libxi/libxi_1.8.4-1.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxi/libxi_1.8.4-1.debian.tar.xz",
+          "size": 23348,
+          "sha256": "9720c170c270c313be1c4422cc2ac8a1eb5872dbf943603a7f012a64f2bf1bff"
+        },
+        {
+          "file": "sources/libxi/libxi_1.8.4-1.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxi/libxi_1.8.4-1.dsc",
+          "size": 2068,
+          "sha256": "82025749283a2231866439499d86655c82f8154ae26d8b20ce1c18fe034f596f"
+        },
+        {
+          "file": "sources/libxi/libxi_1.8.4.orig.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxi/libxi_1.8.4.orig.tar.xz",
+          "size": 422212,
+          "sha256": "ddd6057b89a91903bc2f884d55c8467440906945e482c36547260dff28661afc"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--without-xmlto",
+            "--without-fop",
+            "--disable-specs"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "libxrender",
+      "version": "1:0.9.13-1",
+      "libraries": [
+        "libXrender.so.1"
+      ],
+      "sources": [
+        {
+          "file": "sources/libxrender/libxrender_0.9.13-1.diff.gz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxrender/libxrender_0.9.13-1.diff.gz",
+          "size": 26505,
+          "sha256": "8272e0d966bb7c7c9d8d0a0dd70e9258bded5833ea675b2783d5c698d9b4eb8d"
+        },
+        {
+          "file": "sources/libxrender/libxrender_0.9.13-1.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxrender/libxrender_0.9.13-1.dsc",
+          "size": 2002,
+          "sha256": "d1e0fa2d03ac3402e449e73bdee3a75be391634ab3cb0e5a44dd69701b8fdf0a"
+        },
+        {
+          "file": "sources/libxrender/libxrender_0.9.13.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/libx/libxrender/libxrender_0.9.13.orig.tar.gz",
+          "size": 460608,
+          "sha256": "bf264b683d1e49ff9a6bc03af13baa430a556d943731a2b1ac2439dae4fea205"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "krb5",
+      "version": "1.22.1-3",
+      "libraries": [
+        "libgssapi_krb5.so.2",
+        "libk5crypto.so.3",
+        "libkrb5.so.3",
+        "libkrb5support.so.0",
+        "libcom_err.so.3"
+      ],
+      "sources": [
+        {
+          "file": "sources/krb5/krb5_1.22.1-3.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/k/krb5/krb5_1.22.1-3.debian.tar.xz",
+          "size": 111476,
+          "sha256": "519ad7537260ebc450a678b38f00c8deaf0e05d848d0e5cfeef1ddb154663ba8"
+        },
+        {
+          "file": "sources/krb5/krb5_1.22.1-3.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/k/krb5/krb5_1.22.1-3.dsc",
+          "size": 3397,
+          "sha256": "b619af9a52f00c4888e1f53f38d5e147e8c518d1c5b0cda120873fa4ebd4ea77"
+        },
+        {
+          "file": "sources/krb5/krb5_1.22.1.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/k/krb5/krb5_1.22.1.orig.tar.gz",
+          "size": 8747101,
+          "sha256": "1a8832b8cad923ebbf1394f67e2efcf41e3a49f460285a66e35adec8fa0053af"
+        },
+        {
+          "file": "sources/krb5/krb5_1.22.1.orig.tar.gz.asc",
+          "url": "https://deb.debian.org/debian/pool/main/k/krb5/krb5_1.22.1.orig.tar.gz.asc",
+          "size": 833,
+          "sha256": "598334b7b54f63a2280f72cc566bee6f9cbc5ef4dcd9ccabd3a0460641908a64"
+        }
+      ],
+      "patches": [
+        {
+          "commit": "62196e2b269159a5465f5b8d0ed7cf6f29c3282a",
+          "url": "https://github.com/krb5/krb5/commit/62196e2b269159a5465f5b8d0ed7cf6f29c3282a.patch",
+          "sha256": "5cacda3418777f7d3c890b302a09678dc3c7fdca2ecadfa362f28ad7f59954e8",
+          "size": 1322,
+          "file": "vendor/linux-dependency-patches/krb5-credential-count.patch"
+        }
+      ],
+      "commands": [
+        {
+          "args": [
+            "{source}/src/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--without-ldap",
+            "--without-system-verto",
+            "--without-libedit"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "nspr",
+      "version": "2:4.40-1",
+      "libraries": [
+        "libnspr4.so",
+        "libplc4.so",
+        "libplds4.so"
+      ],
+      "sources": [
+        {
+          "file": "sources/nspr/nspr_4.40-1.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/n/nspr/nspr_4.40-1.debian.tar.xz",
+          "size": 11312,
+          "sha256": "6028efd34e05f62ea28c7f537c6e26b60a408ef39aa7ad02a74a99359a348b3e"
+        },
+        {
+          "file": "sources/nspr/nspr_4.40-1.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/n/nspr/nspr_4.40-1.dsc",
+          "size": 2000,
+          "sha256": "b080f76dee6843776c9f36896a389ad64cf03f274d21a3d381246de36c247839"
+        },
+        {
+          "file": "sources/nspr/nspr_4.40.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/n/nspr/nspr_4.40.orig.tar.gz",
+          "size": 1008989,
+          "sha256": "c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc"
+        }
+      ],
+      "patches": [],
+      "commands": [
+        {
+          "args": [
+            "{source}/nspr/configure",
+            "--prefix={prefix}",
+            "--libdir={prefix}/lib",
+            "--enable-shared",
+            "--disable-static",
+            "--enable-64bit",
+            "--enable-optimize",
+            "--disable-debug",
+            "--with-pthreads",
+            "--includedir={prefix}/include/nspr"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "-j{jobs}"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "install",
+            "DESTDIR={stage}"
+          ],
+          "cwd": "{build}"
+        }
+      ]
+    },
+    {
+      "name": "nss",
+      "version": "2:3.132-1",
+      "libraries": [
+        "libnss3.so",
+        "libnssutil3.so",
+        "libsmime3.so",
+        "libssl3.so",
+        "libsoftokn3.so",
+        "libfreebl3.so",
+        "libfreeblpriv3.so"
+      ],
+      "sources": [
+        {
+          "file": "sources/nss/nss_3.132-1.debian.tar.xz",
+          "url": "https://deb.debian.org/debian/pool/main/n/nss/nss_3.132-1.debian.tar.xz",
+          "size": 19920,
+          "sha256": "6164e417ccab2fe5cc730be613e66f744245155ec0ab88fb15c692369fb21c43"
+        },
+        {
+          "file": "sources/nss/nss_3.132-1.dsc",
+          "url": "https://deb.debian.org/debian/pool/main/n/nss/nss_3.132-1.dsc",
+          "size": 2192,
+          "sha256": "fa72229d8007cbbe7174b27027432102d8ed7fefe16aa272b42cf9d799172e35"
+        },
+        {
+          "file": "sources/nss/nss_3.132.orig.tar.gz",
+          "url": "https://deb.debian.org/debian/pool/main/n/nss/nss_3.132.orig.tar.gz",
+          "size": 87788090,
+          "sha256": "ee9cf4837ba801141a804321c4462ad8f452ff4314275c6d5108a6b05af227ff"
+        }
+      ],
+      "patches": [
+        {
+          "directory": "nss",
+          "commit": "d485b20805d136ce88e658d680fceffa9020d959",
+          "url": "https://github.com/mozilla/nss/compare/34716626284b2a8ed64f8055734ae7730e902686..d485b20805d136ce88e658d680fceffa9020d959.diff",
+          "sha256": "4958954bc46f86fc559cc68d5f34215ea4b289189a80ca2c4ef662ee2b2643ae",
+          "size": 304571,
+          "upstreamSha256": "baeeb4370be2df6d9279e9813d80ecb875654a99e05a2e36143dd7a0f402e682",
+          "upstreamSize": 340145,
+          "scope": [
+            "gtests/common/testvectors/chachapoly-long-vectors.h",
+            "gtests/freebl_gtest/chacha20poly1305_unittest.cc",
+            "gtests/freebl_gtest/freebl_gtest.gyp",
+            "gtests/pk11_gtest/pk11_chacha20poly1305_unittest.cc",
+            "gtests/pk11_gtest/pk11_der_private_key_import_unittest.cc",
+            "gtests/pk11_gtest/pk11_pbkdf2_unittest.cc",
+            "gtests/pk11_gtest/pk11_symkey_unittest.cc",
+            "gtests/pk11_gtest/pq_pkcs8.h",
+            "gtests/ssl_gtest/ssl_loopback_unittest.cc",
+            "gtests/ssl_gtest/ssl_resumption_unittest.cc",
+            "gtests/ssl_gtest/tls_connect.cc",
+            "gtests/ssl_gtest/tls_connect.h",
+            "lib/cryptohi/seckey.c",
+            "lib/freebl/Makefile",
+            "lib/freebl/chacha20poly1305.c",
+            "lib/freebl/freebl.gyp",
+            "lib/nss/nss.h",
+            "lib/pk11wrap/pk11pbe.c",
+            "lib/pk11wrap/pk11pk12.c",
+            "lib/softoken/pkcs11c.c",
+            "lib/softoken/pkcs11u.c",
+            "lib/softoken/sftkhmac.c",
+            "lib/softoken/softkver.h",
+            "lib/ssl/dtlscon.c",
+            "lib/ssl/sslencode.c",
+            "lib/ssl/sslencode.h",
+            "lib/ssl/sslexp.h",
+            "lib/ssl/sslimpl.h",
+            "lib/ssl/sslnonce.c",
+            "lib/ssl/sslsock.c",
+            "lib/util/nssutil.h",
+            "lib/util/pkcs11t.h"
+          ],
+          "targetFiles": [
+            {
+              "file": "gtests/common/testvectors/chachapoly-long-vectors.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/common/testvectors/chachapoly-long-vectors.h",
+              "size": 187064,
+              "sha256": "e1b84fd4cef4ab2ab67825dfa7ecbef076e08c751a1eff6b409f95d4f82053ed"
+            },
+            {
+              "file": "gtests/freebl_gtest/chacha20poly1305_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/freebl_gtest/chacha20poly1305_unittest.cc",
+              "size": 5072,
+              "sha256": "a191b29f9c8b669a6e5f5f77b634080c7604bb8b3f1f836ac81902a4b365f5ef"
+            },
+            {
+              "file": "gtests/freebl_gtest/freebl_gtest.gyp",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/freebl_gtest/freebl_gtest.gyp",
+              "size": 3163,
+              "sha256": "b2f3fea51d96a7561d22474cbdf23607f138e2960af0b545863430cfa61a094b"
+            },
+            {
+              "file": "gtests/pk11_gtest/pk11_chacha20poly1305_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/pk11_gtest/pk11_chacha20poly1305_unittest.cc",
+              "size": 33056,
+              "sha256": "7b89e53c29610cc4cb732cc9838673c7fb0585d46bf3604c06bc962d3db95bf0"
+            },
+            {
+              "file": "gtests/pk11_gtest/pk11_der_private_key_import_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/pk11_gtest/pk11_der_private_key_import_unittest.cc",
+              "size": 45968,
+              "sha256": "37bd58cfa243b5f4f519c7caee68c92cccc8a7f8e4ffe7f235fef054b109a14f"
+            },
+            {
+              "file": "gtests/pk11_gtest/pk11_pbkdf2_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc",
+              "size": 13532,
+              "sha256": "6d0631a799f4e50f115e48ecfd8d8cc653ff923de11bd940afdc69fa83430267"
+            },
+            {
+              "file": "gtests/pk11_gtest/pk11_symkey_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/pk11_gtest/pk11_symkey_unittest.cc",
+              "size": 7127,
+              "sha256": "224309a639880d84291d7423cd6ffcd243c27544ff386d1f663a2074e8109797"
+            },
+            {
+              "file": "gtests/pk11_gtest/pq_pkcs8.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/pk11_gtest/pq_pkcs8.h",
+              "size": 5001,
+              "sha256": "475aaacac1088008d8e25c2bcd04f740177a6dcae0c0a33f095bbecb98c1b9a9"
+            },
+            {
+              "file": "gtests/ssl_gtest/ssl_loopback_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/ssl_gtest/ssl_loopback_unittest.cc",
+              "size": 28526,
+              "sha256": "604cb111ccb09d228d2a47529e04813228fa4091c71368207d81cab7705739f4"
+            },
+            {
+              "file": "gtests/ssl_gtest/ssl_resumption_unittest.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/ssl_gtest/ssl_resumption_unittest.cc",
+              "size": 64802,
+              "sha256": "4f8849b3e2629bf29b404def5bb6e8b5b3373ccd63de965bbfcb12f43d1b7d8e"
+            },
+            {
+              "file": "gtests/ssl_gtest/tls_connect.cc",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/ssl_gtest/tls_connect.cc",
+              "size": 39385,
+              "sha256": "21ddab6ba361bfba99921c65d3f65a5e0ce185a01e7e6dd39338e3cd56b0b8a8"
+            },
+            {
+              "file": "gtests/ssl_gtest/tls_connect.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/gtests/ssl_gtest/tls_connect.h",
+              "size": 16208,
+              "sha256": "152f8870ff5be31c3326b9c054a3603e1f95d5f81a4503970ae39f0ecfd26239"
+            },
+            {
+              "file": "lib/cryptohi/seckey.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/cryptohi/seckey.c",
+              "size": 92905,
+              "sha256": "89c638cfec644164e9e0539242ac174ecf2f2403c1b907357ac6c682f0521e3c"
+            },
+            {
+              "file": "lib/freebl/Makefile",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/freebl/Makefile",
+              "size": 32421,
+              "sha256": "d4db06a1d18208ca94145cab9b8c6d91cd14b646e9e92401f9dac776ef5634a3"
+            },
+            {
+              "file": "lib/freebl/chacha20poly1305.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/freebl/chacha20poly1305.c",
+              "size": 20790,
+              "sha256": "3bd364c83f1fa2f0d28f2aa68859df075462225c9b752efdaa5ff410eaf220e7"
+            },
+            {
+              "file": "lib/freebl/freebl.gyp",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/freebl/freebl.gyp",
+              "size": 25670,
+              "sha256": "c45c5ba6584c480c0e4d3ed5e408fd1c6ffb063f26813448793cf705740cf7df"
+            },
+            {
+              "file": "lib/nss/nss.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/nss/nss.h",
+              "size": 15492,
+              "sha256": "67f5874d2a9c7b204dc41866714fe914193e4cfdd753f45f87323a1f01820bdb"
+            },
+            {
+              "file": "lib/pk11wrap/pk11pbe.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/pk11wrap/pk11pbe.c",
+              "size": 53778,
+              "sha256": "f591b9fe68c52ef446075b80abfb78f454bad7c70d173702de8c9a81ea0970b8"
+            },
+            {
+              "file": "lib/pk11wrap/pk11pk12.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/pk11wrap/pk11pk12.c",
+              "size": 48927,
+              "sha256": "4599b2a9371c2dfd4d5ec100537e34ad34bd561c182ea7d6512849799420497c"
+            },
+            {
+              "file": "lib/softoken/pkcs11c.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/softoken/pkcs11c.c",
+              "size": 387849,
+              "sha256": "e954db1ec5ebae5cea8b4f13308704a3789e86f41cfa959974745867f36c89d4"
+            },
+            {
+              "file": "lib/softoken/pkcs11u.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/softoken/pkcs11u.c",
+              "size": 105337,
+              "sha256": "ab3da824e07b1e60832f1332f58f1b0dd7974703cecf06704bf70e3df01ccc3c"
+            },
+            {
+              "file": "lib/softoken/sftkhmac.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/softoken/sftkhmac.c",
+              "size": 15210,
+              "sha256": "0aca60480a9bc3f52d900fa4ae42653ce717aeb1c53fa68d6b840fb9b0704658"
+            },
+            {
+              "file": "lib/softoken/softkver.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/softoken/softkver.h",
+              "size": 799,
+              "sha256": "490b59b77d4462928aef3aa458e7a5e018d11ce7559dff272092d3c5b1e90531"
+            },
+            {
+              "file": "lib/ssl/dtlscon.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/dtlscon.c",
+              "size": 48256,
+              "sha256": "2497fdb728d867dfa6ebcc2b41ac78fed236d06a414969414dbeb5f1afb6ebf3"
+            },
+            {
+              "file": "lib/ssl/sslencode.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslencode.c",
+              "size": 14170,
+              "sha256": "011619c27800099321bb969810c6a499bb4ecd59fa0b9c1a34a5e848af5d2ec7"
+            },
+            {
+              "file": "lib/ssl/sslencode.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslencode.h",
+              "size": 4572,
+              "sha256": "d1b5e621869f823960caad640c36d3d1206ef0f2dc9067d6c02d208d91924412"
+            },
+            {
+              "file": "lib/ssl/sslexp.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslexp.h",
+              "size": 57704,
+              "sha256": "abd4ab70d4c3db8fa36d7f011a5ffd9668fae0dc9d1ceccc1a5acefa7c2d1bcb"
+            },
+            {
+              "file": "lib/ssl/sslimpl.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslimpl.h",
+              "size": 87137,
+              "sha256": "5deef836bcb3c4d1e47cc9ba1dfa51f4e36ad0367d64a3c0f24057af1e431a60"
+            },
+            {
+              "file": "lib/ssl/sslnonce.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslnonce.c",
+              "size": 40628,
+              "sha256": "b1a9a9bd217c3290907af2469ae582a1367b6b3ce56163f3b7d681f4b7815e3a"
+            },
+            {
+              "file": "lib/ssl/sslsock.c",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/ssl/sslsock.c",
+              "size": 144649,
+              "sha256": "2819149f234375756df58496011325d82893d2a1c33151db5b8a620d122575fa"
+            },
+            {
+              "file": "lib/util/nssutil.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/util/nssutil.h",
+              "size": 968,
+              "sha256": "3715d88904bf0660cec2a79890a9effddf5e2a6cd11a33c803661ad4fceb3d6a"
+            },
+            {
+              "file": "lib/util/pkcs11t.h",
+              "url": "https://raw.githubusercontent.com/mozilla/nss/d485b20805d136ce88e658d680fceffa9020d959/lib/util/pkcs11t.h",
+              "size": 103569,
+              "sha256": "5ec9edfa024f9afcc6c5946b63388d7c7e86f406fca90aa1c331ab18e6423c0f"
+            }
+          ],
+          "upstreamVersion": "3.133",
+          "file": "vendor/linux-dependency-patches/nss-3.133-runtime.patch"
+        }
+      ],
+      "commands": [
+        {
+          "args": [
+            "make",
+            "--no-print-directory",
+            "-C",
+            "{source}/nss/coreconf/nsinstall",
+            "-j{jobs}",
+            "BUILD_OPT=1",
+            "USE_64=1",
+            "NS_USE_GCC=1",
+            "DIST={source}/dist",
+            "SOURCE_PREFIX={source}/dist",
+            "SOURCE_MD_DIR={source}/dist",
+            "OBJDIR_NAME=OBJS"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "make",
+            "--no-print-directory",
+            "-C",
+            "{source}/nss",
+            "-j{jobs}",
+            "all",
+            "BUILD_OPT=1",
+            "USE_64=1",
+            "NS_USE_GCC=1",
+            "MOZILLA_CLIENT=1",
+            "NSS_USE_SYSTEM_SQLITE=1",
+            "NSS_DISABLE_DBM=1",
+            "NSPR_INCLUDE_DIR={build_prefix}/include/nspr",
+            "NSPR_LIB_DIR={build_prefix}/lib",
+            "SQLITE_INCLUDE_DIR={build_prefix}/include",
+            "SQLITE_LIB_DIR={build_prefix}/lib",
+            "DIST={source}/dist",
+            "NSS_ENABLE_WERROR=0",
+            "OPTIMIZER={cflags}",
+            "LDFLAGS={ldflags} $(ARCHFLAG) $(ZDEFS_FLAG)",
+            "DSO_LDOPTS=-shared $(LDFLAGS)",
+            "SOURCE_PREFIX={source}/dist",
+            "SOURCE_MD_DIR={source}/dist",
+            "OBJDIR_NAME=OBJS"
+          ],
+          "cwd": "{build}"
+        },
+        {
+          "args": [
+            "env",
+            "LD_LIBRARY_PATH={source}/dist/lib:{build_prefix}/lib",
+            "{tools}/bin/python",
+            "-c",
+            "import ctypes; p=ctypes.CDLL('./libnss3.so'); p.NSS_GetVersion.restype=ctypes.c_char_p; v=p.NSS_GetVersion().decode(); print('Built NSS runtime:',v); assert v.startswith('3.133')"
+          ],
+          "cwd": "{source}/dist/lib"
+        }
+      ]
+    }
+  ]
+}

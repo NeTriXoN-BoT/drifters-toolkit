@@ -6,6 +6,7 @@ input set. They do not build, download, read user state or launch native tools.
 from contextlib import ExitStack
 from pathlib import Path
 import json
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -33,7 +34,8 @@ class PublicSourcePrivacy(unittest.TestCase):
             stack.enter_context(patch.object(review_sources, 'FIXED', {'src/core.cpp'}))
             for name in ('verify_sources', 'verify_webengine_inputs',
                          'verify_followup_inputs', 'verify_incremental_inputs',
-                         'verify_residual_inputs', 'verify_vendor_followup_inputs'):
+                         'verify_residual_inputs', 'verify_vendor_followup_inputs',
+                         'verify_release_1_1_inputs'):
                 stack.enter_context(patch.object(review_sources, name, return_value=None))
             stack.enter_context(patch.object(build_seasonal_emoji, 'generate', return_value=None))
             stack.enter_context(patch.object(build_changelog, 'generate', return_value=None))
@@ -44,11 +46,11 @@ class PublicSourcePrivacy(unittest.TestCase):
             root = Path(temp)
             marker = b'PRIVATE FIXTURE MUST NEVER SHIP'
             private = (
-                'README_FOR_CLAUDE.md', 'docs/NEXT_SESSION.md',
+                'README_PRIVATE.md', 'docs/NEXT_SESSION.md',
                 '.env', '.git/config', 'config/account.json',
                 'private-artifacts/release-signing/private-key.pem',
                 'logs/run.log', 'profiles/default.json',
-                'src/README_FOR_CLAUDE.hpp', 'src/.hidden.hpp',
+                'src/README_PRIVATE.hpp', 'src/.hidden.hpp',
                 'src/logs/trace.cpp', 'src/profiles/account.cpp',
                 'src/save_preview_decoder/src/main.rs',
                 'src/save_codec_decoder/src/main.cpp',
@@ -75,18 +77,16 @@ class PublicSourcePrivacy(unittest.TestCase):
                 self.collect_fixture(root)
             self.assertEqual(external.read_bytes(), b'PRIVATE OUTSIDE SOURCE ROOT')
 
-    def test_public_baseline_excludes_private_packager_and_tracks_full_codec(self):
-        value = json.loads((ROOT / 'SOURCE_BASELINE.json').read_text(encoding='utf-8'))
-        application = json.loads((ROOT / value['applicationSourceZip']['sha256Inventory']).read_text(encoding='utf-8'))
-        self.assertEqual(len(application), 383)
-        self.assertNotIn('scripts/package_source.py', application)
-        self.assertNotIn('scripts/package_source.py',
-                         {row['path'] for row in value['developmentSupplement']['files']})
-        codec = ROOT / value['saveCodec']['directory']
+    def test_public_tree_excludes_private_packager_and_tracks_full_codec(self):
+        self.assertFalse((ROOT / 'scripts/package_source.py').exists())
+        codec = ROOT / 'components/save-codec'
         manifest = json.loads((codec / 'SOURCE-MANIFEST.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(manifest['files']) + 1, value['saveCodec']['files'])
         self.assertEqual(manifest['licence'], 'GPL-3.0-or-later')
-        self.assertTrue(all((codec / row['path']).is_file() for row in manifest['files']))
+        for row in manifest['files']:
+            source = codec / row['path']
+            self.assertTrue(source.resolve().is_relative_to(codec.resolve()))
+            self.assertEqual(source.stat().st_size, row['bytes'])
+            self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), row['sha256'])
 
 
 if __name__ == '__main__':

@@ -4528,7 +4528,7 @@ html[data-contrast='high'] *::-webkit-scrollbar-thumb {
     min-width: 32px;
   }
 }
-@media (max-height: 850px) {
+@media (max-height: 1100px) {
   .sidebar-note {
     display: none;
   }
@@ -7019,3 +7019,9 @@ dialog:has(.save-editor-dialog) .modal-body, dialog:has(.save-slot-review) .moda
 .scale-narrow .save-editor-field input[type="checkbox"] { justify-self: start; }
 
 #save-editor-revert[hidden], #save-editor-review[hidden] { display: none; }
+
+.workshop-property-copy { min-width: 0; }
+.workshop-property-copy label { display: block; }
+.workshop-property-help { margin-top: 6px; color: var(--secondary); font-size: .85em; }
+.workshop-property-help summary { cursor: pointer; color: var(--muted); }
+.workshop-property-help p { margin: 8px 0 0; overflow-wrap: anywhere; }

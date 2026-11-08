@@ -87,7 +87,7 @@ async function test(platform) {
   assert(await ui.importSaveFiles());
   assert.equal(ui.state.saveSelection.id, safetyId); assert.equal(ui.state.saveProfileFilter, null);
   assert.equal(ui.state.savesTab, 'backups');
-  assert(node('#modal-content').innerHTML.includes('current game saves have not changed'));
+  assert(!node('#modal').open, 'Successful save imports select the separate backup without another modal');
   assert(!nativeRequests.some((request) => request.action === 'saveBackupRestore'));
   checks += 5;
   node('#modal').close(); ui.handleModalClosed();

@@ -1,0 +1,55 @@
+From cd67cbe4c4aef13e56dc3e0aa4fd155efd08d62f Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Thu, 1 Oct 2026 10:48:55 -0700
+Subject: [PATCH] [Backport] CVE-2026-121118: Use after free in SVG
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8490054:
+Guard against re-hashing in SVGResource::ResourceContainer
+
+Fixed: 566377255
+Change-Id: I99ebafc0fd102fd02ea3b06ccc85668dcc77f94b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8490054
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709198}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786744
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../blink/renderer/core/svg/svg_resource.cc     | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/svg/svg_resource.cc b/chromium/third_party/blink/renderer/core/svg/svg_resource.cc
+index ebabd2ebb4f..02a4b652de4 100644
+--- a/chromium/third_party/blink/renderer/core/svg/svg_resource.cc
++++ b/chromium/third_party/blink/renderer/core/svg/svg_resource.cc
+@@ -141,16 +141,19 @@ LayoutSVGResourceContainer* SVGResource::ResourceContainer(
+   auto* container = ResourceContainerNoCycleCheck();
+   if (!container)
+     return nullptr;
+-  ClientEntry& entry = it->value;
+-  if (entry.cached_cycle_check == kNeedCheck) {
+-    entry.cached_cycle_check = kPerformingCheck;
++  if (it->value.cached_cycle_check == kNeedCheck) {
++    it->value.cached_cycle_check = kPerformingCheck;
+     bool has_cycle = container->FindCycle();
+-    DCHECK_EQ(entry.cached_cycle_check, kPerformingCheck);
+-    entry.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
++    // FindCycle() can modify clients_ and invalidate the iterator
++    it = clients_.find(&client);
++    CHECK(it != clients_.end());
++    DCHECK_EQ(it->value.cached_cycle_check, kPerformingCheck);
++    it->value.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
+   }
+-  if (entry.cached_cycle_check == kHasCycle)
++  if (it->value.cached_cycle_check == kHasCycle) {
+     return nullptr;
+-  DCHECK_EQ(entry.cached_cycle_check, kNoCycle);
++  }
++  DCHECK_EQ(it->value.cached_cycle_check, kNoCycle);
+   return container;
+ }
+ 

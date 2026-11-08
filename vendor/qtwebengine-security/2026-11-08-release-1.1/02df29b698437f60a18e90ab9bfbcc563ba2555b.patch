@@ -1,0 +1,84 @@
+From 02df29b698437f60a18e90ab9bfbcc563ba2555b Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Thu, 22 Oct 2026 10:37:32 -0700
+Subject: [PATCH] [Backport] CVE-2026-119260: Use after free in Frames
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8622063:
+Avoid re-entry when draining pending error events
+
+Fixed: 573264074
+Change-Id: If8503bd2e9ca28fc5dd316d8aacb58ec168c6d38
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8622063
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1724943}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785265
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ .../execution_context/execution_context.cc    | 22 ++++++++++++++-----
+ .../execution_context/execution_context.h     |  1 +
+ 2 files changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/execution_context/execution_context.cc b/chromium/third_party/blink/renderer/core/execution_context/execution_context.cc
+index 50096c5cd58..0efbb976c81 100644
+--- a/chromium/third_party/blink/renderer/core/execution_context/execution_context.cc
++++ b/chromium/third_party/blink/renderer/core/execution_context/execution_context.cc
+@@ -27,6 +27,7 @@
+ 
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ 
++#include "base/auto_reset.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/tracing/protos/chrome_track_event.pbzero.h"
+ #include "build/build_config.h"
+@@ -283,20 +284,31 @@ void ExecutionContext::AddConsoleMessageImpl(
+ void ExecutionContext::DispatchErrorEvent(
+     ErrorEvent* error_event,
+     SanitizeScriptErrors sanitize_script_errors) {
++  if (is_draining_pending_exceptions_) {
++    // Disregard errors reported while draining pending exceptions. This would
++    // help to avoid potential infinite recursion and, given this only
++    // happens with with inspector Runtime domain enabled, somewhat reduces
++    // devtools side effects.
++    return;
++  }
+   if (in_dispatch_error_event_) {
+     pending_exceptions_.push_back(error_event);
+     return;
+   }
+ 
+   // First report the original exception and only then all the nested ones.
+-  if (!DispatchErrorEventInternal(error_event, sanitize_script_errors))
++  if (!DispatchErrorEventInternal(error_event, sanitize_script_errors)) {
++    base::AutoReset auto_reset(&is_draining_pending_exceptions_, true);
+     ExceptionThrown(error_event);
++  }
+ 
+-  if (pending_exceptions_.empty())
+-    return;
+-  for (ErrorEvent* e : pending_exceptions_)
++  base::AutoReset auto_reset(&is_draining_pending_exceptions_, true);
++  auto pending_exceptions = std::move(pending_exceptions_);
++  for (const auto& e : pending_exceptions) {
+     ExceptionThrown(e);
+-  pending_exceptions_.clear();
++  }
++  // Assure handling pending exceptions doesn't add more pending exceptions.
++  CHECK(pending_exceptions_.empty());
+ }
+ 
+ bool ExecutionContext::DispatchErrorEventInternal(
+diff --git a/chromium/third_party/blink/renderer/core/execution_context/execution_context.h b/chromium/third_party/blink/renderer/core/execution_context/execution_context.h
+index e2478e8e71e..71db9297e77 100644
+--- a/chromium/third_party/blink/renderer/core/execution_context/execution_context.h
++++ b/chromium/third_party/blink/renderer/core/execution_context/execution_context.h
+@@ -514,6 +514,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+   unsigned circular_sequential_id_;
+ 
+   bool in_dispatch_error_event_;
++  bool is_draining_pending_exceptions_ = false;
+   HeapVector<Member<ErrorEvent>> pending_exceptions_;
+ 
+   mojom::FrameLifecycleState lifecycle_state_;

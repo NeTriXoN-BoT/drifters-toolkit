@@ -1,0 +1,46 @@
+From 807e4ded9511e7e3cd17b915ea3cda1faf6611e6 Mon Sep 17 00:00:00 2001
+From: Harsh Raj Singhania <raj.harshraut@gmail.com>
+Date: Thu, 1 Oct 2026 00:28:37 +0530
+Subject: [PATCH] pcm: cap route plugin ttable channel dimensions at 1024
+
+csize/ssize grew from config-supplied channel indices with no upper
+bound before malloc(csize * ssize * sizeof(entry)). Cap both at 1024,
+consistent with other PCM plugins.
+
+[ fixed coding style -- tiwai ]
+
+Closes: https://github.com/alsa-project/alsa-lib/pull/527
+Signed-off-by: Harsh Raj Singhania <raj.harshraut@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ src/pcm/pcm_route.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/src/pcm/pcm_route.c b/src/pcm/pcm_route.c
+index 3836dcc3..4f1e004e 100644
+--- a/src/pcm/pcm_route.c
++++ b/src/pcm/pcm_route.c
+@@ -1098,6 +1098,11 @@ static int _snd_pcm_route_determine_ttable(snd_config_t *tt,
+ 		}
+ 		if (cchannel + 1 > csize)
+ 			csize = cchannel + 1;
++		if (csize > 1024) {
++			SNDERR("route: client channel %d exceeds max (1024)",
++			       cchannel);
++			return -EINVAL;
++		}
+ 		if (snd_config_get_type(in) != SND_CONFIG_TYPE_COMPOUND)
+ 			return -EINVAL;
+ 		snd_config_for_each(j, jnext, in) {
+@@ -1113,6 +1118,11 @@ static int _snd_pcm_route_determine_ttable(snd_config_t *tt,
+ 			}
+ 			if (schannel + 1 > ssize)
+ 				ssize = schannel + 1;
++			if (ssize > 1024) {
++				SNDERR("route: slave channel %d exceeds max (1024)",
++				       schannel);
++				return -EINVAL;
++			}
+ 		}
+ 	}
+ 	if (csize == 0 || ssize == 0) {

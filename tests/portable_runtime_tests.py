@@ -25,7 +25,7 @@ def main():
         else:check(False,message)
     with tempfile.TemporaryDirectory(prefix='drifter-portable-tests-') as temporary:
         root=Path(temporary);appdir=root/'bundle';files={'usr/bin/qt.conf':b'[Paths]\nPrefix=..\n','usr/libexec/qt.conf':b'[Paths]\nPrefix=..\n','usr/libexec/QtWebEngineProcess':b'fixture helper\n','usr/lib/fakeQt.so':b'fixture library\n'}
-        cli_paths={'usr/bin/qt.conf','usr/lib/libQt6Core.so.6','usr/lib/libQt6Network.so.6','usr/lib/libQt6WebSockets.so.6','usr/lib/libcrypto.so.3','usr/lib/libssl.so.3','usr/plugins/tls/libqopensslbackend.so'}
+        cli_paths={'usr/bin/qt.conf','usr/lib/libQt6Core.so.6','usr/lib/libQt6Network.so.6','usr/lib/libcrypto.so.3','usr/lib/libssl.so.3','usr/plugins/tls/libqopensslbackend.so'}
         for name in cli_paths-{'usr/bin/qt.conf'}:files[name]=b'fixture headless dependency\n'
         rows=[]
         for name,data in files.items():

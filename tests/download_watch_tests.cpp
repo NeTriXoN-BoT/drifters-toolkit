@@ -77,7 +77,7 @@ void contentIdentityAndResumableChecks() {
           "a small source archive gets its actual content digest without extraction");
     response = watch.handle({{"action", "downloadCandidates"}}, json::array({originalHash}));
     check(response["data"]["candidates"].empty(), "a verified present source hash removes an already imported offer");
-    write(f.downloads / "Renamed.zip", zip("First.pak"));
+    write(f.downloads / "Renamed.zip", read(path));
     response = watch.handle({{"action", "downloadCandidates"}}, json::array({originalHash}));
     check(response["data"]["candidates"].empty(), "a renamed identical download is also recognised by content");
     response = candidates(watch);

@@ -779,6 +779,19 @@ void unknownStateAndOutput() {
     require(uncertain.run({"settings", "set", "autoCheckToolkitUpdates", "false", "--yes"}).exitCode == 0 &&
                 uncertain.requests.size() == 2 && uncertain.requests.back()["action"] == "savePreferences",
             "Unknown game observation blocked toolkit update preference or triggered a game scan");
+    auto browserStatus = [](const json& request) {
+        require(request.value("action", "") == "nexusStatus", "Browser status requested an account action");
+        return json{{"ok", true}, {"data", {{"connected", false}, {"premium", false},
+                    {"edition", "local"}, {"apiKey", "private-unused-key"}}}};
+    };
+    auto localHuman = runCli({"nexus", "status"}, browserStatus);
+    require(localHuman.exitCode == 0 && localHuman.standardOutput.find("browser downloads") != std::string::npos &&
+                localHuman.standardOutput.find("Sign in through") == std::string::npos,
+            "Public CLI suggested connecting an unavailable Nexus account");
+    auto localJson = runCli({"--json", "nexus", "status"}, browserStatus);
+    require(localJson.exitCode == 0 && localJson.standardOutput.find("local") != std::string::npos &&
+                localJson.standardOutput.find("private-unused-key") == std::string::npos,
+            "Public CLI lost the browser edition or exposed an unused credential");
     auto malformed = runCli({"--json", "nexus", "status"}, [](const json&) {
         return json{{"ok", true},
                     {"data", {{"connected", true}, {"premium", "true"}, {"api_key", "private-malformed-key"}}}};

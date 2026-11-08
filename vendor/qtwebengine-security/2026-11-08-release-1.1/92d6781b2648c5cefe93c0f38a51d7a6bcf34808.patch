@@ -1,0 +1,164 @@
+From 92d6781b2648c5cefe93c0f38a51d7a6bcf34808 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 22 Oct 2026 18:05:58 -0700
+Subject: [PATCH] [Backport] CVE-2026-76029: Memory corruption in Network
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8608994:
+HttpCache::Transaction reject overlong range responses
+
+...that is, those that don't match the length of their own
+Content-Range.
+
+Bug: 572055997
+Change-Id: I7a0ca8652462fa890cf04944c21e0674d3d21815
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8608994
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725388}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785369
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/net/http/http_cache_transaction.cc |  4 +++
+ chromium/net/http/http_cache_writers.cc     | 27 ++++++++++++++-------
+ chromium/net/http/http_cache_writers.h      |  2 ++
+ chromium/net/http/partial_data.cc           | 15 ++++++++++++
+ chromium/net/http/partial_data.h            |  7 +++++-
+ 5 files changed, 45 insertions(+), 10 deletions(-)
+
+diff --git a/chromium/net/http/http_cache_transaction.cc b/chromium/net/http/http_cache_transaction.cc
+index cef614fbf0ca..ec620aaa0f4f 100644
+--- a/chromium/net/http/http_cache_transaction.cc
++++ b/chromium/net/http/http_cache_transaction.cc
+@@ -2431,6 +2431,10 @@ int HttpCache::Transaction::DoNetworkReadCacheWriteComplete(int result) {
+ int HttpCache::Transaction::DoPartialNetworkReadCompleted(int result) {
+   DCHECK(partial_);
+ 
++  if (result > 0 && handling_206_ && !partial_->IsNetworkReadOK(result)) {
++    result = ERR_CONTENT_LENGTH_MISMATCH;
++  }
++
+   // Go to the next range if nothing returned or return the result.
+   // TODO(shivanisha) Simplify this condition if possible. It was introduced
+   // in https://codereview.chromium.org/545101
+diff --git a/chromium/net/http/http_cache_writers.cc b/chromium/net/http/http_cache_writers.cc
+index ac02766843d6..533441069877 100644
+--- a/chromium/net/http/http_cache_writers.cc
++++ b/chromium/net/http/http_cache_writers.cc
+@@ -341,6 +341,18 @@ HttpCache::Writers::WaitingForRead::WaitingForRead(
+ HttpCache::Writers::WaitingForRead::~WaitingForRead() = default;
+ HttpCache::Writers::WaitingForRead::WaitingForRead(WaitingForRead&&) = default;
+ 
++PartialData* HttpCache::Writers::GetPartial() const {
++  // The active transaction must be alive if this is a partial request, as
++  // partial requests are exclusive and hence will always be the active
++  // transaction.
++  // TODO(shivanisha): When partial requests support parallel writing, this
++  // assumption will not be true.
++  if (active_transaction_) {
++    return all_writers_.find(active_transaction_)->second.partial;
++  }
++  return nullptr;
++}
++
+ int HttpCache::Writers::DoLoop(int result) {
+   DCHECK_NE(State::UNSET, next_state_);
+   DCHECK_NE(State::NONE, next_state_);
+@@ -411,6 +423,11 @@ int HttpCache::Writers::DoNetworkRead() {
+ }
+ 
+ int HttpCache::Writers::DoNetworkReadComplete(int result) {
++  PartialData* partial = GetPartial();
++  if (result > 0 && partial && !partial->IsNetworkReadOK(result)) {
++    result = ERR_CONTENT_LENGTH_MISMATCH;
++  }
++
+   if (result < 0) {
+     next_state_ = State::NONE;
+     OnNetworkReadFailure(result);
+@@ -449,15 +466,7 @@ int HttpCache::Writers::DoCacheWriteData(int num_bytes) {
+ 
+   int rv = 0;
+ 
+-  PartialData* partial = nullptr;
+-  // The active transaction must be alive if this is a partial request, as
+-  // partial requests are exclusive and hence will always be the active
+-  // transaction.
+-  // TODO(shivanisha): When partial requests support parallel writing, this
+-  // assumption will not be true.
+-  if (active_transaction_) {
+-    partial = all_writers_.find(active_transaction_)->second.partial;
+-  }
++  PartialData* partial = GetPartial();
+ 
+   if (!partial) {
+     last_disk_cache_access_start_time_ = base::TimeTicks::Now();
+diff --git a/chromium/net/http/http_cache_writers.h b/chromium/net/http/http_cache_writers.h
+index fefaac32a659..f901666748d5 100644
+--- a/chromium/net/http/http_cache_writers.h
++++ b/chromium/net/http/http_cache_writers.h
+@@ -180,6 +180,8 @@ class NET_EXPORT_PRIVATE HttpCache::Writers {
+ 
+   using TransactionMap = std::map<Transaction*, TransactionInfo>;
+ 
++  PartialData* GetPartial() const;
++
+   // Runs the state transition loop. Resets and calls |callback_| on exit,
+   // unless the return value is ERR_IO_PENDING.
+   int DoLoop(int result);
+diff --git a/chromium/net/http/partial_data.cc b/chromium/net/http/partial_data.cc
+index a47451b68920..2395ddde5cbc 100644
+--- a/chromium/net/http/partial_data.cc
++++ b/chromium/net/http/partial_data.cc
+@@ -422,11 +422,26 @@ int PartialData::CacheRead(disk_cache::Entry* entry,
+   return rv;
+ }
+ 
++bool PartialData::IsNetworkReadOK(int data_len) const {
++  // Check to see if the network has overrun the range.
++  if (data_len) {
++    base::CheckedNumeric<int64_t> write_end_inclusive = current_range_start_;
++    write_end_inclusive += (data_len - 1);
++    int64_t write_end_inclusive_extracted;
++    if (!write_end_inclusive.AssignIfValid(&write_end_inclusive_extracted) ||
++        write_end_inclusive_extracted > current_range_end_) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ int PartialData::CacheWrite(disk_cache::Entry* entry,
+                             IOBuffer* data,
+                             int data_len,
+                             CompletionOnceCallback callback) {
+   DVLOG(3) << "To write: " << data_len;
++
+   if (sparse_entry_) {
+     return entry->WriteSparseData(current_range_start_, data, data_len,
+                                   std::move(callback));
+diff --git a/chromium/net/http/partial_data.h b/chromium/net/http/partial_data.h
+index 4094fcf9c5c3..d220e569e015 100644
+--- a/chromium/net/http/partial_data.h
++++ b/chromium/net/http/partial_data.h
+@@ -109,6 +109,11 @@ class PartialData {
+                 int data_len,
+                 CompletionOnceCallback callback);
+ 
++  // Returns true if the returned length from network is reasonable.
++  // Expected to be called before deciding to transition towards cache
++  // writing.
++  bool IsNetworkReadOK(int data_len) const;
++
+   // Writes |data_len| bytes to cache. This is basically a wrapper around the
+   // API of the cache that provides the right arguments for the current range.
+   int CacheWrite(disk_cache::Entry* entry,
+@@ -137,7 +142,7 @@ class PartialData {
+ 
+   // The portion we're trying to get, either from cache or network.
+   int64_t current_range_start_ = 0;
+-  int64_t current_range_end_ = 0;
++  int64_t current_range_end_ = 0;  // Inclusive.
+ 
+   // Next portion available in the cache --- this may be what's currently being
+   // read, or the next thing that will be read if the current network portion

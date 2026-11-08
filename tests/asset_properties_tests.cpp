@@ -12,10 +12,11 @@ void name(Bytes& b, std::uint32_t index) { integer(b, index); integer(b, 0); }
 void text(Bytes& b, const std::string& value) { integer(b, static_cast<std::uint32_t>(value.size() + 1)); b.insert(b.end(), value.begin(), value.end()); b.push_back(0); }
 void tag(Bytes& b, unsigned field, unsigned type, unsigned size) { name(b, field); name(b, type); integer(b, size); integer(b, 0); }
 Bytes fixture(unsigned custom = 0, const std::string& folder = "None", bool opaque = true, bool invalidType = false,
-              unsigned repeats = 0, unsigned nameWidth = 0, unsigned depth = 1, bool deep = false) {
+              unsigned repeats = 0, unsigned nameWidth = 0, unsigned depth = 1, bool deep = false, bool table = false, const std::string& tableKind = "DataTable") {
     // These fixtures exercise our supported binary subset, not game assets.
     std::vector<std::string> names = {"None", "IntProperty", "FloatProperty", "BoolProperty", "StructProperty", "ArrayProperty",
         "ByteProperty", "ExampleClass", "Default__Example_C", "Count", "Scale", "On", "Nested", "NestedType", "Inside", "OpaqueArray", "UnknownProperty"};
+    if (table) names[7] = tableKind;
     if (nameWidth) { names[9] = std::string(nameWidth, 'P'); names[12] = std::string(nameWidth, 'N'); }
     Bytes payload;
     tag(payload, 9, invalidType ? 16 : 1, 4); integer(payload, 7);
@@ -55,8 +56,16 @@ Bytes fixture(unsigned custom = 0, const std::string& folder = "None", bool opaq
         typed("LinearTint", "StructProperty", 16); name(payload, index("LinearColor")); payload.resize(payload.size() + 16); floating(0.1f); floating(0.2f); floating(0.3f); floating(1);
         typed("Samples", "ArrayProperty", 10); name(payload, index("Int16Property")); integer(payload, 3); wide(1, 2); wide(0xfffe, 2); wide(3, 2);
         typed("Flags", "ArrayProperty", 6); name(payload, index("BoolProperty")); integer(payload, 2); payload.insert(payload.end(), {0, 1});
+        typed("Orientation", "StructProperty", 16); name(payload, index("Quat")); payload.resize(payload.size() + 16); floating(0); floating(0); floating(0); floating(1);
+        typed("Placement", "StructProperty", 40); name(payload, index("Transform")); payload.resize(payload.size() + 16);
+        for (int n = 0; n < 10; ++n) floating(n == 3 || n >= 7 ? 1.f : 0.f);
     }
     name(payload, 0);
+    if (table) {
+        integer(payload, 2);
+        name(payload, 9); tag(payload, 14, 1, 4); integer(payload, 17); name(payload, 0);
+        name(payload, 10); tag(payload, 14, 1, 4); integer(payload, 23); name(payload, 0);
+    }
     const auto tableBase = 24 + custom * 20 + 4 + 4 + folder.size() + 1 + 4;
     const auto nameOffset = 185 + custom * 20 + folder.size() - 4;
     Bytes b(nameOffset);
@@ -270,6 +279,29 @@ void malformed() {
     Bytes tooLarge(detail::maxBytes + 1);
     check(!parse(tooLarge).supported && parse(tooLarge).data.empty(), "An oversized source was copied into editor memory");
 }
+void tableEdits() {
+    const auto original = fixture(0, "None", true, false, 0, 0, 1, false, true);
+    auto document = parse(original);
+    check(document.supported && field(document, "Rows/Count/Inside").value == 17 && field(document, "Rows/Scale/Inside").value == 23,
+          "Tagged table rows were not exposed separately");
+    const auto selected = field(document, "Rows/Count/Inside");
+    setValue(document, selected.id, 99);
+    check(field(document, "Rows/Count/Inside").value == 99 && field(document, "Rows/Scale/Inside").value == 23, "Table editing changed another row");
+    check(document.data.size() == original.size() && std::equal(original.begin(), original.begin() + selected.offset, document.data.begin()) &&
+          std::equal(original.begin() + selected.offset + selected.size, original.end(), document.data.begin() + selected.offset + selected.size),
+          "Table editing changed unrelated bytes");
+    auto broken = original; broken.erase(broken.end() - 8); // invalidate the export range/terminator
+    check(parse(broken).fields.empty() && !summary(parse(broken))["editable"].get<bool>(), "Truncated table was exposed for editing");
+    auto curve = parse(fixture(0, "None", true, false, 0, 0, 1, false, true, "CurveTable"));
+    check(curve.supported && field(curve, "Rows/Count/Inside").value == 17, "Legacy tagged curve-table rows were not recognized");
+    setValue(curve, field(curve, "Rows/Count/Inside").id, 88);
+    check(field(curve, "Rows/Count/Inside").value == 88 && field(curve, "Rows/Scale/Inside").value == 23, "Curve-table edit changed another row");
+    auto transforms = parse(fixture(0, "None", true, false, 0, 0, 1, true));
+    setValue(transforms, field(transforms, "Orientation/W").id, 0.5);
+    setValue(transforms, field(transforms, "Placement/Translation/X").id, 42);
+    check(field(transforms, "Orientation/W").value == 0.5 && field(transforms, "Placement/Translation/X").value == 42 &&
+          field(transforms, "Placement/Scale/X").value == 1, "Transform component edit did not preserve neighbouring components");
+}
 void actualFixture(const char* selected) {
     std::ifstream stream(selected, std::ios::binary | std::ios::ate);
     check(!!stream, "The explicitly selected private asset could not be read");
@@ -289,7 +321,7 @@ void actualFixture(const char* selected) {
 }
 int main(int argc, char** argv) {
     try {
-        scalarEdits(); batchedEdits(); deepEdits(); mergeEdits(); malformed();
+        scalarEdits(); batchedEdits(); deepEdits(); mergeEdits(); malformed(); tableEdits();
         for (int i = 1; i < argc; ++i) actualFixture(argv[i]);
         std::cout << checks << " asset-property checks passed (in-memory edits only).\n";
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

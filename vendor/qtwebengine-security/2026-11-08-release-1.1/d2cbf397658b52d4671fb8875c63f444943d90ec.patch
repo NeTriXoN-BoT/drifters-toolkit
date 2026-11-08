@@ -1,0 +1,79 @@
+From d2cbf397658b52d4671fb8875c63f444943d90ec Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 14 Oct 2026 00:49:54 -0400
+Subject: [PATCH] [Backport] CVE-2026-121140: Out of bounds read in Internals
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8578337:
+Translator: Work around monomorphizer crash vs comma corner case
+
+A tricky shader could cause the monomorphization pass to drop a call to
+a function that would have otherwise needed monomorphization.  That
+function would become dead code, but was otherwise left in the AST,
+causing follow up transforms to fail assertions.
+
+This change simply drops the dead functions, even if the transformation
+is not actually correct.  The IR transforms the shader correctly.
+
+Bug: chromium:557605839
+Change-Id: Ic8af0d5d3473029ad6d3f93a1d9f719959d66ffc
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8578337
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786749
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../MonomorphizeUnsupportedFunctions.cpp      | 33 +++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/chromium/third_party/angle/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/chromium/third_party/angle/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+index 0a24232fc13..1ad617f0e65 100644
+--- a/chromium/third_party/angle/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
++++ b/chromium/third_party/angle/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+@@ -57,6 +57,31 @@ void InitializeFunctionMap(TIntermBlock *root, FunctionMap *functionMapOut)
+     }
+ }
+ 
++void RemoveUnreferencedFunctions(TIntermBlock *root, const FunctionMap &functionMap)
++{
++    TIntermSequence &sequence = *root->getSequence();
++    TIntermSequence pruned;
++
++    for (TIntermNode *node : sequence)
++    {
++        TIntermFunctionDefinition *asFuncDef = node->getAsFunctionDefinition();
++        if (asFuncDef != nullptr)
++        {
++            const TFunction *function = asFuncDef->getFunction();
++            ASSERT(function && functionMap.find(function) != functionMap.end());
++            if (!function->isMain() && !functionMap.at(function).isOriginalUsed)
++            {
++                // This function was never called, remove it
++                continue;
++            }
++        }
++
++        pruned.push_back(node);
++    }
++
++    root->replaceAllChildren(std::move(pruned));
++}
++
+ const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
+ {
+     *isSamplerInStructOut = false;
+@@ -538,6 +563,14 @@ bool MonomorphizeUnsupportedFunctionsImpl(TCompiler *compiler,
+ 
+         if (!monomorphizer.getAnyMonomorphized())
+         {
++            // This transformation does not correctly handle comma in function arguments, so if f
++            // needs monomorphization in f((g(x), y), the call to g is accidentally dropped.  If g
++            // needed monomorphization in a second pass, it's now lost but the function itself is
++            // still left in the AST, causing trouble in future passes.  This is not a problem in
++            // the IR; for now the AST pass is made to just remove g to prevent an unexpected AST
++            // even though the translation is incorrect.
++            RemoveUnreferencedFunctions(root, functionMap);
++
+             break;
+         }
+ 

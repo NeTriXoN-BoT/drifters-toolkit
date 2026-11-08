@@ -6,6 +6,7 @@
 #include "storage_location.hpp"
 #include "pak_workshop.hpp"
 #include "workshop_picker.hpp"
+#include "drop_import.hpp"
 #include "mod_archive.hpp"
 #include "download_watch.hpp"
 #include "bounded_json.hpp"
@@ -41,6 +42,7 @@
 #include "linux_display_metrics.hpp"
 #include <linux_assets_manifest.hpp>
 #include <QApplication>
+#include <QStyleHints>
 #include <QBuffer>
 #include <QCloseEvent>
 #include <QClipboard>
@@ -1129,7 +1131,12 @@ class Shell final : public QMainWindow {
     QString lastSession_;
     std::string lastGameProcessEvent_;
     std::string pendingNxm_;
+    std::vector<fs::path> droppedFiles_;
+    std::string dropToken_;
+    std::uint64_t dropSequence_ = 0, dropRenderer_ = 0;
+    std::chrono::steady_clock::time_point dropDeadline_;
     int jobs_ = 0;
+    bool closeWhenIdle_ = false;
     bool closing_ = false, ready_ = false, recoveryNotice_ = false, reviewerPromptPending_ = false;
     unsigned rendererRestarts_ = 0;
     std::atomic<std::uint64_t> rendererGeneration_{0};
@@ -1296,6 +1303,7 @@ class Shell final : public QMainWindow {
             [this, generation, request = envelope](json packet) mutable {
                 --jobs_;
                 if (closing_) return;
+                if (closeWhenIdle_ && !jobs_) QTimer::singleShot(0, this, [this] { closeWhenIdle_ = false; close(); });
                 auto session = packet.value(
                     "session", json{{"active", backend_->sessionActive.load()}, {"status", "needs-attention"}});
                 auto response = packet.contains("response") ? std::move(packet["response"]) : std::move(packet);
@@ -1800,7 +1808,7 @@ public:
     }
     void smoke(const QString& output, int fontScale, const std::string& view, bool recovery = false,
                const std::string& colorMode = "auto", const std::string& season = "auto", bool reduced = false,
-               bool contrast = false) {
+               bool contrast = false, bool desktopColors = false) {
         if (view == "teardown") {
             teardownProbe_ = std::make_shared<ShellTeardownProbe>();
             const auto probe = teardownProbe_;
@@ -1838,13 +1846,13 @@ public:
         const auto loadObserved = std::make_shared<bool>(false);
         connect(
             view_, &QWebEngineView::loadFinished, this,
-            [this, output, fontScale, view, colorMode, season, reduced, contrast, loadObserved](bool ok) {
+            [this, output, fontScale, view, colorMode, season, reduced, contrast, desktopColors, loadObserved](bool ok) {
                 *loadObserved = true;
                 if (!ok) {
                     qApp->exit(31);
                     return;
                 }
-                QTimer::singleShot(2500, this, [this, output, fontScale, view, colorMode, season, reduced, contrast] {
+                QTimer::singleShot(2500, this, [this, output, fontScale, view, colorMode, season, reduced, contrast, desktopColors] {
                     const auto configuration = QString::fromStdString(json{
                         {"fontScale", fontScale},
                         {"view", view == "changelog" ? "overview" : view},
@@ -1853,8 +1861,13 @@ public:
                         {"reducedMotion", reduced},
                         { "highContrast",
                           contrast }}.dump());
+                    const QString desktopOptIn = desktopColors
+                        ? "const toggle=document.querySelector('#system-theme-setting');if(!toggle)return false;"
+                          "if(toggle.getAttribute('aria-checked')!=='true')toggle.click();"
+                        : "";
                     view_->page()->runJavaScript(
-                        "window.__toolkitSmoke?.configure(" + configuration + ")===true",
+                        "(()=>{if(window.__toolkitSmoke?.configure(" + configuration +
+                            ")!==true)return false;" + desktopOptIn + "return true;})()",
                         [this, output, colorMode, view](const QVariant& configured) {
                             if (!configured.toBool()) {
                                 qApp->exit(32);
@@ -2074,6 +2087,16 @@ public:
             if ((action == "nexusPreviewImage" || action == "nexusAuthorAvatar") && drifter::LocalEdition) {
                 emitResult({{"ok", false}, {"error", drifter::LocalEditionMessage}}, request);
                 return;
+            }
+            if (action == "importDropped") {
+                if (request.size() != 4 || request.value("dropToken", "") != dropToken_ || dropToken_.empty() ||
+                    dropRenderer_ != rendererGeneration_.load() || std::chrono::steady_clock::now() > dropDeadline_)
+                    throw std::runtime_error("This file drop expired. Drop the files again.");
+                auto files = std::move(droppedFiles_); dropToken_.clear(); request.erase("dropToken");
+                auto prepared = drifter::droppedImportRequest(request, files);
+                if (prepared.value("action", "") == "__workshopOpen")
+                    backend_->workshopPickerEpoch.stamp(prepared, backend_->workshopPickerEpoch.capture());
+                queue(std::move(prepared)); return;
             }
             if (action == "storageBrowse") {
                 const auto parent = QFileDialog::getExistingDirectory(this, "Choose a drive or parent folder for toolkit data");
@@ -2360,10 +2383,7 @@ protected:
         for (const auto& url : data->urls()) {
             if (!url.isLocalFile()) return {};
             const auto path = url.toLocalFile();
-            const auto native = fs::path(path.toStdString());
-            if (!QFileInfo(path).isDir() && !path.endsWith(".pak", Qt::CaseInsensitive) &&
-                !drifter::mod_archive::supportedExtension(native))
-                continue;
+            if (QFileInfo(path).isDir()) return {};
             result.push_back(path);
         }
         return result;
@@ -2382,10 +2402,16 @@ protected:
                 drop->acceptProposedAction();
                 if (type == QEvent::Drop) {
                     RendererRequestScope nativeDrop(rendererGeneration_.load());
-                    json request = {
-                        {"requestId", "drop-import"}, {"action", "__batchInspectFiles"}, {"paths", json::array()}};
-                    for (const auto& path : paths) request["paths"].push_back(path.toStdString());
-                    queue(std::move(request));
+                    droppedFiles_.clear();
+                    dropToken_ = std::to_string(++dropSequence_);
+                    dropRenderer_ = rendererGeneration_.load();
+                    dropDeadline_ = std::chrono::steady_clock::now() + std::chrono::minutes(2);
+                    json notification{{"event", "filesDropped"}, {"dropToken", dropToken_}, {"files", json::array()}};
+                    for (const auto& path : paths) {
+                        droppedFiles_.emplace_back(path.toStdString());
+                        notification["files"].push_back({{"name", fs::path(path.toStdString()).filename().u8string()}});
+                    }
+                    emit message(QString::fromStdString(notification.dump()));
                 }
                 return true;
             }
@@ -2399,19 +2425,22 @@ protected:
         return QMainWindow::eventFilter(watched, event);
     }
     void closeEvent(QCloseEvent* event) override {
-        if (backend_ && backend_->sessionActive) {
-            event->ignore();
-            QMessageBox::information(
-                this, "Profile session active",
-                "Keep the toolkit open until Days Gone closes and your original package collection is restored. If "
-                "recovery needs attention, use the profile recovery controls.");
+        if (jobs_) {
+            event->ignore(); closeWhenIdle_ = true;
+            setWindowTitle(QStringLiteral("Drifter’s Toolkit — finishing the current operation before closing"));
             return;
+        }
+        setWindowTitle(QStringLiteral("Drifter’s Toolkit"));
+        if (backend_ && backend_->sessionActive) {
+            if (QMessageBox::question(this, "Profile session active",
+                "Closing stops the toolkit’s profile monitor. Days Gone will keep running if it is open. "
+                "Preserved packages and the recovery record are kept for the next startup. Close the toolkit?",
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) { event->ignore(); return; }
         }
         if (jobs_) {
             event->ignore();
-            QMessageBox::information(
-                this, "Operation in progress",
-                "Wait for the current package or download operation to finish before closing the toolkit.");
+            closeWhenIdle_ = true;
+            setWindowTitle(QStringLiteral("Drifter’s Toolkit — finishing the current operation before closing"));
             return;
         }
         if (backend_ && backend_->workshopHasUnsavedChanges && QMessageBox::question(this, "Workshop draft",
@@ -2617,13 +2646,6 @@ int main(int argc, char** argv) {
         }
         if (drifter::linux_startup::configureGraphics())
             std::cerr << "Drifter’s Toolkit: Using software rendering for a virtual graphics adapter.\n";
-        drifter::linux_startup::PortableModules startupModules(app,
-#ifdef DRIFTER_PORTABLE_BUILD
-                                                              true
-#else
-                                                              false
-#endif
-        );
         QWebEngineUrlScheme scheme("drifter");
         scheme.setSyntax(QWebEngineUrlScheme::Syntax::Host);
         scheme.setFlags(QWebEngineUrlScheme::SecureScheme | QWebEngineUrlScheme::LocalScheme |
@@ -2632,7 +2654,6 @@ int main(int argc, char** argv) {
         int qtArgc = 1;
         char* qtArgv[] = {argv[0], nullptr};
         QApplication application(qtArgc, qtArgv);
-        startupModules.restoreEnvironment();
         application.setApplicationName("DriftersToolkit");
         application.setApplicationVersion(drifter::AppVersion);
         if (!sandboxReady) {
@@ -2652,6 +2673,9 @@ int main(int argc, char** argv) {
             palette.setColor(QPalette::Highlight, QColor(dark ? "#96562d" : "#765031"));
             palette.setColor(QPalette::HighlightedText, Qt::white);
             application.setPalette(palette);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+            application.styleHints()->setColorScheme(dark ? Qt::ColorScheme::Dark : Qt::ColorScheme::Light);
+#endif
         }
         auto state = dataRoot();
         privateDirectory(state);
@@ -2749,14 +2773,14 @@ int main(int argc, char** argv) {
         // Register ordinary private load observers before show() can service startup events.
         if (smoke && smokeView != "teardown")
             shell.smoke(output, smokeFont, smokeView, smokeRecovery, smokeColor, smokeSeason, smokeReduced,
-                        smokeContrast);
+                        smokeContrast, !smokeSystemPalette.empty());
 #endif
         shell.show();
 #ifdef DRIFTER_UI_TESTING
         // A teardown probe must start after show() and enter the main event loop first.
         if (smoke && smokeView == "teardown")
             shell.smoke(output, smokeFont, smokeView, smokeRecovery, smokeColor, smokeSeason, smokeReduced,
-                        smokeContrast);
+                        smokeContrast, !smokeSystemPalette.empty());
         teardownReporter.probe = shell.teardownProbe();
 #endif
 #ifdef DRIFTER_NEXUS_REVIEWER

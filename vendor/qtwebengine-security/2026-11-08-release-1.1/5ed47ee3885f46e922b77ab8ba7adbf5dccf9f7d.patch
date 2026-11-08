@@ -1,0 +1,166 @@
+From 5ed47ee3885f46e922b77ab8ba7adbf5dccf9f7d Mon Sep 17 00:00:00 2001
+From: Philip Pfaffe <pfaffe@chromium.org>
+Date: Thu, 29 Oct 2026 08:22:24 +0000
+Subject: [PATCH] [Backport] CVE-2026-121137: Type confusion in DevTools
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8669378:
+Defer debugger break in optimized Wasm frames
+
+Debug::HandleDebugBreak deoptimizes the top JavaScript frame before it
+enters the debugger. However, Deoptimizer::DeoptimizeFunction skips
+WebAssembly frames. If an interrupt triggers Debug::HandleDebugBreak
+inside a Turboshaft WebAssembly frame, the frame stays optimized on the
+stack. While the debugger pauses the program, JavaScript can modify
+WebAssembly tables or state. These changes break compiler assumptions
+in the active Turboshaft frame.
+
+To prevent this bug, Debug::HandleDebugBreak now checks the top
+debuggable frame. If the frame is a non-Liftoff WebAssembly frame, the
+debugger defers the break. It calls SetBreakOnNextFunctionCall and
+returns immediately. This patch also updates DebugInfoImpl::IsStepping
+and ExecuteWasmDebugBreaks to check scheduled_break_on_function_call.
+A deferred break now pauses at the entry of the next JS or Liftoff
+WebAssembly function.
+
+Fixed: 577352626
+Change-Id: Ib201097ee80464c3ae716a118568fda2457d98c1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8669378
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111331}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786748
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/debug/debug.cc          | 55 +++++++++++++++++++++++++
+ chromium/v8/src/debug/debug.h           |  3 ++
+ chromium/v8/src/runtime/runtime-wasm.cc |  4 +-
+ chromium/v8/src/wasm/wasm-debug.cc      |  7 +++-
+ 4 files changed, 67 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/v8/src/debug/debug.cc b/chromium/v8/src/debug/debug.cc
+index 964e8927ba52..622327b417f4 100644
+--- a/chromium/v8/src/debug/debug.cc
++++ b/chromium/v8/src/debug/debug.cc
+@@ -38,6 +38,7 @@
+ #include "src/snapshot/embedded/embedded-data.h"
+ 
+ #if V8_ENABLE_WEBASSEMBLY
++#include "src/wasm/wasm-code-manager.h"
+ #include "src/wasm/wasm-debug.h"
+ #include "src/wasm/wasm-objects-inl.h"
+ #endif  // V8_ENABLE_WEBASSEMBLY
+@@ -2910,6 +2911,60 @@ void Debug::HandleDebugBreak(IgnoreBreakMode ignore_break_mode,
+           return;
+         }
+       }
++#if V8_ENABLE_WEBASSEMBLY
++    } else if (!it.done() && it.frame()->is_wasm()) {
++#if V8_ENABLE_DRUMBRAKE
++      if (!it.frame()->is_wasm_interpreter_entry())
++#endif  // V8_ENABLE_DRUMBRAKE
++      {
++        WasmFrame* wasm_frame = WasmFrame::cast(it.frame());
++        wasm::WasmCodeRefScope code_ref_scope;
++        // Optimized Wasm frames cannot be deoptimized on-stack at loop stack
++        // checks. Defer the pause to the next function call (or return to a
++        // debuggable caller frame) so that JavaScript executed during the
++        // pause cannot invalidate load-eliminated state in the optimized Wasm
++        // frame.
++        if (!wasm_frame->wasm_code()->is_liftoff()) {
++          if (ignore_events()) return;
++          thread_local_.scheduled_break_on_next_function_call_.Add(
++              break_reasons);
++          SetBreakOnNextFunctionCall();
++          for (it.Advance(); !it.done(); it.Advance()) {
++            if (it.frame()->is_wasm()) {
++#if V8_ENABLE_DRUMBRAKE
++              if (it.frame()->is_wasm_interpreter_entry()) continue;
++#endif  // V8_ENABLE_DRUMBRAKE
++              WasmFrame* caller_wasm = WasmFrame::cast(it.frame());
++              if (!caller_wasm->wasm_code()->is_inspectable()) continue;
++              wasm::DebugInfo* debug_info =
++                  caller_wasm->native_module()->GetDebugInfo();
++              if (debug_info->IsFrameBlackboxed(caller_wasm)) continue;
++              debug_info->PrepareStepOutTo(caller_wasm);
++              break;
++            }
++            JavaScriptFrame* js_frame = JavaScriptFrame::cast(it.frame());
++            if (js_frame->is_optimized()) {
++              Deoptimizer::DeoptimizeFunction(js_frame->function(),
++                                              LazyDeoptimizeReason::kDebugger,
++                                              js_frame->LookupCode());
++            }
++            HandleScope inner_scope(isolate_);
++            std::vector<Handle<SharedFunctionInfo>> infos;
++            js_frame->GetFunctions(&infos);
++            bool flooded = false;
++            for (; !infos.empty(); infos.pop_back()) {
++              Handle<SharedFunctionInfo> info = infos.back();
++              if (IsBlackboxed(info)) continue;
++              FloodWithOneShot(info);
++              flooded = true;
++              break;
++            }
++            if (flooded) break;
++          }
++          return;
++        }
++      }
++#endif  // V8_ENABLE_WEBASSEMBLY
+     }
+   }
+ 
+diff --git a/chromium/v8/src/debug/debug.h b/chromium/v8/src/debug/debug.h
+index 4f7ed555fd4a..4822f02fe0cc 100644
+--- a/chromium/v8/src/debug/debug.h
++++ b/chromium/v8/src/debug/debug.h
+@@ -465,6 +465,9 @@ class V8_EXPORT_PRIVATE Debug {
+   bool scheduled_break_on_function_call() const {
+     return !thread_local_.scheduled_break_on_next_function_call_.empty();
+   }
++  v8::debug::BreakReasons scheduled_break_on_next_function_call() const {
++    return thread_local_.scheduled_break_on_next_function_call_;
++  }
+ 
+   bool IsRestartFrameScheduled() const {
+     return thread_local_.restart_frame_id_ != StackFrameId::NO_ID;
+diff --git a/chromium/v8/src/runtime/runtime-wasm.cc b/chromium/v8/src/runtime/runtime-wasm.cc
+index 4b36fbb9d8c1..31295c010427 100644
+--- a/chromium/v8/src/runtime/runtime-wasm.cc
++++ b/chromium/v8/src/runtime/runtime-wasm.cc
+@@ -975,9 +975,11 @@ bool ExecuteWasmDebugBreaks(
+   if (debug_info->IsStepping(frame) && !debug_info->IsFrameBlackboxed(frame)) {
+     debug_info->ClearStepping(isolate);
+     StepAction step_action = isolate->debug()->last_step_action();
++    v8::debug::BreakReasons break_reasons =
++        isolate->debug()->scheduled_break_on_next_function_call();
+     isolate->debug()->ClearStepping();
+     isolate->debug()->OnDebugBreak(isolate->factory()->empty_fixed_array(),
+-                                   step_action);
++                                   step_action, break_reasons);
+     return true;
+   }
+ 
+diff --git a/chromium/v8/src/wasm/wasm-debug.cc b/chromium/v8/src/wasm/wasm-debug.cc
+index 4f5c43f46fc2..c06242539248 100644
+--- a/chromium/v8/src/wasm/wasm-debug.cc
++++ b/chromium/v8/src/wasm/wasm-debug.cc
+@@ -446,7 +446,12 @@ class DebugInfoImpl {
+ 
+   bool IsStepping(WasmFrame* frame) {
+     Isolate* isolate = frame->isolate();
+-    if (isolate->debug()->last_step_action() == StepInto) return true;
++    if (isolate->debug()->last_step_action() == StepInto ||
++        isolate->debug()->break_on_next_function_call() ||
++        isolate->debug()->scheduled_break_on_function_call()) {
++      return true;
++    }
++    if (isolate->debug()->last_step_action() == StepNone) return false;
+     base::MutexGuard guard(&mutex_);
+     auto it = per_isolate_data_.find(isolate);
+     return it != per_isolate_data_.end() &&

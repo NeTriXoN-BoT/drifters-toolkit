@@ -28,10 +28,12 @@ class CodecPackaging(unittest.TestCase):
         argv = ['package_portable_linux.py', 'stage', str(paths[0]), str(paths[1])]
         for name, path in zip(names[2:], paths[2:]):
             argv += ['--' + name, str(path)]
-        argv += ['--save-codec-source', str(self.source), '--destination', str(self.root / 'output')]
+        dependencies=self.root/'dependencies-prefix'
+        argv += ['--save-codec-source', str(self.source), '--dependencies-prefix',str(dependencies),
+                 '--destination', str(self.root / 'output')]
         with patch.object(sys, 'argv', argv), patch.object(portable, 'stage') as stage:
             portable.main()
-        stage.assert_called_once_with(*paths, self.source)
+        stage.assert_called_once_with(*paths, self.source, dependencies)
 
     def setUp(self):
         self.owner = tempfile.TemporaryDirectory(prefix='drifter-codec-package-test-')

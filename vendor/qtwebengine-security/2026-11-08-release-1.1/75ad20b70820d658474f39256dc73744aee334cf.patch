@@ -1,0 +1,84 @@
+From 75ad20b70820d658474f39256dc73744aee334cf Mon Sep 17 00:00:00 2001
+From: Hubert Chao <hchao@chromium.org>
+Date: Wed, 7 Oct 2026 07:59:10 -0700
+Subject: [PATCH] [Backport] CVE-2026-121174 (2/2) and CVE-2026-121107
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8125729:
+Address various Background Fetch CORS issues
+
+This CL expands test coverage and fixes lingering response type and
+header exposure bugs resolved by moving Background Fetch away from
+RequestMode::kNavigate to standard RequestMode::kCors enforcement, and
+expands test coverage.
+
+Specifically:
+
+- Fixes response type assignment in
+  MarkRequestCompleteTask::StoreResponse by dynamically assigning
+  FetchResponseType::kCors when the response URL origin differs from
+  the registration's initiator origin (instead of hardcoding
+  kDefault). This ensures JavaScript Response objects enforce
+  strict CORS exposed-header filtering (Access-Control-Expose-Headers)
+  and correctly mark response types as 'cors'.
+- Adds browser tests verifying CORS restrictions across redirect
+  chains (FailsOnCrossOriginRedirectWithoutCorsHeaders,
+  SucceedsOnCrossOriginRedirectWithCorsHeaders).
+- Adds browser tests verifying CORS OPTIONS preflight blocking on
+  custom request headers (FailsWithCustomHeaderWithoutPreflight).
+- Adds browser tests verifying accurate credentials mode plumbing and
+  wildcard origin constraints
+  (FailsWithCredentialsIncludeAgainstWildcardOrigin,
+  SucceedsWithCredentialsOmitAgainstWildcardOrigin).
+- Adds browser tests verifying JavaScript response record encapsulation
+  (CrossOriginResponseTypeIsCors, NonCorsExposedHeaderNotExposed).
+- Introduces standardized Web Platform Test (WPT) suite under
+  external/wpt/background-fetch/cors.https.window.js verifying
+  interoperable CORS behaviors (preflights, response types, exposed
+  headers, credentials).
+
+TAG=agy
+CONV=f978795a-c003-44c4-b9c9-28b4678a1f95
+
+Fixed: 496008447, 495903812, 485855931, 40059500, 500171457, 498000798
+Bug: 515243254
+Change-Id: I1ab48bc2a63aaaf9bc2e9ea480f062428416ff61
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8125729
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Camille Lamy <clamy@chromium.org>
+Commit-Queue: Hubert Chao <hchao@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713427}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786662
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../storage/mark_request_complete_task.cc                | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/chromium/content/browser/background_fetch/storage/mark_request_complete_task.cc b/chromium/content/browser/background_fetch/storage/mark_request_complete_task.cc
+index 2c61a1c94450..b2384031032d 100644
+--- a/chromium/content/browser/background_fetch/storage/mark_request_complete_task.cc
++++ b/chromium/content/browser/background_fetch/storage/mark_request_complete_task.cc
+@@ -24,6 +24,7 @@
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/mojom/blob/blob.mojom.h"
+ #include "third_party/blink/public/mojom/blob/serialized_blob.mojom.h"
++#include "url/origin.h"
+ 
+ namespace content {
+ namespace background_fetch {
+@@ -87,7 +88,13 @@ void MarkRequestCompleteTask::Start() {
+ void MarkRequestCompleteTask::StoreResponse(base::OnceClosure done_closure) {
+   response_ = blink::mojom::FetchAPIResponse::New();
+   response_->url_list = request_info_->GetURLChain();
+-  response_->response_type = network::mojom::FetchResponseType::kDefault;
++  if (!request_info_->GetURLChain().empty() &&
++      !url::Origin::Create(request_info_->GetURLChain().back())
++           .IsSameOriginWith(registration_id_.storage_key().origin())) {
++    response_->response_type = network::mojom::FetchResponseType::kCors;
++  } else {
++    response_->response_type = network::mojom::FetchResponseType::kDefault;
++  }
+   response_->response_time = request_info_->GetResponseTime();
+ 
+   if (request_info_->GetURLChain().empty()) {

@@ -16,7 +16,7 @@ def render(data):
     if type(cli_ready) is not bool: raise RuntimeError('Invalid command-line runtime membership.')
     cli_seen = set()
     cli_required = {'usr/bin/qt.conf','usr/lib/libQt6Core.so.6','usr/lib/libQt6Network.so.6',
-                    'usr/lib/libQt6WebSockets.so.6','usr/lib/libcrypto.so.3','usr/lib/libssl.so.3',
+                    'usr/lib/libcrypto.so.3','usr/lib/libssl.so.3',
                     'usr/plugins/tls/libqopensslbackend.so'}
     for row in data['files']:
         if not isinstance(row, dict): raise RuntimeError('Invalid portable runtime entry.')

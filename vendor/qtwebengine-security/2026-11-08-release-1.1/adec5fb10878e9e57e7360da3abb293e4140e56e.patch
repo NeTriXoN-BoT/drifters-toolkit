@@ -1,0 +1,972 @@
+From adec5fb10878e9e57e7360da3abb293e4140e56e Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Tue, 22 Sep 2026 02:16:32 +0000
+Subject: [PATCH] [Backport] CVE-2026-121246: Use after free in WebGL
+
+Backport by Claude Code of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/8448362:
+GL: add defer_gl_delete_buffers workaround.
+
+Add a workaround which defers calls to glDeleteBuffers while the
+buffer might be in use by in-flight GPU work. Apply this workaround to
+Mali GPUs.
+
+Distilled and integrated test cases from the bug report. Confirmed on
+device that the test cases reliably catch the crash, and that the
+workaround eliminates it.
+
+Co-authored with Gemini.
+
+Bug: chromium:558870371
+Change-Id: I4b9246a42e863fe2dd45b20a8eeea7357475fc99
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8448362
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786193
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ .../platform/autogen/FeaturesGL_autogen.h     |   6 +
+ .../angle/include/platform/gl_features.json   |   8 ++
+ .../angle/src/libANGLE/renderer/gl/BlitGL.cpp |   8 +-
+ .../src/libANGLE/renderer/gl/BufferGL.cpp     |  30 +++--
+ .../src/libANGLE/renderer/gl/ContextGL.cpp    |  21 +--
+ .../src/libANGLE/renderer/gl/ContextGL.h      |   5 +-
+ .../src/libANGLE/renderer/gl/QueryGL.cpp      |  11 +-
+ .../angle/src/libANGLE/renderer/gl/QueryGL.h  |   2 +
+ .../src/libANGLE/renderer/gl/RendererGL.cpp   |   1 +
+ .../libANGLE/renderer/gl/StateManagerGL.cpp   | 126 ++++++++++++++++--
+ .../src/libANGLE/renderer/gl/StateManagerGL.h |  29 +++-
+ .../angle/src/libANGLE/renderer/gl/SyncGL.cpp |  11 +-
+ .../angle/src/libANGLE/renderer/gl/SyncGL.h   |   2 +
+ .../src/libANGLE/renderer/gl/TextureGL.cpp    |  18 ++-
+ .../libANGLE/renderer/gl/VertexArrayGL.cpp    |  26 ++--
+ .../libANGLE/renderer/gl/renderergl_utils.cpp |   3 +
+ .../util/autogen/angle_features_autogen.cpp   |   1 +
+ .../util/autogen/angle_features_autogen.h     |   1 +
+ 18 files changed, 251 insertions(+), 58 deletions(-)
+
+diff --git a/chromium/third_party/angle/include/platform/autogen/FeaturesGL_autogen.h b/chromium/third_party/angle/include/platform/autogen/FeaturesGL_autogen.h
+index 4ded01c1f432..f71603b45dff 100644
+--- a/chromium/third_party/angle/include/platform/autogen/FeaturesGL_autogen.h
++++ b/chromium/third_party/angle/include/platform/autogen/FeaturesGL_autogen.h
+@@ -740,6 +740,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo deferGlDeleteBuffers = {
++        "deferGlDeleteBuffers",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/chromium/third_party/angle/include/platform/gl_features.json b/chromium/third_party/angle/include/platform/gl_features.json
+index d64317d22324..98c61f5c644b 100644
+--- a/chromium/third_party/angle/include/platform/gl_features.json
++++ b/chromium/third_party/angle/include/platform/gl_features.json
+@@ -974,6 +974,14 @@
+                 "For non-power-of-two textures, upload via TexSubImage2D instead of TexImage2D when uploading client-side data."
+             ],
+             "issue": "http://crbug.com/553172761"
++        },
++        {
++            "name": "defer_gl_delete_buffers",
++            "category": "Workarounds",
++            "description": [
++                "Defer glDeleteBuffers calls until previous GPU work has completed."
++            ],
++            "issue": "http://crbug.com/558870371"
+         }
+     ]
+ }
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/BlitGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/BlitGL.cpp
+index 32dfa6940b16..57da2675bb40 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/BlitGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/BlitGL.cpp
+@@ -1323,7 +1323,7 @@ angle::Result BlitGL::generateMipmap(const gl::Context *context,
+     // Copy source to an intermediate texture.
+     GLuint intermediateTexture = mScratchTextures[0];
+     mStateManager->bindTexture(sourceType, intermediateTexture);
+-    mStateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++    mStateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0, context->isHardenedContext());
+     ANGLE_GL_TRY(context, mFunctions->texParameteri(ToGLenum(sourceTarget), GL_TEXTURE_MIN_FILTER,
+                                                     GL_NEAREST));
+     ANGLE_GL_TRY(context, mFunctions->texParameteri(ToGLenum(sourceTarget), GL_TEXTURE_MAG_FILTER,
+@@ -1416,7 +1416,8 @@ angle::Result BlitGL::initializeResources(const gl::Context *context)
+     ANGLE_GL_TRY(context, mFunctions->genFramebuffers(1, &mScratchFBO));
+ 
+     ANGLE_GL_TRY(context, mFunctions->genBuffers(1, &mVertexBuffer));
+-    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer);
++    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer,
++                              context->isHardenedContext());
+ 
+     // Use a single, large triangle, to avoid arithmetic precision issues where fragments
+     // with the same Y coordinate don't get exactly the same interpolated texcoord Y.
+@@ -1534,7 +1535,8 @@ angle::Result BlitGL::setVAOState(const gl::Context *context)
+ 
+ angle::Result BlitGL::initializeVAOState(const gl::Context *context)
+ {
+-    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer);
++    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer,
++                              context->isHardenedContext());
+ 
+     ANGLE_GL_TRY(context, mFunctions->enableVertexAttribArray(mTexcoordAttribLocation));
+     ANGLE_GL_TRY(context, mFunctions->vertexAttribPointer(mTexcoordAttribLocation, 2, GL_FLOAT,
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/BufferGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/BufferGL.cpp
+index a653178bbbc8..302c8fb9893d 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/BufferGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/BufferGL.cpp
+@@ -76,7 +76,7 @@ BufferGL::~BufferGL()
+ void BufferGL::destroy(const gl::Context *context)
+ {
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+-    stateManager->deleteBuffer(mBufferID);
++    stateManager->deleteBuffer(mBufferID, mBufferSize, context->isHardenedContext());
+     mBufferID = 0;
+ }
+ 
+@@ -99,7 +99,7 @@ angle::Result BufferGL::setData(const gl::Context *context,
+         mShadowCopy = angle::MemoryBuffer();
+     }
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
+ 
+     const void *uploadData = data;
+ 
+@@ -136,7 +136,7 @@ angle::Result BufferGL::setSubData(const gl::Context *context,
+     const FunctionsGL *functions = GetFunctionsGL(context);
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
+ 
+     const void *uploadData = data;
+ 
+@@ -170,8 +170,9 @@ angle::Result BufferGL::copySubData(const gl::Context *context,
+ 
+     BufferGL *sourceGL = GetAs<BufferGL>(source);
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
+-    stateManager->bindBuffer(SourceBufferOperationTarget, sourceGL->getBufferID());
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
++    stateManager->bindBuffer(SourceBufferOperationTarget, sourceGL->getBufferID(),
++                             context->isHardenedContext());
+ 
+     ANGLE_GL_TRY(context, functions->copyBufferSubData(gl::ToGLenum(SourceBufferOperationTarget),
+                                                        gl::ToGLenum(DestBufferOperationTarget),
+@@ -208,7 +209,8 @@ angle::Result BufferGL::map(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         if (functions->mapBuffer)
+         {
+             *mapPtr = ANGLE_GL_TRY(
+@@ -225,7 +227,7 @@ angle::Result BufferGL::map(const gl::Context *context,
+         // Unbind the mapped buffer from the array buffer binding. Some drivers generate errors if
+         // any mapped buffer is bound to array buffer bindings.
+         // crbug.com/1345777
+-        stateManager->bindBuffer(DestBufferOperationTarget, 0);
++        stateManager->bindBuffer(DestBufferOperationTarget, 0, context->isHardenedContext());
+     }
+ 
+     mIsMapped  = true;
+@@ -254,7 +256,8 @@ angle::Result BufferGL::mapRange(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         *mapPtr =
+             ANGLE_GL_TRY(context, functions->mapBufferRange(gl::ToGLenum(DestBufferOperationTarget),
+                                                             offset, length, access));
+@@ -262,7 +265,7 @@ angle::Result BufferGL::mapRange(const gl::Context *context,
+         // Unbind the mapped buffer from the array buffer binding. Some drivers generate errors if
+         // any mapped buffer is bound to array buffer bindings.
+         // crbug.com/1345777
+-        stateManager->bindBuffer(DestBufferOperationTarget, 0);
++        stateManager->bindBuffer(DestBufferOperationTarget, 0, context->isHardenedContext());
+     }
+ 
+     mIsMapped  = true;
+@@ -287,7 +290,8 @@ angle::Result BufferGL::unmap(const gl::Context *context,
+ 
+     if (mShadowCopy.has_value())
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         ANGLE_GL_TRY(context,
+                      functions->bufferSubData(gl::ToGLenum(DestBufferOperationTarget), mMapOffset,
+                                               mMapSize, mShadowCopy->data() + mMapOffset));
+@@ -295,7 +299,8 @@ angle::Result BufferGL::unmap(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         *result =
+             ANGLE_GL_TRY(context, functions->unmapBuffer(gl::ToGLenum(DestBufferOperationTarget)));
+     }
+@@ -327,7 +332,8 @@ angle::Result BufferGL::getIndexRange(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+ 
+         const GLuint typeBytes = gl::GetDrawElementsTypeSize(type);
+         const uint8_t *bufferData =
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
+index 1a3d7109b5fd..0a8c1aad3e9a 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -451,7 +451,8 @@ angle::Result ContextGL::drawArraysInstanced(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
+-gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstance)
++gl::AttributesMask ContextGL::updateAttributesForBaseInstance(const gl::Context *context,
++                                                              GLuint baseInstance)
+ {
+     const gl::ProgramExecutable *executable = getState().getProgramExecutable();
+     gl::AttributesMask attribToUpdateMask;
+@@ -477,7 +478,8 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
+                 // and that information is in VertexArrayGL.
+                 // Assert that the buffer is non-null because this case isn't handled.
+                 ASSERT(buffer);
+-                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID());
++                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID(),
++                                              context->isHardenedContext());
+                 if (attrib.format->isPureInt())
+                 {
+                     functions->vertexAttribIPointer(attribIndex, attrib.format->channelCount,
+@@ -498,7 +500,7 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
+     return attribToUpdateMask;
+ }
+ 
+-void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
++void ContextGL::resetUpdatedAttributes(const gl::Context *context, gl::AttributesMask attribMask)
+ {
+     const FunctionsGL *functions = getFunctions();
+     for (size_t attribIndex : attribMask)
+@@ -508,7 +510,8 @@ void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
+         const gl::Buffer *buffer =
+             mState.getVertexArray()->getVertexArrayBuffer(attrib.bindingIndex);
+         getStateManager()->bindBuffer(gl::BufferBinding::Array,
+-                                      GetImplAs<BufferGL>(buffer)->getBufferID());
++                                      GetImplAs<BufferGL>(buffer)->getBufferID(),
++                                      context->isHardenedContext());
+         if (attrib.format->isPureInt())
+         {
+             functions->vertexAttribIPointer(static_cast<GLuint>(attribIndex),
+@@ -555,12 +558,13 @@ angle::Result ContextGL::drawArraysInstancedBaseInstance(const gl::Context *cont
+         // pointer offset calling vertexAttribPointer Will refactor stateCache and pass baseInstance
+         // to setDrawArraysState to set pointer offset
+ 
+-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
++        gl::AttributesMask attribToResetMask =
++            updateAttributesForBaseInstance(context, baseInstance);
+ 
+         ANGLE_GL_TRY(context, functions->drawArraysInstanced(ToGLenum(mode), first, count,
+                                                              adjustedInstanceCount));
+ 
+-        resetUpdatedAttributes(attribToResetMask);
++        resetUpdatedAttributes(context, attribToResetMask);
+     }
+ 
+     mRenderer->markWorkSubmitted();
+@@ -706,13 +710,14 @@ angle::Result ContextGL::drawElementsInstancedBaseVertexBaseInstance(const gl::C
+     {
+         // GL 3.3+ or GLES 3.2+
+         // TODO(http://anglebug.com/42262554): same as above
+-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
++        gl::AttributesMask attribToResetMask =
++            updateAttributesForBaseInstance(context, baseInstance);
+ 
+         ANGLE_GL_TRY(context, functions->drawElementsInstancedBaseVertex(
+                                   ToGLenum(mode), count, ToGLenum(type), drawIndexPointer,
+                                   adjustedInstanceCount, baseVertex));
+ 
+-        resetUpdatedAttributes(attribToResetMask);
++        resetUpdatedAttributes(context, attribToResetMask);
+     }
+ 
+     mRenderer->markWorkSubmitted();
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.h b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.h
+index 75d803445bff..fcb0e430f61c 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.h
+@@ -314,8 +314,9 @@ class ContextGL : public ContextImpl
+                                        GLsizei instanceCount,
+                                        const void **outIndices);
+ 
+-    gl::AttributesMask updateAttributesForBaseInstance(GLuint baseInstance);
+-    void resetUpdatedAttributes(gl::AttributesMask attribMask);
++    gl::AttributesMask updateAttributesForBaseInstance(const gl::Context *context,
++                                                       GLuint baseInstance);
++    void resetUpdatedAttributes(const gl::Context *context, gl::AttributesMask attribMask);
+ 
+     angle::Result applyRecreateFboWorkaroundIfNeeded(const gl::Context *context);
+ 
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.cpp
+index fbd3613fe4f4..e2b7ff42a560 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.cpp
+@@ -64,7 +64,8 @@ StandardQueryGL::StandardQueryGL(gl::QueryType type,
+       mStateManager(stateManager),
+       mActiveQuery(0),
+       mPendingQueries(),
+-      mResultSum(0)
++      mResultSum(0),
++      mDeferredBufferDeletionSerial(0)
+ {}
+ 
+ StandardQueryGL::~StandardQueryGL()
+@@ -92,7 +93,8 @@ void StandardQueryGL::clearInternalQueries()
+ angle::Result StandardQueryGL::begin(const gl::Context *context)
+ {
+     clearInternalQueries();
+-    mResultSum = 0;
++    mResultSum                    = 0;
++    mDeferredBufferDeletionSerial = mStateManager->onBeginQuery();
+     return resume(context);
+ }
+ 
+@@ -231,6 +233,11 @@ angle::Result StandardQueryGL::flush(const gl::Context *context, bool force)
+         mPendingQueries.pop_front();
+     }
+ 
++    if (mActiveQuery == 0 && mDeferredBufferDeletionSerial > 0)
++    {
++        mStateManager->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
++
+     return angle::Result::Continue;
+ }
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.h b/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.h
+index 43ceb3f1fc3c..c4b87e23dfde 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/QueryGL.h
+@@ -12,6 +12,7 @@
+ #include <deque>
+ 
+ #include "libANGLE/renderer/QueryImpl.h"
++#include "libANGLE/renderer/gl/StateManagerGL.h"
+ 
+ namespace rx
+ {
+@@ -66,6 +67,7 @@ class StandardQueryGL : public QueryGL
+     GLuint mActiveQuery;
+     std::deque<GLuint> mPendingQueries;
+     GLuint64 mResultSum;
++    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
+ };
+ }  // namespace rx
+ 
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/RendererGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/RendererGL.cpp
+index 2b747152eef3..8ac257b48004 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/RendererGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/RendererGL.cpp
+@@ -239,6 +239,7 @@ angle::Result RendererGL::finish()
+     mNeedsFlushBeforeDeleteTextures = false;
+     mWorkDoneSinceLastFlush         = false;
+     mStateManager->onSyncedFlushOrFinish();
++    mStateManager->onFinish();
+ 
+     if (mFeatures.finishDoesNotCauseQueriesToBeAvailable.enabled && mUseDebugOutput)
+     {
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index c780eeada4b8..3511a7e12225 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -39,6 +39,9 @@ namespace rx
+ namespace
+ {
+ 
++constexpr size_t kMaxDeferredDeletedBuffers     = 128;
++constexpr size_t kMaxDeferredDeletedBuffersSize = 128 * 1024 * 1024;
++
+ static void ValidateStateHelper(const FunctionsGL *functions,
+                                 const GLuint localValue,
+                                 const GLenum pname,
+@@ -235,6 +238,12 @@ StateManagerGL::StateManagerGL(const FunctionsGL *functions,
+ 
+ StateManagerGL::~StateManagerGL()
+ {
++    if (!mDeferredBufferDeletions.empty())
++    {
++        mFunctions->finish();
++        onFinish();
++    }
++
+     if (mPlaceholderFbo != 0)
+     {
+         deleteFramebuffer(mPlaceholderFbo);
+@@ -320,7 +329,7 @@ void StateManagerGL::deleteSampler(GLuint sampler)
+     }
+ }
+ 
+-void StateManagerGL::deleteBuffer(GLuint buffer)
++void StateManagerGL::deleteBuffer(GLuint buffer, size_t clientSpecifiedSize, bool isHardenedContext)
+ {
+     if (buffer == 0)
+     {
+@@ -331,7 +340,7 @@ void StateManagerGL::deleteBuffer(GLuint buffer)
+     {
+         if (mBuffers[target] == buffer)
+         {
+-            bindBuffer(target, 0);
++            bindBuffer(target, 0, isHardenedContext);
+         }
+ 
+         auto &indexedTarget = mIndexedBuffers[target];
+@@ -360,7 +369,29 @@ void StateManagerGL::deleteBuffer(GLuint buffer)
+         }
+     }
+ 
+-    mFunctions->deleteBuffers(1, &buffer);
++    if (!isHardenedContext || !mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        mFunctions->deleteBuffers(1, &buffer);
++    }
++    else
++    {
++        bool hasBeenBoundAsElementArrayBuffer = mElementArrayBuffers.erase(buffer) > 0;
++        if (mDeferredBufferDeletions.empty() ||
++            mDeferredBufferDeletions.back().serial != mCurrentSerial)
++        {
++            mDeferredBufferDeletions.push_back({mCurrentSerial, {}, 0});
++        }
++        DeferredBufferDeletions &deletions = mDeferredBufferDeletions.back();
++        deletions.buffers.push_back(buffer);
++        deletions.size += clientSpecifiedSize;
++        ++mDeferredBufferDeletionsCount;
++        mDeferredBufferDeletionsTotalSize += clientSpecifiedSize;
++        if (hasBeenBoundAsElementArrayBuffer)
++        {
++            mDeferredBufferDeletionsNeedFinish = true;
++        }
++        maybeDrainDeferredBuffers();
++    }
+ }
+ 
+ void StateManagerGL::deleteFramebuffer(GLuint fbo)
+@@ -467,7 +498,7 @@ void StateManagerGL::forceBindVertexArray(GLuint vao, VertexArrayStateGL *vaoSta
+     mLocalDirtyBits.set(gl::state::DIRTY_BIT_VERTEX_ARRAY_BINDING);
+ }
+ 
+-void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
++void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer, bool isHardenedContext)
+ {
+     // GL drivers differ in whether the transform feedback bind point is modified when
+     // glBindTransformFeedback is called. To avoid these behavior differences we shouldn't try to
+@@ -478,6 +509,14 @@ void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
+         mBuffers[target] = buffer;
+         mFunctions->bindBuffer(gl::ToGLenum(target), buffer);
+         setBufferBindingDirty(target);
++
++        if (target == gl::BufferBinding::ElementArray)
++        {
++            if (isHardenedContext && mFeatures.deferGlDeleteBuffers.enabled && buffer != 0)
++            {
++                mElementArrayBuffers.insert(buffer);
++            }
++        }
+     }
+ }
+ 
+@@ -645,7 +684,7 @@ angle::Result StateManagerGL::setPixelUnpackBuffer(const gl::Context *context,
+     {
+         bufferID = GetImplAs<BufferGL>(pixelBuffer)->getBufferID();
+     }
+-    bindBuffer(gl::BufferBinding::PixelUnpack, bufferID);
++    bindBuffer(gl::BufferBinding::PixelUnpack, bufferID, context->isHardenedContext());
+ 
+     return angle::Result::Continue;
+ }
+@@ -696,7 +735,7 @@ angle::Result StateManagerGL::setPixelPackBuffer(const gl::Context *context,
+     {
+         bufferID = GetImplAs<BufferGL>(pixelBuffer)->getBufferID();
+     }
+-    bindBuffer(gl::BufferBinding::PixelPack, bufferID);
++    bindBuffer(gl::BufferBinding::PixelPack, bufferID, context->isHardenedContext());
+ 
+     return angle::Result::Continue;
+ }
+@@ -770,6 +809,68 @@ void StateManagerGL::onSyncedFlushOrFinish()
+     mHasUnflushedQueries = false;
+ }
+ 
++void StateManagerGL::onFinish()
++{
++    if (mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        mDeferredBufferDeletionsNeedFinish = false;
++        ExecutionSerial serial             = mCurrentSerial++;
++        onSerialCompleted(serial);
++    }
++}
++
++StateManagerGL::ExecutionSerial StateManagerGL::onFenceSync()
++{
++    return mCurrentSerial++;
++}
++
++StateManagerGL::ExecutionSerial StateManagerGL::onBeginQuery()
++{
++    return mCurrentSerial++;
++}
++
++void StateManagerGL::onSerialCompleted(ExecutionSerial serial)
++{
++    if (!mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        return;
++    }
++
++    if (mDeferredBufferDeletions.empty() || mDeferredBufferDeletions.front().serial > serial)
++    {
++        return;
++    }
++
++    if (mDeferredBufferDeletionsNeedFinish)
++    {
++        mFunctions->finish();
++        mDeferredBufferDeletionsNeedFinish = false;
++        serial                             = mCurrentSerial++;
++    }
++
++    while (!mDeferredBufferDeletions.empty() && mDeferredBufferDeletions.front().serial <= serial)
++    {
++        DeferredBufferDeletions &deletions = mDeferredBufferDeletions.front();
++        mFunctions->deleteBuffers(static_cast<GLsizei>(deletions.buffers.size()),
++                                  deletions.buffers.data());
++        ASSERT(mDeferredBufferDeletionsCount >= deletions.buffers.size());
++        mDeferredBufferDeletionsCount -= deletions.buffers.size();
++        ASSERT(mDeferredBufferDeletionsTotalSize >= deletions.size);
++        mDeferredBufferDeletionsTotalSize -= deletions.size;
++        mDeferredBufferDeletions.pop_front();
++    }
++}
++
++void StateManagerGL::maybeDrainDeferredBuffers()
++{
++    if (mDeferredBufferDeletionsCount > kMaxDeferredDeletedBuffers ||
++        mDeferredBufferDeletionsTotalSize > kMaxDeferredDeletedBuffersSize)
++    {
++        mFunctions->finish();
++        onFinish();
++    }
++}
++
+ void StateManagerGL::forcefullyFlush()
+ {
+     if (mFunctions->fenceSync != nullptr && mFunctions->clientWaitSync != nullptr &&
+@@ -788,6 +889,7 @@ void StateManagerGL::forcefullyFlush()
+     // Sync creation not supported or failed; fall back to finish()
+     mFunctions->finish();
+     onSyncedFlushOrFinish();
++    onFinish();
+ }
+ 
+ void StateManagerGL::bindRenderbuffer(GLenum type, GLuint renderbuffer)
+@@ -885,7 +987,8 @@ void StateManagerGL::updateDrawIndirectBufferBinding(const gl::Context *context)
+     if (drawIndirectBuffer != nullptr)
+     {
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(drawIndirectBuffer);
+-        bindBuffer(gl::BufferBinding::DrawIndirect, bufferGL->getBufferID());
++        bindBuffer(gl::BufferBinding::DrawIndirect, bufferGL->getBufferID(),
++                   context->isHardenedContext());
+     }
+ }
+ 
+@@ -896,7 +999,8 @@ void StateManagerGL::updateDispatchIndirectBufferBinding(const gl::Context *cont
+     if (dispatchIndirectBuffer != nullptr)
+     {
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(dispatchIndirectBuffer);
+-        bindBuffer(gl::BufferBinding::DispatchIndirect, bufferGL->getBufferID());
++        bindBuffer(gl::BufferBinding::DispatchIndirect, bufferGL->getBufferID(),
++                   context->isHardenedContext());
+     }
+ }
+ 
+@@ -3717,8 +3821,8 @@ void StateManagerGL::syncBufferBindingsFromNativeContext(const gl::Extensions &e
+ void StateManagerGL::restoreBufferBindingsNativeContext(const gl::Extensions &extensions,
+                                                         const ExternalContextState *state)
+ {
+-    bindBuffer(gl::BufferBinding::Array, state->vertexArrayBufferBinding);
+-    bindBuffer(gl::BufferBinding::ElementArray, state->elementArrayBufferBinding);
++    bindBuffer(gl::BufferBinding::Array, state->vertexArrayBufferBinding, false);
++    bindBuffer(gl::BufferBinding::ElementArray, state->elementArrayBufferBinding, false);
+ }
+ 
+ void StateManagerGL::syncTextureUnitsFromNativeContext(const gl::Extensions &extensions,
+@@ -3859,7 +3963,7 @@ void StateManagerGL::restoreVertexArraysNativeContext(const gl::Extensions &exte
+             externalAttrib.pointer != localAttribute.pointer ||
+             externalAttrib.buffer != localBinding.buffer)
+         {
+-            bindBuffer(gl::BufferBinding::Array, externalAttrib.buffer);
++            bindBuffer(gl::BufferBinding::Array, externalAttrib.buffer, false);
+             mFunctions->vertexAttribPointer(i, externalAttrib.format->channelCount,
+                                             gl::ToGLenum(externalAttrib.format->vertexAttribType),
+                                             externalAttrib.format->isNorm(), externalAttrib.stride,
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.h b/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.h
+index cc1bf28371ff..87edb5face78 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -10,6 +10,7 @@
+ #define LIBANGLE_RENDERER_GL_STATEMANAGERGL_H_
+ 
+ #include "common/debug.h"
++#include "common/hash_containers.h"
+ #include "libANGLE/Error.h"
+ #include "libANGLE/State.h"
+ #include "libANGLE/angletypes.h"
+@@ -18,7 +19,9 @@
+ #include "platform/autogen/FeaturesGL_autogen.h"
+ 
+ #include <array>
++#include <deque>
+ #include <map>
++#include <vector>
+ 
+ namespace gl
+ {
+@@ -176,21 +179,28 @@ class StateManagerGL final : angle::NonCopyable
+                    const angle::FeaturesGL &features);
+     ~StateManagerGL();
+ 
++    using ExecutionSerial = uint64_t;
++
+     void deleteProgram(GLuint program);
+     void deleteVertexArray(GLuint vao);
+     void deleteTexture(GLuint texture);
+     void deleteSampler(GLuint sampler);
+-    void deleteBuffer(GLuint buffer);
++    // clientSpecifiedSize may be 0 for internally-allocated scratch buffers.
++    void deleteBuffer(GLuint buffer, size_t clientSpecifiedSize, bool isHardenedContext);
+     void deleteFramebuffer(GLuint fbo);
+     void deleteRenderbuffer(GLuint rbo);
+     void deleteTransformFeedback(GLuint transformFeedback);
+ 
+     void onSyncedFlushOrFinish();
++    void onFinish();
++    ExecutionSerial onFenceSync();
++    ExecutionSerial onBeginQuery();
++    void onSerialCompleted(ExecutionSerial serial);
+ 
+     void useProgram(GLuint program);
+     void forceUseProgram(GLuint program);
+     void bindVertexArray(GLuint vao, VertexArrayStateGL *vaoState);
+-    void bindBuffer(gl::BufferBinding target, GLuint buffer);
++    void bindBuffer(gl::BufferBinding target, GLuint buffer, bool isHardenedContext);
+     void bindBufferBase(gl::BufferBinding target, size_t index, GLuint buffer);
+     void bindBufferRange(gl::BufferBinding target,
+                          size_t index,
+@@ -421,6 +431,8 @@ class StateManagerGL final : angle::NonCopyable
+     void restoreVertexArraysNativeContext(const gl::Extensions &extensions,
+                                           const ExternalContextState *state);
+ 
++    void maybeDrainDeferredBuffers();
++
+     const FunctionsGL *mFunctions;
+     const angle::FeaturesGL &mFeatures;
+ 
+@@ -590,6 +602,19 @@ class StateManagerGL final : angle::NonCopyable
+     gl::state::DirtyBits mLocalDirtyBits;
+     gl::state::ExtendedDirtyBits mLocalExtendedDirtyBits;
+     gl::AttributesMask mLocalDirtyCurrentValues;
++
++    struct DeferredBufferDeletions
++    {
++        ExecutionSerial serial = 0;
++        std::vector<GLuint> buffers;
++        size_t size = 0;
++    };
++    ExecutionSerial mCurrentSerial = 0;
++    std::deque<DeferredBufferDeletions> mDeferredBufferDeletions;
++    size_t mDeferredBufferDeletionsCount     = 0;
++    size_t mDeferredBufferDeletionsTotalSize = 0;
++    bool mDeferredBufferDeletionsNeedFinish  = false;
++    angle::HashSet<GLuint> mElementArrayBuffers;
+ };
+ 
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
+index e7411020e88b..d807a3fc2a2e 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
+@@ -18,7 +18,7 @@ namespace rx
+ {
+ 
+ SyncGL::SyncGL(const std::shared_ptr<RendererGL> &renderer)
+-    : SyncImpl(), mRenderer(renderer), mSyncObject(0)
++    : SyncImpl(), mRenderer(renderer), mSyncObject(0), mDeferredBufferDeletionSerial(0)
+ {
+     ASSERT(mRenderer);
+ }
+@@ -42,6 +42,7 @@ angle::Result SyncGL::set(const gl::Context *context, GLenum condition, GLbitfie
+     mSyncObject          = mRenderer->getFunctions()->fenceSync(condition, flags);
+     ANGLE_CHECK(contextGL, mSyncObject != 0, "glFenceSync failed to create a GLsync object.",
+                 GL_OUT_OF_MEMORY);
++    mDeferredBufferDeletionSerial = mRenderer->getStateManager()->onFenceSync();
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+ }
+@@ -53,6 +54,10 @@ angle::Result SyncGL::clientWait(const gl::Context *context,
+ {
+     ASSERT(mSyncObject != 0);
+     *outResult = mRenderer->getFunctions()->clientWaitSync(mSyncObject, flags, timeout);
++    if (*outResult == GL_ALREADY_SIGNALED || *outResult == GL_CONDITION_SATISFIED)
++    {
++        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
+     return angle::Result::Continue;
+ }
+ 
+@@ -67,6 +72,10 @@ angle::Result SyncGL::getStatus(const gl::Context *context, GLint *outResult)
+ {
+     ASSERT(mSyncObject != 0);
+     mRenderer->getFunctions()->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
++    if (*outResult == GL_SIGNALED)
++    {
++        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
+     return angle::Result::Continue;
+ }
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
+index 581efc9deccc..01485477e7c8 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
+@@ -10,6 +10,7 @@
+ #define LIBANGLE_RENDERER_GL_FENCESYNCGL_H_
+ 
+ #include "libANGLE/renderer/SyncImpl.h"
++#include "libANGLE/renderer/gl/StateManagerGL.h"
+ 
+ #include <memory>
+ 
+@@ -38,6 +39,7 @@ class SyncGL : public SyncImpl
+   private:
+     std::shared_ptr<RendererGL> mRenderer;
+     GLsync mSyncObject;
++    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
+ };
+ }  // namespace rx
+ 
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/TextureGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/TextureGL.cpp
+index 7651d1237bee..abc0d691b7f0 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -439,7 +439,7 @@ angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *conte
+ 
+     GLuint scratch = 0;
+     functions->genBuffers(1, &scratch);
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, scratch);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, scratch, context->isHardenedContext());
+     // Regardless of whether the user supplied data (pixels != nullptr), the pixel unpack buffer
+     // must be allocated with the expected amount of data.
+     if (uploadBytes > 0)
+@@ -493,7 +493,7 @@ angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *conte
+         setLevelInfo(context, target, level, 1, levelInfo);
+     }
+ 
+-    stateManager->deleteBuffer(scratch);
++    stateManager->deleteBuffer(scratch, 0, context->isHardenedContext());
+ 
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+@@ -1422,7 +1422,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+         else
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             const gl::InternalFormat &internalFormatInfo =
+                 gl::GetSizedInternalFormatInfo(internalFormat);
+@@ -1539,7 +1540,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+         else
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             // Internal format must be sized
+             ASSERT(internalFormatInfo.sized);
+@@ -1846,7 +1848,8 @@ angle::Result TextureGL::allocateMipmapLevelsForGeneration(const gl::Context *co
+         if (levelDesc.size != levelSize || *levelDesc.format.info != baseLevelInternalFormat)
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             switch (getType())
+             {
+@@ -2880,7 +2883,7 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpackState));
+ 
+     GLuint prevUnpackBuffer = stateManager->getBufferID(gl::BufferBinding::PixelUnpack);
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0, context->isHardenedContext());
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+     if (internalFormatInfo.compressed)
+@@ -2961,7 +2964,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+     // glTexImage call, we need to make sure that the texture data to be uploaded later has the
+     // expected unpack state.
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, context->getState().getUnpackState()));
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, prevUnpackBuffer);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, prevUnpackBuffer,
++                             context->isHardenedContext());
+ 
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index 19654deb7c8b..e95c4b40b9a0 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -148,11 +148,11 @@ void VertexArrayGL::destroy(const gl::Context *context)
+         binding.set(context, nullptr);
+     }
+ 
+-    stateManager->deleteBuffer(mStreamingElementArrayBuffer);
++    stateManager->deleteBuffer(mStreamingElementArrayBuffer, 0, context->isHardenedContext());
+     mStreamingElementArrayBufferSize = 0;
+     mStreamingElementArrayBuffer     = 0;
+ 
+-    stateManager->deleteBuffer(mStreamingArrayBuffer);
++    stateManager->deleteBuffer(mStreamingArrayBuffer, 0, context->isHardenedContext());
+     mStreamingArrayBufferSize = 0;
+     mStreamingArrayBuffer     = 0;
+ 
+@@ -182,7 +182,8 @@ angle::Result VertexArrayGL::updateElementArrayBufferBinding(const gl::Context *
+             elementArrayBuffer ? GetNativeBufferID(elementArrayBuffer) : 0;
+ 
+         StateManagerGL *stateManager = GetStateManagerGL(context);
+-        stateManager->bindBuffer(gl::BufferBinding::ElementArray, elementArrayBufferId);
++        stateManager->bindBuffer(gl::BufferBinding::ElementArray, elementArrayBufferId,
++                                 context->isHardenedContext());
+         mElementArrayBuffer.set(context, elementArrayBuffer);
+         mNativeState->elementArrayBuffer = elementArrayBufferId;
+     }
+@@ -329,7 +330,8 @@ angle::Result VertexArrayGL::syncIndexData(const gl::Context *context,
+ 
+         stateManager->bindVertexArray(mVertexArrayID, mNativeState);
+ 
+-        stateManager->bindBuffer(gl::BufferBinding::ElementArray, mStreamingElementArrayBuffer);
++        stateManager->bindBuffer(gl::BufferBinding::ElementArray, mStreamingElementArrayBuffer,
++                                 context->isHardenedContext());
+         mElementArrayBuffer.set(context, nullptr);
+         mNativeState->elementArrayBuffer = mStreamingElementArrayBuffer;
+ 
+@@ -433,7 +435,8 @@ angle::Result VertexArrayGL::streamAttributes(
+         attribsToStream.count() * maxAttributeDataSize * indexRange.start();
+     const size_t requiredBufferSize = streamingDataSize + bufferEmptySpace;
+ 
+-    stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer);
++    stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer,
++                             context->isHardenedContext());
+     if (requiredBufferSize > mStreamingArrayBufferSize)
+     {
+         ANGLE_GL_TRY_ALWAYS_CHECK(
+@@ -515,7 +518,8 @@ angle::Result VertexArrayGL::streamAttributes(
+                 {
+                     needsUnmapAndRebindStreamingAttributeBuffer = true;
+                     const auto buffer = GetImplAs<BufferGL>(bindingBufferPointer);
+-                    stateManager->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID());
++                    stateManager->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID(),
++                                             context->isHardenedContext());
+                     // The workaround is only for latest Mac Intel so glMapBufferRange should be
+                     // supported
+                     ASSERT(CanMapBufferForRead(functions));
+@@ -560,7 +564,8 @@ angle::Result VertexArrayGL::streamAttributes(
+             if (needsUnmapAndRebindStreamingAttributeBuffer)
+             {
+                 ANGLE_GL_TRY(context, functions->unmapBuffer(GL_ARRAY_BUFFER));
+-                stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer);
++                stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer,
++                                         context->isHardenedContext());
+             }
+ 
+             // Compute where the 0-index vertex would be.
+@@ -625,7 +630,8 @@ angle::Result VertexArrayGL::recoverForcedStreamingAttributesForDrawArraysInstan
+         const auto &binding = bindings[attrib.bindingIndex];
+         gl::Buffer *buffer       = getVertexArrayBuffer(attrib.bindingIndex);
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(buffer);
+-        stateManager->bindBuffer(gl::BufferBinding::Array, bufferGL->getBufferID());
++        stateManager->bindBuffer(gl::BufferBinding::Array, bufferGL->getBufferID(),
++                                 context->isHardenedContext());
+ 
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(idx), attrib,
+                                           static_cast<GLsizei>(binding.getStride()),
+@@ -736,7 +742,7 @@ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, siz
+ 
+         BufferGL *bufferGL = GetImplAs<BufferGL>(arrayBuffer);
+         bufferId           = bufferGL->getBufferID();
+-        stateManager->bindBuffer(gl::BufferBinding::Array, bufferId);
++        stateManager->bindBuffer(gl::BufferBinding::Array, bufferId, context->isHardenedContext());
+         if (features.ensureNonEmptyBufferIsBoundForDraw.enabled && bufferGL->getBufferSize() == 0)
+         {
+             BufferFeedback feedback;
+@@ -751,7 +757,7 @@ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, siz
+     else
+     {
+         ASSERT(canUseClientArrays);
+-        stateManager->bindBuffer(gl::BufferBinding::Array, 0);
++        stateManager->bindBuffer(gl::BufferBinding::Array, 0, context->isHardenedContext());
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(attribIndex), attrib,
+                                           binding.getStride(),
+                                           reinterpret_cast<uintptr_t>(attrib.pointer)));
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/renderergl_utils.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index a19f42d0763b..2419b765ee4d 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2729,6 +2729,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // http://crbug.com/546252753
+     ANGLE_FEATURE_CONDITION(features, finishBeforeBlitFramebufferMultiAttachment, isMali);
+ 
++    // http://crbug.com/558870371
++    ANGLE_FEATURE_CONDITION(features, deferGlDeleteBuffers, isMali);
++
+     // https://crbug.com/40264674
+     ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
+ 
+diff --git a/chromium/third_party/angle/util/autogen/angle_features_autogen.cpp b/chromium/third_party/angle/util/autogen/angle_features_autogen.cpp
+index e21c74d72f5d..ec26075f8939 100644
+--- a/chromium/third_party/angle/util/autogen/angle_features_autogen.cpp
++++ b/chromium/third_party/angle/util/autogen/angle_features_autogen.cpp
+@@ -79,6 +79,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::CopyTextureToBufferForReadOptimization, "copyTextureToBufferForReadOptimization"},
+     {Feature::CorruptProgramBinaryForTesting, "corruptProgramBinaryForTesting"},
+     {Feature::DecodeEncodeSRGBForGenerateMipmap, "decodeEncodeSRGBForGenerateMipmap"},
++    {Feature::DeferGlDeleteBuffers, "deferGlDeleteBuffers"},
+     {Feature::DepthStencilBlitExtraCopy, "depthStencilBlitExtraCopy"},
+     {Feature::DescriptorSetCache, "descriptorSetCache"},
+     {Feature::DestroyOldSwapchainInSharedPresentMode, "destroyOldSwapchainInSharedPresentMode"},
+diff --git a/chromium/third_party/angle/util/autogen/angle_features_autogen.h b/chromium/third_party/angle/util/autogen/angle_features_autogen.h
+index 45b97c59141b..1e370805b021 100644
+--- a/chromium/third_party/angle/util/autogen/angle_features_autogen.h
++++ b/chromium/third_party/angle/util/autogen/angle_features_autogen.h
+@@ -79,6 +79,7 @@ enum class Feature
+     CopyTextureToBufferForReadOptimization,
+     CorruptProgramBinaryForTesting,
+     DecodeEncodeSRGBForGenerateMipmap,
++    DeferGlDeleteBuffers,
+     DepthStencilBlitExtraCopy,
+     DescriptorSetCache,
+     DestroyOldSwapchainInSharedPresentMode,

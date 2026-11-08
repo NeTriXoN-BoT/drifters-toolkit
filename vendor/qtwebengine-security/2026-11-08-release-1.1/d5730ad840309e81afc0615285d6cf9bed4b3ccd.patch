@@ -1,0 +1,97 @@
+From d5730ad840309e81afc0615285d6cf9bed4b3ccd Mon Sep 17 00:00:00 2001
+From: Michal Mocny <mmocny@chromium.org>
+Date: Fri, 2 Oct 2026 07:02:52 -0700
+Subject: [PATCH] [Backport] CVE-2026-121188: Use after free in PerformanceAPIs
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8507254:
+Unregister AnimationFrameTimingMonitor from CoreProbeSink on Shutdown
+
+AnimationFrameTimingMonitor registers itself with its CoreProbeSink at
+construction, but Shutdown() only removed its TaskTimeObserver without
+calling CoreProbeSink::RemoveAnimationFrameTimingMonitor().
+
+When a local root frame is detached inside a FrameRelatedTask probe
+(such as LocalFrame::PostMessageEvent), WebFrameWidgetImpl::Close()
+shuts down the AnimationFrameTimingMonitor and resets local_root_.
+Because the monitor remained registered in CoreProbeSink,
+~FrameRelatedTask() still invoked Did() -> OnMainThreadTaskCompleted() ->
+client_->ReportLongTaskTiming() on the closed widget. Similarly,
+WasHidden()/WasShown() leaked old monitors in CoreProbeSink.
+
+Store a Member<CoreProbeSink> on AnimationFrameTimingMonitor, remove the
+monitor from CoreProbeSink in Shutdown(), and guard
+OnMainThreadTaskCompleted() on enabled_.
+
+Bug: 566506819
+Change-Id: Id45e22c00637548cfc6ba651a07b57d66a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8507254
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Commit-Queue: Michal Mocny <mmocny@chromium.org>
+Auto-Submit: Michal Mocny <mmocny@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709995}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786521
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../core/frame/animation_frame_timing_monitor.cc   | 14 ++++++++++++--
+ .../core/frame/animation_frame_timing_monitor.h    |  1 +
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+index 0465abc0fbbe..7af4daa9331e 100644
+--- a/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
++++ b/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+@@ -40,15 +40,21 @@ constexpr base::TimeDelta kLongScriptDuration = base::Milliseconds(5);
+ 
+ AnimationFrameTimingMonitor::AnimationFrameTimingMonitor(Client& client,
+                                                          CoreProbeSink* sink)
+-    : client_(client) {
++    : client_(client), probe_sink_(sink) {
+   Thread::Current()->AddTaskTimeObserver(this);
+-  sink->AddAnimationFrameTimingMonitor(this);
++  if (probe_sink_) {
++    probe_sink_->AddAnimationFrameTimingMonitor(this);
++  }
+   enabled_ = true;
+ }
+ 
+ void AnimationFrameTimingMonitor::Shutdown() {
+   enabled_ = false;
+   frame_handling_input_ = nullptr;
++  if (probe_sink_) {
++    probe_sink_->RemoveAnimationFrameTimingMonitor(this);
++    probe_sink_ = nullptr;
++  }
+   Thread::Current()->RemoveTaskTimeObserver(this);
+ }
+ 
+@@ -184,6 +190,9 @@ void AnimationFrameTimingMonitor::OnTaskCompleted(
+     base::TimeTicks start_time,
+     base::TimeTicks end_time,
+     LocalFrame* frame) {
++  if (!enabled_) {
++    return;
++  }
+   HeapVector<Member<ScriptTimingInfo>> scripts;
+ 
+   bool did_pause = false;
+@@ -517,6 +526,7 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
+   visitor->Trace(current_frame_timing_info_);
+   visitor->Trace(current_scripts_);
+   visitor->Trace(frame_handling_input_);
++  visitor->Trace(probe_sink_);
+ }
+ 
+ namespace {
+diff --git a/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h b/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+index 784095e12392..101cd8e19221 100644
+--- a/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
++++ b/chromium/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+@@ -149,6 +149,7 @@ class CORE_EXPORT AnimationFrameTimingMonitor final
+   std::optional<PendingScriptInfo> pending_script_info_;
+   HashMap<size_t, PendingScriptInfo> user_entry_points_;
+   Client& client_;
++  Member<CoreProbeSink> probe_sink_;
+ 
+   enum class State {
+     // No task running, no pending frames.

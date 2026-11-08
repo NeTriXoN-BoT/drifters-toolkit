@@ -1,0 +1,157 @@
+From b8d5748347e4722c73fed6b5841f96d0df189217 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Fri, 23 Oct 2026 14:02:30 -0700
+Subject: [PATCH] [Backport] CVE-2026-121182: Use after free in DOM
+
+Manual backport assisted by Claude Code of patch originally
+reviewed on https://chromium-review.googlesource.com/c/chromium/src/+/8634694:
+Fix UAF in TransitionPseudoElementData::ClearPseudoElements
+
+Move transition_containers_ into a local map before disposing entries
+in TransitionPseudoElementData::ClearPseudoElements, and release
+column_pseudo_elements_ and transition_data_ before clearing them in
+PseudoElementData::ClearPseudoElements so re-entrant lookups or
+mutations cannot invalidate an active iterator.
+
+Also prevent PseudoElements from being registered in TreeScope ID or
+name maps in Element::UpdateId and Element::UpdateName, and ensure
+HitTestResult::GetPosition uses inner_node_ rather than a PseudoElement
+when ChildPaintBlockedByDisplayLock is true.
+
+Fixed: 576169244
+Bug: 576169244
+Change-Id: I3d412dd2defa1eb3149d1d1fa254a8a367571f4c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8634694
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Noam Rosenthal <nrosenthal@google.com>
+Cr-Commit-Position: refs/heads/main@{#1726202}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786824
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../blink/renderer/core/dom/element.cc        |  7 ++++--
+ .../renderer/core/dom/pseudo_element_data.h   | 12 +++++-----
+ .../core/dom/transition_pseudo_element_data.h |  6 +++--
+ .../renderer/core/layout/hit_test_result.cc   | 24 ++++++++++++++-----
+ 4 files changed, 33 insertions(+), 16 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/dom/element.cc b/chromium/third_party/blink/renderer/core/dom/element.cc
+index 9db613b76ef7..23373b31e8ef 100644
+--- a/chromium/third_party/blink/renderer/core/dom/element.cc
++++ b/chromium/third_party/blink/renderer/core/dom/element.cc
+@@ -10293,7 +10293,7 @@ bool Element::HasNamedNodeMap() const {
+ 
+ inline void Element::UpdateName(const AtomicString& old_name,
+                                 const AtomicString& new_name) {
+-  if (!IsInDocumentTree()) {
++  if (!IsInDocumentTree() || IsPseudoElement()) {
+     return;
+   }
+ 
+@@ -10309,7 +10309,7 @@ inline void Element::UpdateName(const AtomicString& old_name,
+ 
+ inline void Element::UpdateId(const AtomicString& old_id,
+                               const AtomicString& new_id) {
+-  if (!IsInTreeScope()) {
++  if (!IsInTreeScope() || IsPseudoElement()) {
+     return;
+   }
+ 
+@@ -10324,6 +10324,9 @@ inline void Element::UpdateId(const AtomicString& old_id,
+ inline void Element::UpdateId(TreeScope& scope,
+                               const AtomicString& old_id,
+                               const AtomicString& new_id) {
++  if (IsPseudoElement()) {
++    return;
++  }
+   DCHECK(IsInTreeScope());
+   DCHECK_NE(old_id, new_id);
+ 
+diff --git a/chromium/third_party/blink/renderer/core/dom/pseudo_element_data.h b/chromium/third_party/blink/renderer/core/dom/pseudo_element_data.h
+index eff2a49655ab..2428f5084a4a 100644
+--- a/chromium/third_party/blink/renderer/core/dom/pseudo_element_data.h
++++ b/chromium/third_party/blink/renderer/core/dom/pseudo_element_data.h
+@@ -139,15 +139,15 @@ inline void PseudoElementData::ClearPseudoElements() {
+   SetPseudoElement(kPseudoIdScrollButtonInlineStart, nullptr);
+   SetPseudoElement(kPseudoIdScrollButtonInlineEnd, nullptr);
+   SetPseudoElement(kPseudoIdScrollButtonBlockEnd, nullptr);
+-  if (column_pseudo_elements_) {
+-    for (ColumnPseudoElement* column_pseudo_element : *column_pseudo_elements_) {
++  if (ColumnPseudoElementsVector* columns = column_pseudo_elements_.Release()) {
++    for (ColumnPseudoElement* column_pseudo_element : *columns) {
+       column_pseudo_element->Dispose();
+     }
+-    column_pseudo_elements_->clear();
++    columns->clear();
+   }
+-  if (transition_data_) {
+-    transition_data_->ClearPseudoElements();
+-    transition_data_ = nullptr;
++  if (TransitionPseudoElementData* transition_data =
++          transition_data_.Release()) {
++    transition_data->ClearPseudoElements();
+   }
+ }
+ 
+diff --git a/chromium/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h b/chromium/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
+index 3582f3c06e82..05085954548e 100644
+--- a/chromium/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
++++ b/chromium/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
+@@ -75,9 +75,11 @@ inline void TransitionPseudoElementData::ClearPseudoElements() {
+                        ? transition_incoming_image_->view_transition_name()
+                        : g_null_atom);
+ 
+-  for (auto& entry : transition_containers_)
++  HeapHashMap<AtomicString, Member<PseudoElement>> containers;
++  std::swap(containers, transition_containers_);
++  for (auto& entry : containers) {
+     entry.value->Dispose();
+-  transition_containers_.clear();
++  }
+ }
+ 
+ inline void TransitionPseudoElementData::SetPseudoElement(
+diff --git a/chromium/third_party/blink/renderer/core/layout/hit_test_result.cc b/chromium/third_party/blink/renderer/core/layout/hit_test_result.cc
+index e3a38280cb28..d37cbc729b48 100644
+--- a/chromium/third_party/blink/renderer/core/layout/hit_test_result.cc
++++ b/chromium/third_party/blink/renderer/core/layout/hit_test_result.cc
+@@ -218,8 +218,13 @@ PositionWithAffinity HitTestResult::GetPosition() const {
+   // the node as the position. This is because we don't paint contents of the
+   // element. Furthermore, any caret adjustments below can access layout-dirty
+   // state in the subtree of this object.
+-  if (layout_object->ChildPaintBlockedByDisplayLock())
+-    return PositionWithAffinity(Position(*node, 0), TextAffinity::kDefault);
++  if (layout_object->ChildPaintBlockedByDisplayLock()) {
++    const Node* anchor = node;
++    if (const auto* pseudo = DynamicTo<PseudoElement>(node)) {
++      anchor = &pseudo->UltimateOriginatingElement();
++    }
++    return PositionWithAffinity(Position(*anchor, 0), TextAffinity::kDefault);
++  }
+ 
+   if (node->IsPseudoElement() && node->GetPseudoId() == kPseudoIdBefore) {
+     return PositionWithAffinity(
+@@ -254,12 +259,19 @@ PositionWithAffinity HitTestResult::GetPositionForInnerNodeOrImageMapImage()
+   // the node as the position. This is because we don't paint contents of the
+   // element. Furthermore, any caret adjustments below can access layout-dirty
+   // state in the subtree of this object.
+-  if (layout_object->ChildPaintBlockedByDisplayLock())
+-    return PositionWithAffinity(Position(*node, 0), TextAffinity::kDefault);
++  if (layout_object->ChildPaintBlockedByDisplayLock()) {
++    const Node* anchor = node;
++    if (const auto* pseudo = DynamicTo<PseudoElement>(node)) {
++      anchor = &pseudo->UltimateOriginatingElement();
++    }
++    return PositionWithAffinity(Position(*anchor, 0), TextAffinity::kDefault);
++  }
+ 
+   PositionWithAffinity position = layout_object->PositionForPoint(LocalPoint());
+-  if (position.IsNull())
+-    return PositionWithAffinity(FirstPositionInOrBeforeNode(*node));
++  if (position.IsNull()) {
++    return PositionWithAffinity(
++        FirstPositionInOrBeforeNode(*InnerNodeOrImageMapImage()));
++  }
+   return position;
+ }
+ 

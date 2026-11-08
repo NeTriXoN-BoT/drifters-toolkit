@@ -142,7 +142,7 @@ def qt_inputs(prefix, provenance, archives):
     # The official 22 October SDK predates vendor critical backports. A version
     # string, original archive hashes or a claimed source patch is insufficient:
     # require the new core/helper/resource bytes from the completed pinned build.
-    from qt_webengine_vendor_followup import verify_build, public_provenance
+    from qt_webengine_release_1_1 import verify_build, public_provenance
     security=public_provenance(verify_build(prefix))
     return prefix,qt,{'version':'6.11.3','origin':'official-qt-sdk-with-pinned-vendor-webengine-backports','archives':verified,'webengineSecurity':security}
 
@@ -212,7 +212,7 @@ def reindex(appdir):
             staged=identity(appdir/name,512*1024*1024)
             if staged!=binding.get('staged'):
                 binding['staged']=staged;binding['localReplacement']=True
-        write_artifact(proof_path,(json.dumps(proof,indent=2)+'\n').encode(),maximum=8*1024*1024)
+        write_artifact(proof_path,(json.dumps(proof,indent=2)+'\n').encode(),maximum=8*1024*1024).chmod(0o644)
     path.write_text(json.dumps(current,indent=2)+'\n')
     print('Reindexed local library replacements. Rebuild both native programs with this manifest before refresh; no signing key is needed.')
     return current
@@ -237,12 +237,13 @@ def install_codec(appdir, inputs):
     if target.exists() or target.is_symlink(): verify_worker(target, 'linux')
     copy(helper, target, True)
     if read_plain(target, 8*1024*1024) != body: raise RuntimeError('The unchanged static SaveCodec worker was altered during staging.')
-    write_artifact(Path(appdir)/'usr/bin'/POINTER_NAME, pointer_bytes(), maximum=16384)
-    for name, content in notices.items(): write_artifact(Path(appdir)/'licenses'/name, content, maximum=32*1024*1024)
+    write_artifact(Path(appdir)/'usr/bin'/POINTER_NAME, pointer_bytes(), maximum=16384).chmod(0o644)
+    for name, content in notices.items():
+        write_artifact(Path(appdir)/'licenses'/name, content, maximum=32*1024*1024).chmod(0o644)
     return proof
 
 
-def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_prefix,openssl_provenance,openssl_archive,save_codec_source=None):
+def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_prefix,openssl_provenance,openssl_archive,save_codec_source=None,dependencies_prefix=None):
     refuse_private_save_preview(build,Path(appdir)/'usr/bin',appdir)
     baseline();build=build.resolve(strict=True);appdir=appdir.absolute()
     codec = codec_inputs(build, save_codec_source)
@@ -256,6 +257,11 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
     from bootstrap_openssl import runtime_inputs, RUNTIME_NAMES
     openssl_prefix=Path(openssl_prefix).absolute()
     ssl_proof=runtime_inputs(openssl_prefix,openssl_provenance,openssl_archive)
+    if dependencies_prefix is None:raise RuntimeError('Stage with the verified maintained Linux dependency prefix.')
+    from bootstrap_linux_dependencies import verify_build as dependency_build
+    dependencies_prefix=Path(dependencies_prefix).absolute()
+    maintained=dependency_build(dependencies_prefix)
+    dependency_outputs={r['name']:r for r in maintained['outputs']}
     if appdir.exists():raise RuntimeError('Stage into a fresh path; an existing bundle is never overwritten.')
     # A previously portable build intentionally cannot run from the flat CMake
     # output directory. Staging is unsealed data; the second compiled-manifest
@@ -266,16 +272,24 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
     for name in list(programs)+['ui/'+name for name in UI]+['catalog/catalog.json','config/nexus.json']:
         if (build/name).is_symlink():raise RuntimeError('Redirected release input: '+name)
         copy(build/name,bin_dir/name,name in programs)
-    packages=set();originals={};elf_targets=[];sdk_members=[];ssl_members=[]
+    packages=set();originals={};elf_targets=[];sdk_members=[];ssl_members=[];dependency_members=[]
     def native(source,target):
         source=Path(source);copy_runtime(source,appdir/target,target,sdk,rebuilt,copied,True)
         if source.resolve().is_relative_to(sdk):sdk_members.append(target)
         elif source.resolve().is_relative_to(openssl_prefix):ssl_members.append(target)
+        elif source.resolve().is_relative_to(dependencies_prefix):
+            expected=dependency_outputs.get(source.name)
+            if expected is None or digest(source)!=expected['sha256'] or source.stat().st_size!=expected['size']:
+                raise RuntimeError('A maintained Linux library changed before staging: '+source.name)
+            dependency_members.append(target)
         else:packages.add(package_owner(source))
         originals[str(appdir/target)]=source;elf_targets.append(appdir/target)
     native(qt['QT_INSTALL_LIBEXECS']/'QtWebEngineProcess','usr/libexec/QtWebEngineProcess')
     for group in PLUGIN_GROUPS:
         for source in sorted((qt['QT_INSTALL_PLUGINS']/group).glob('*.so')):
+            # Qt/XDG portals provide the portable dialogs. The optional GTK
+            # theme bridge pulls in an unused second widget/image stack.
+            if group=='platformthemes' and source.name=='libqgtk3.so':continue
             if group=='platforms' and source.name not in {'libqxcb.so','libqwayland.so','libqwayland-egl.so','libqwayland-generic.so'}:continue
             if group=='imageformats' and source.name not in IMAGE_PLUGINS:continue
             native(source,'usr/plugins/'+group+'/'+source.name)
@@ -302,27 +316,36 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
         source=openssl_prefix/'lib'/extra
         if not source.is_file():raise RuntimeError('The pinned OpenSSL TLS runtime is missing: '+extra)
         native(source,'usr/lib/'+extra);ssl_inputs.append(source)
-    cli_sources=[build/'DriftersToolkitCLI']+ssl_inputs+[source for target,source in originals.items() if '/usr/plugins/tls/' in target]
-    cli_paths={'usr/bin/qt.conf'}
-    for source in cli_sources:
-        for line in run('lddtree','-l',str(source)).splitlines():
-            dependency=Path(line)
-            if not dependency.is_absolute() or not dependency.is_file():raise RuntimeError('A CLI dependency could not be resolved: '+line)
-            if dependency==build/'DriftersToolkitCLI' or host_library(dependency.name):continue
-            if dependency==source and source.parent.name=='tls':cli_paths.add('usr/plugins/tls/'+source.name)
-            else:cli_paths.add('usr/lib/'+dependency.name)
+    # Resolve direct edges after each replacement. Flattening the old lddtree
+    # first would retain dependencies of libraries that are no longer shipped.
+    replacements={p.name:p for p in (sdk/'lib').glob('*.so*') if p.is_file()}
+    replacements.update({p.name:p for p in ssl_inputs})
+    replacements.update({name:dependencies_prefix/'runtime'/name for name in dependency_outputs})
+    dynamic={};resolved={}
+    def needed(source):
+        key=str(source)
+        if key not in dynamic:dynamic[key]=re.findall(r'\(NEEDED\).*Shared library: \[([^\]]+)\]',run('readelf','-d',key))
+        return dynamic[key]
+    def resolve(source,name):
+        key=str(source)
+        if key not in resolved:
+            paths=[Path(line) for line in run('lddtree','-l',key).splitlines()]
+            resolved[key]={p.name:p for p in paths if p.is_absolute() and p.is_file()}
+        if name not in resolved[key]:raise RuntimeError('An ELF dependency could not be resolved: '+name)
+        return resolved[key][name]
+    from linux_dependency_graph import closure
+    tls_sources=[source for target,source in originals.items() if '/usr/plugins/tls/' in target]
+    cli_sources=[build/'DriftersToolkitCLI']+ssl_inputs+tls_sources
+    cli_paths={'usr/bin/qt.conf',*('usr/plugins/tls/'+p.name for p in tls_sources)}
+    cli_paths.update('usr/lib/'+p.name for p in ssl_inputs)
+    cli_paths.update('usr/lib/'+name for name in closure(cli_sources,replacements,needed,resolve,host_library))
     inputs=[build/name for name in programs]+list(originals.values())
     for extra in ('libsoftokn3.so','libfreebl3.so','libfreeblpriv3.so'):
-        candidates=list(Path('/usr/lib/x86_64-linux-gnu').glob('**/'+extra))
-        if candidates:native(candidates[0],'usr/lib/'+extra);inputs.append(candidates[0])
-    for source in inputs:
-        for line in run('lddtree','-l',str(source)).splitlines():
-            dependency=Path(line)
-            if not dependency.is_absolute() or not dependency.is_file():raise RuntimeError('An ELF dependency could not be resolved: '+line)
-            if dependency.resolve()==Path(source).resolve() or host_library(dependency.name):continue
-            target=appdir/'usr/lib'/dependency.name
-            if target.exists():continue
-            native(dependency,'usr/lib/'+dependency.name)
+        source=replacements[extra]
+        native(source,'usr/lib/'+extra);inputs.append(source)
+    for name,dependency in closure(inputs,replacements,needed,resolve,host_library).items():
+        target=appdir/'usr/lib'/name
+        if not target.exists():native(dependency,'usr/lib/'+name)
     # RUNPATH changes apply only to these ELF objects, not to Steam/the browser
     # launched later. No global LD_LIBRARY_PATH or Qt override is exported.
     elf_targets.extend(bin_dir/name for name in programs)
@@ -346,6 +369,7 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
     for source in Path('/usr/share/common-licenses').iterdir():
         if source.is_file():copy(source,notices/'common'/source.name)
     for name in LINUX_NOTICES:copy(ROOT/'docs'/name,notices/name)
+    for source in sorted((dependencies_prefix/'notices').iterdir()):copy(source,notices/('maintained-'+source.name))
     copy(ROOT/'vendor/miniz/LICENSE',notices/'miniz-LICENSE')
     copy(openssl_prefix/'OPENSSL-LICENSE.txt',notices/'OpenSSL-LICENSE.txt')
     copy(ROOT/'docs/BUILD_LIBRARY_REPLACEMENT.txt',notices/'LIBRARY_REPLACEMENT.txt')
@@ -353,10 +377,17 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
     qt_proof['runtimeFiles']=sorted(set(sdk_members))
     qt_proof['rebuiltRuntimeFiles']=rebuilt_runtime_bindings(appdir,rebuilt,copied)
     ssl_proof['runtimeFiles']=sorted(set(ssl_members))
+    from portable_materials import identity
+    maintained['runtimeBindings']=[{'name':Path(name).name,'path':name,
+        'original':{k:dependency_outputs[Path(name).name][k] for k in ('size','sha256')},
+        'staged':identity(appdir/name)} for name in sorted(set(dependency_members))]
     codec_proof = install_codec(appdir, codec)
     dependency_proof = {'schemaVersion':2,'buildBaseline':'Debian 12 x86-64 / glibc 2.36','qt':qt_proof,'openssl':ssl_proof,'archiveDecoders':public_provenance(),'packages':dependencies,'replacementFile':'licenses/LIBRARY_REPLACEMENT.txt','publicationRequirement':'Distribute the matching actual source/build/replacement materials named in the companion manifest. This inventory is not a written source offer.'}
+    dependency_proof['linuxDependencies']=maintained
     if codec_proof is not None: dependency_proof['saveCodec'] = codec_proof
     (appdir/'DEPENDENCY-SOURCES.json').write_text(json.dumps(dependency_proof,indent=2)+'\n')
+    from bootstrap_linux_dependencies import verify_staged
+    verify_staged(appdir)
     (appdir/'AppRun').write_text(APP_RUN);(appdir/'AppRun').chmod(0o755)
     (appdir/'DriftersToolkit.desktop').write_text('[Desktop Entry]\nType=Application\nName=Drifter’s Toolkit\nExec=AppRun\nIcon=DriftersToolkit\nTerminal=false\nCategories=Game;Utility;\n')
     copy(build/'ui/assets/icon.png',appdir/'DriftersToolkit.png')
@@ -367,7 +398,9 @@ def stage(build,appdir,qt_prefix,qt_provenance,qt_archives,qt_notices,openssl_pr
 def refresh(build,appdir,save_codec_source=None):
     refuse_private_save_preview(build,Path(appdir)/'usr/bin',appdir)
     appdir=appdir.resolve(strict=True);build=build.resolve(strict=True)
-    verify_inventory(appdir)
+    current_inventory=verify_inventory(appdir)
+    from bootstrap_linux_dependencies import verify_staged
+    verify_staged(appdir,locally_modified=current_inventory.get('locallyModified') is True)
     codec = codec_inputs(build, save_codec_source)
     from save_codec_materials import target as codec_target
     if codec is None and (appdir/'usr/bin'/codec_target('linux')['file']).exists(): raise RuntimeError('Restage explicitly when removing the SaveCodec feature; a previous worker is not silently retained.')
@@ -384,7 +417,7 @@ def refresh(build,appdir,save_codec_source=None):
     if codec_proof is not None:
         proof_path=appdir/'DEPENDENCY-SOURCES.json';proof=json.loads(read_plain(proof_path,8*1024*1024));proof['saveCodec']=codec_proof
         from release_layout import write_artifact
-        write_artifact(proof_path,(json.dumps(proof,indent=2)+'\n').encode())
+        write_artifact(proof_path,(json.dumps(proof,indent=2)+'\n').encode()).chmod(0o644)
     # The new compiled manifest must accept this exact bundle before archiving.
     for name in programs:
         target=appdir/'usr/bin'/name
@@ -407,6 +440,7 @@ def main():
     parser.add_argument('--qt-archives',type=Path);parser.add_argument('--qt-notices',type=Path)
     parser.add_argument('--openssl-prefix',type=Path);parser.add_argument('--openssl-provenance',type=Path);parser.add_argument('--openssl-archive',type=Path)
     parser.add_argument('--save-codec-source',type=Path)
+    parser.add_argument('--dependencies-prefix',type=Path)
     parser.add_argument('--runtime',type=Path);parser.add_argument('--runtime-provenance',type=Path);parser.add_argument('--source-companion',type=Path);parser.add_argument('--reviewer',action='store_true')
     args=parser.parse_args()
     if args.destination is None:
@@ -414,7 +448,8 @@ def main():
     if args.mode=='stage':
         if not all((args.qt_prefix,args.qt_provenance,args.qt_archives,args.qt_notices)):parser.error('stage requires --qt-prefix, --qt-provenance, --qt-archives and --qt-notices')
         if not all((args.openssl_prefix,args.openssl_provenance,args.openssl_archive,args.save_codec_source)):parser.error('stage requires --openssl-prefix, --openssl-provenance and --openssl-archive')
-        stage(args.build,args.appdir,args.qt_prefix,args.qt_provenance,args.qt_archives,args.qt_notices,args.openssl_prefix,args.openssl_provenance,args.openssl_archive,args.save_codec_source)
+        if args.dependencies_prefix is None:parser.error('stage requires --dependencies-prefix')
+        stage(args.build,args.appdir,args.qt_prefix,args.qt_provenance,args.qt_archives,args.qt_notices,args.openssl_prefix,args.openssl_provenance,args.openssl_archive,args.save_codec_source,args.dependencies_prefix)
     elif args.mode=='reindex':reindex(args.appdir)
     elif args.mode=='refresh':refresh(args.build,args.appdir,args.save_codec_source)
     else:

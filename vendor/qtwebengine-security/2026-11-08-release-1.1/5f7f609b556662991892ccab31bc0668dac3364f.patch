@@ -1,0 +1,111 @@
+From 5f7f609b556662991892ccab31bc0668dac3364f Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 9 Oct 2026 10:50:50 -0700
+Subject: [PATCH] [backport] CVE-2026-121044: Use after free in Layout
+
+Let CSSParser::ParseFont() parse the shorthand directly
+
+This drops support for CSS wide keywords and pending substitution
+values, which were already being dropped after parsing.
+
+Avoids arbitrary declaration parsing in @supports which may access
+cross thread access to static Persistent in GetUACounterStyleMap().
+
+This fixes a UAF issue when the singleton was created on an off-main
+thread and later accessed from the main thread.
+
+Bug: 568832157
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8525429
+Task-number: QTBUG-152028
+Change-Id: I8793cee34fc032c43918599acc52f65a5ed1c039
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786531
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/core/css/parser/css_parser.cc    | 38 +++++++++++--------
+ .../core/css/parser/css_property_parser.cc    |  9 +++++
+ 2 files changed, 32 insertions(+), 15 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc b/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
+index 97397894d8c2..8269329d75cd 100644
+--- a/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
++++ b/chromium/third_party/blink/renderer/core/css/parser/css_parser.cc
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/renderer/core/css/css_keyframe_rule.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_fast_paths.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_impl.h"
++#include "third_party/blink/renderer/core/css/parser/css_parser_local_context.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_token_stream.h"
+ #include "third_party/blink/renderer/core/css/parser/css_property_parser.h"
+ #include "third_party/blink/renderer/core/css/parser/css_selector_parser.h"
+@@ -17,6 +18,7 @@
+ #include "third_party/blink/renderer/core/css/parser/css_tokenizer.h"
+ #include "third_party/blink/renderer/core/css/parser/css_variable_parser.h"
+ #include "third_party/blink/renderer/core/css/properties/css_parsing_utils.h"
++#include "third_party/blink/renderer/core/css/properties/shorthands.h"
+ #include "third_party/blink/renderer/core/css/style_color.h"
+ #include "third_party/blink/renderer/core/css/style_rule.h"
+ #include "third_party/blink/renderer/core/css/style_sheet_contents.h"
+@@ -473,22 +475,28 @@ MutableCSSPropertyValueSet* CSSParser::ParseFont(
+     const String& string,
+     const ExecutionContext* execution_context) {
+   DCHECK(ThreadState::Current()->IsAllocationAllowed());
+-  auto* set =
+-      MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode);
+-  ParseValue(set, CSSPropertyID::kFont, string, true /* important */,
+-             execution_context);
+-  if (set->IsEmpty()) {
+-    return nullptr;
+-  }
+-  const CSSValue* font_size =
+-      set->GetPropertyCSSValue(CSSPropertyID::kFontSize);
+-  if (!font_size || font_size->IsCSSWideKeyword()) {
+-    return nullptr;
+-  }
+-  if (font_size->IsPendingSubstitutionValue()) {
+-    return nullptr;
++
++  LocalCSSParserContext context(execution_context
++                                    ? execution_context->GetSecureContextMode()
++                                    : SecureContextMode::kInsecureContext,
++                                static_cast<StyleSheetContents*>(nullptr),
++                                execution_context, kHTMLStandardMode);
++  const auto local_context =
++       CSSParserLocalContext().WithCurrentShorthand(CSSPropertyID::kFont);
++
++  CSSParserTokenStream stream(string);
++  HeapVector<CSSPropertyValue, 64> parsed_properties;
++
++  if (GetCSSPropertyFont().ParseShorthand(/*important=*/true, stream,
++                                          *context.GetParserContext(),
++                                          local_context, parsed_properties) &&
++      stream.AtEnd()) {
++    auto* set =
++        MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode);
++    set->AddParsedProperties(parsed_properties);
++    return set;
+   }
+-  return set;
++  return nullptr;
+ }
+ 
+ }  // namespace blink
+diff --git a/chromium/third_party/blink/renderer/core/css/parser/css_property_parser.cc b/chromium/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+index 6320b1f3cb19..ce56d7ee187f 100644
+--- a/chromium/third_party/blink/renderer/core/css/parser/css_property_parser.cc
++++ b/chromium/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+@@ -197,6 +197,15 @@ bool CSSPropertyParser::ParseValueStart(CSSPropertyID unresolved_property,
+     }
+   }
+ 
++  // From here we can end up parsing arbitrary CSS properties via
++  // if(supports(<property>:<value>)). CSS parsing can in some cases be unsafe
++  // cross threads where we rely on static Persistent objects which are not
++  // thread local.
++  //
++  // Some CSSParser APIS are invoked off main thread for canvas APIs, but should
++  // never end up here.
++  CHECK(IsMainThread());
++
+   // We did not parse properly without variable substitution,
+   // so rewind the stream, and see if parsing it as something
+   // containing variables will help.

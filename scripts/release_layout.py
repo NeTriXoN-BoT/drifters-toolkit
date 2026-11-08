@@ -18,7 +18,7 @@ PUBLIC_UI = (
     'assets/hero-camp.png', 'assets/hero-burn.png', 'assets/hero-freakers.png', 'assets/hero-breaker.png',
     'assets/seasonal-emoji.svg', 'assets/mod-art-the-clown.png',
 )
-COMMON_NOTICES = ('THIRD_PARTY.md', 'nlohmann-json-LICENSE.MIT', 'NotoEmoji-Images-LICENSE.txt', 'Archive-Decoder-LICENSES.txt')
+COMMON_NOTICES = ('Drifters-Toolkit-LICENSE.txt', 'THIRD_PARTY.md', 'nlohmann-json-LICENSE.MIT', 'NotoEmoji-Images-LICENSE.txt', 'Archive-Decoder-LICENSES.txt')
 LINUX_NOTICES = (*COMMON_NOTICES, 'GNU-LGPL-3.0.txt', 'GNU-GPL-3.0.txt', 'GNU-LGPL-2.1.txt')
 WINDOWS_NOTICES = (*COMMON_NOTICES, 'WebView2-LICENSE.txt', 'WebView2-NOTICE.txt',
                    'LLVM-RUNTIME-LICENSE.txt', 'MinGW-w64-RUNTIME-LICENSE.txt')

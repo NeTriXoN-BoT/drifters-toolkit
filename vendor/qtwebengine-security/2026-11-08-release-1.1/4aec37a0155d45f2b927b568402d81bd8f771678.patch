@@ -1,0 +1,174 @@
+From 4aec37a0155d45f2b927b568402d81bd8f771678 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Fri, 29 May 2026 12:37:10 +0000
+Subject: [PATCH] [Backport] Dependency for CVE-2026-121246
+
+Cherry-pick done by Claude Code of patch originally reviewed on
+https://chromium-review.googlesource.com/c/angle/angle/+/7885695:
+GL: Extend RendererGL lifetime to fix SyncGL teardown UAF
+
+When enabling PartitionAlloc locally or running under ASan, the test
+MultithreadingTestES3.MultithreadFenceDraw/ES3_OpenGL (and other
+multithreading tests) crash with a UAF during teardown.
+
+The crash is caused by a lifecycle mismatch when cleaning up leaked
+sync objects:
+- The test loops exit early in the final iteration, leaking some
+  GLsync objects (mSecondThreadSyncObj and mMainThreadSyncObj) in the
+  shared SyncManager.
+- During context teardown, Context::releaseSharedObjects() releases the
+  ShaderProgramManager first, which destroys all programs. Since the
+  programs hold the last std::shared_ptr<RendererGL>, RendererGL is
+  deallocated.
+- Subsequently, Context::releaseSharedObjects() releases the
+  SyncManager, which performs a forced cleanup of the leaked sync
+  objects.
+- SyncGL::onDestroy() attempts to delete the syncs using a raw
+  FunctionsGL* pointer, which points to the already-destroyed
+  RendererGL, resulting in a UAF crash.
+
+Why this happens despite DisplayGLX owning the default renderer:
+- The multithreading tests use EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE.
+- For virtualized contexts, DisplayGLX::createContext creates a new
+  RendererGLX instance and stores only a std::weak_ptr in
+  mVirtualizationGroups.
+- Thus, the lifetime of this virtualized RendererGLX is entirely
+  bound to the contexts and programs using it.
+- When the context and programs are destroyed during teardown, the
+  refcount of the virtualized RendererGLX drops to 0 and it is
+  deallocated immediately, before SyncManager::release() runs.
+
+This patch fixes the lifecycle issue by modifying SyncGL to hold a
+std::shared_ptr<RendererGL> instead of a raw FunctionsGL* pointer.
+This ensures that RendererGL (and its function tables) is kept alive
+as long as any SyncGL objects (including leaked ones) exist, making
+the teardown robust and order-independent.
+
+Alternative considered:
+https://chromium-review.googlesource.com/c/angle/angle/+/7882142
+
+Bug: b/517327192
+Test: angle_end2end_tests --gtest_filter="MultithreadingTestES3.MultithreadFenceDraw/ES3_OpenGL" under ASan
+Change-Id: Ibc7f186d0f1cf78feadc7c6ff7e748c8e9efb40c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7885695
+Commit-Queue: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786192
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ .../angle/src/libANGLE/renderer/gl/ContextGL.cpp |  2 +-
+ .../angle/src/libANGLE/renderer/gl/SyncGL.cpp    | 16 +++++++++-------
+ .../angle/src/libANGLE/renderer/gl/SyncGL.h      |  8 +++++---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
+index 124b8fd4653e..1a3d7109b5fd 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -191,7 +191,7 @@ FenceNVImpl *ContextGL::createFenceNV()
+ 
+ SyncImpl *ContextGL::createSync(const gl::Context *context)
+ {
+-    SyncImpl *sync = new SyncGL(getFunctions());
++    SyncImpl *sync = new SyncGL(mRenderer);
+     if (context)
+     {
+         static_cast<void>(applyRecreateFboWorkaroundIfNeeded(context));
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
+index 67214d414d7a..e7411020e88b 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.cpp
+@@ -12,13 +12,15 @@
+ #include "libANGLE/Context.h"
+ #include "libANGLE/renderer/gl/ContextGL.h"
+ #include "libANGLE/renderer/gl/FunctionsGL.h"
++#include "libANGLE/renderer/gl/RendererGL.h"
+ 
+ namespace rx
+ {
+ 
+-SyncGL::SyncGL(const FunctionsGL *functions) : SyncImpl(), mFunctions(functions), mSyncObject(0)
++SyncGL::SyncGL(const std::shared_ptr<RendererGL> &renderer)
++    : SyncImpl(), mRenderer(renderer), mSyncObject(0)
+ {
+-    ASSERT(mFunctions);
++    ASSERT(mRenderer);
+ }
+ 
+ SyncGL::~SyncGL()
+@@ -29,7 +31,7 @@ SyncGL::~SyncGL()
+ void SyncGL::onDestroy(const gl::Context *context)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->deleteSync(mSyncObject);
++    mRenderer->getFunctions()->deleteSync(mSyncObject);
+     mSyncObject = 0;
+ }
+ 
+@@ -37,7 +39,7 @@ angle::Result SyncGL::set(const gl::Context *context, GLenum condition, GLbitfie
+ {
+     ASSERT(condition == GL_SYNC_GPU_COMMANDS_COMPLETE && flags == 0);
+     ContextGL *contextGL = GetImplAs<ContextGL>(context);
+-    mSyncObject          = mFunctions->fenceSync(condition, flags);
++    mSyncObject          = mRenderer->getFunctions()->fenceSync(condition, flags);
+     ANGLE_CHECK(contextGL, mSyncObject != 0, "glFenceSync failed to create a GLsync object.",
+                 GL_OUT_OF_MEMORY);
+     contextGL->markWorkSubmitted();
+@@ -50,21 +52,21 @@ angle::Result SyncGL::clientWait(const gl::Context *context,
+                                  GLenum *outResult)
+ {
+     ASSERT(mSyncObject != 0);
+-    *outResult = mFunctions->clientWaitSync(mSyncObject, flags, timeout);
++    *outResult = mRenderer->getFunctions()->clientWaitSync(mSyncObject, flags, timeout);
+     return angle::Result::Continue;
+ }
+ 
+ angle::Result SyncGL::serverWait(const gl::Context *context, GLbitfield flags, GLuint64 timeout)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->waitSync(mSyncObject, flags, timeout);
++    mRenderer->getFunctions()->waitSync(mSyncObject, flags, timeout);
+     return angle::Result::Continue;
+ }
+ 
+ angle::Result SyncGL::getStatus(const gl::Context *context, GLint *outResult)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
++    mRenderer->getFunctions()->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
+     return angle::Result::Continue;
+ }
+ }  // namespace rx
+diff --git a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
+index de3424db7282..581efc9deccc 100644
+--- a/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
++++ b/chromium/third_party/angle/src/libANGLE/renderer/gl/SyncGL.h
+@@ -11,14 +11,16 @@
+ 
+ #include "libANGLE/renderer/SyncImpl.h"
+ 
++#include <memory>
++
+ namespace rx
+ {
+-class FunctionsGL;
++class RendererGL;
+ 
+ class SyncGL : public SyncImpl
+ {
+   public:
+-    explicit SyncGL(const FunctionsGL *functions);
++    explicit SyncGL(const std::shared_ptr<RendererGL> &renderer);
+     ~SyncGL() override;
+ 
+     void onDestroy(const gl::Context *context) override;
+@@ -34,7 +36,7 @@ class SyncGL : public SyncImpl
+     angle::Result getStatus(const gl::Context *context, GLint *outResult) override;
+ 
+   private:
+-    const FunctionsGL *mFunctions;
++    std::shared_ptr<RendererGL> mRenderer;
+     GLsync mSyncObject;
+ };
+ }  // namespace rx

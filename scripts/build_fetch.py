@@ -9,7 +9,7 @@ import urllib.request
 from release_layout import read_plain
 
 HOSTS={'github.com','raw.githubusercontent.com','release-assets.githubusercontent.com','www.apache.org',
-       'objects.githubusercontent.com','www.nuget.org','api.nuget.org','globalcdn.nuget.org'}
+       'objects.githubusercontent.com','www.nuget.org','api.nuget.org','globalcdn.nuget.org','deb.debian.org'}
 MAX_DOWNLOAD=512*1024*1024
 
 

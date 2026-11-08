@@ -25,7 +25,9 @@ BUILD_HELPERS+=('qt_webengine_followup.py','qt_webengine_followup_lock.json')
 BUILD_HELPERS+=('qt_webengine_incremental.py','qt_webengine_incremental_lock.json')
 BUILD_HELPERS+=('qt_webengine_residual.py','qt_webengine_residual_lock.json')
 BUILD_HELPERS+=('qt_webengine_vendor_followup.py','qt_webengine_vendor_followup_lock.json')
+BUILD_HELPERS+=('qt_webengine_release_1_1.py','qt_webengine_release_1_1_lock.json')
 BUILD_HELPERS+=('linux_build_storage.py','save_codec_materials.py','save_codec_lock.json')
+BUILD_HELPERS+=('bootstrap_linux_dependencies.py','linux_dependencies_lock.json','linux_dependency_graph.py')
 
 def identity(path, maximum=MAX_FILE):
     path=Path(path).absolute()
@@ -229,10 +231,13 @@ def _companion_closure(path,descriptor,provenance,runtime_provenance,observed,ma
     residual=verify_residual(security.get('residualDelta'))
     from qt_webengine_vendor_followup import verify_public as verify_vendor_followup
     vendor_followup=verify_vendor_followup(security.get('vendorFollowup'))
+    from qt_webengine_release_1_1 import verify_public as verify_release_1_1
+    release_1_1=verify_release_1_1(security.get('release11'))
     if (incremental['priorOutputs']!=followup['outputs']
             or residual['priorOutputs']!=incremental['outputs']
             or vendor_followup['priorOutputs']!=residual['outputs']
-            or vendor_followup['outputs']!=security.get('outputs')):
+            or release_1_1['priorOutputs']!=vendor_followup['outputs']
+            or release_1_1['outputs']!=security.get('outputs')):
         raise RuntimeError('The source companion incremental/runtime history disagrees.')
     from qt_webengine_followup import verify_inputs as followup_inputs, all_patch_inputs as followup_patches
     followup_data=followup_inputs()
@@ -258,6 +263,12 @@ def _companion_closure(path,descriptor,provenance,runtime_provenance,observed,ma
         relative=vendor_followup_data['patchDirectory']+'/'+patch['name']
         if relative not in observed or any(observed[relative][key]!=patch[key] for key in ('sha256','size')):
             raise RuntimeError('An exact vendor-followup WebEngine source input is missing or changed: '+patch['name'])
+    from qt_webengine_release_1_1 import verify_inputs as release_1_1_inputs, all_patch_inputs as release_1_1_patches
+    release_1_1_data=release_1_1_inputs()
+    for patch in release_1_1_patches(release_1_1_data):
+        relative=release_1_1_data['patchDirectory']+'/'+patch['name']
+        if relative not in observed or any(observed[relative][key]!=patch[key] for key in ('sha256','size')):
+            raise RuntimeError('An exact 1.1 WebEngine source input is missing or changed: '+patch['name'])
     from bootstrap_openssl import SOURCE as ssl_source, VERSION as ssl_version
     ssl=provenance.get('openssl',{})
     candidates=by_component.get('openssl',[])
@@ -279,6 +290,8 @@ def _companion_closure(path,descriptor,provenance,runtime_provenance,observed,ma
         from save_codec_materials import verify_source_records
         if 'save-codec' not in components:raise RuntimeError('The SaveCodec corresponding-source component is missing.')
         verify_source_records(observed)
+    from bootstrap_linux_dependencies import verify_public as verify_linux_dependencies
+    verify_linux_dependencies(provenance.get('linuxDependencies',{}),observed,by_component)
     packages=provenance.get('packages')
     if not isinstance(packages,list) or not packages:raise RuntimeError('The exact distribution source closure is missing.')
     for package in packages:
@@ -381,6 +394,19 @@ def pack(locks, application, instructions, destination, save_codec_source=None):
         relative=vendor_followup['patchDirectory']+'/'+patch['name'];source=source_root/relative
         inputs.append((source,relative));records.append({'file':relative,'component':'qtwebengine-vendor-followup-security',**identity(source)})
         components.add('qtwebengine-vendor-followup-security')
+    from qt_webengine_release_1_1 import verify_inputs as release_1_1_inputs, all_patch_inputs as release_1_1_patches
+    release_1_1=release_1_1_inputs()
+    for patch in release_1_1_patches(release_1_1):
+        relative=release_1_1['patchDirectory']+'/'+patch['name'];source=source_root/relative
+        inputs.append((source,relative));records.append({'file':relative,'component':'qtwebengine-release-1-1-security',**identity(source)})
+        components.add('qtwebengine-release-1-1-security')
+    from bootstrap_linux_dependencies import load_lock as linux_dependency_lock
+    for package in linux_dependency_lock()['packages']:
+        for patch in package.get('patches', []):
+            source=source_root/patch['file']
+            relative=patch['file']
+            inputs.append((source,relative));records.append({'file':relative,'component':'linux-dependency-repairs',**identity(source)})
+            components.add('linux-dependency-repairs')
     from resume_qt_webengine_security import load_resume_inputs
     resume,_,_=load_resume_inputs();relative=resume['configuredRecipeFile'];source=source_root/relative
     inputs.append((source,relative));records.append({'file':relative,'component':'qtwebengine-build-continuation',**identity(source)})

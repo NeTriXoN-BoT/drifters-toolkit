@@ -2,13 +2,13 @@
 struct TrustedAsset { const char* path; const char* sha256; };
 inline constexpr TrustedAsset TrustedAssets[] = {
   {"ui/index.html", "6ed0e1125066dd26cfbe072040482def077161566806e4eb5a089c5f6a2194f9"},
-  {"ui/app.js", "304ac2045da7e16726c265e247c2b618e64ec6af89e719c7d6508d63b6a1cefe"},
-  {"ui/style.css", "c836e364e45ad067dadf57803c4a10059b77aeb60ed381c23ef3fb1079cbe513"},
-  {"ui/help.js", "1a1acb99c3fd3d7557fa5d38de5de717ed2475a3bb794e56c40fe638cd1d4c80"},
-  {"ui/changelog.js", "2143dbc623dd71f21214810b471f4b283dd001b8b8b70c7a515c7166d3a65aab"},
+  {"ui/app.js", "eb835a7b75a5847b02dde5f64d79808a9b7168a4b0ffabf0ffc0a50933f75125"},
+  {"ui/style.css", "749541916e1b871707653517d06f2fe3f76b26534d7074aa7db714a232d6d2e0"},
+  {"ui/help.js", "4e204d3eb9bf97c6c075d3969310fc21790b5ece603fcf2b99b8fc37de06dc3c"},
+  {"ui/changelog.js", "7d8a8f50c4e557d630f2aab0af173ac89d742a9659cc0a0b6b46089b2b380491"},
   {"ui/assets/hero.png", "2861ea88c0b18020f4ff102dd39b7ed4ed640646d275cccbd2df12ac3ab678ae"},
-  {"ui/assets/icon.png", "8f761a4ea5d424be4d3b51743a74443d0040f3cd4d46d328385c7131f72edcfd"},
-  {"ui/assets/app.ico", "93edb6656020a4015ccb9443f6e0947dfa5f3c3977a8f18c781aa3b6c092e034"},
+  {"ui/assets/icon.png", "9f72b29d76e14e3892d36d163512453700bf17083fc8b48f791e0e0a2bd7e6f7"},
+  {"ui/assets/app.ico", "3b077bf328df8e9972531624f401bf6cce826e62d6b620e75b4ffac7e665ad06"},
   {"ui/assets/hero-forest.png", "70309c30225ec2a9549ae45fd0ade82406d5a59d7d97f8ac888ba244eabf53ce"},
   {"ui/assets/hero-pass.png", "44e493968258bf08e12e3258ed93929f9af78273565dbbee565137a9d5e01dc4"},
   {"ui/assets/hero-outpost.png", "6c59d82467b99367b942b8f971242646724d70ae0fb2ea8c1766d7b7752a0feb"},
@@ -27,6 +27,7 @@ inline constexpr TrustedAsset TrustedAssets[] = {
   {"catalog/catalog.json", "a42f637efa102290d0934fd38183ca000b5c600b9bfa18f99666656b655a0ed2"},
   {"WebView2Loader.dll", "3426dcc55fdfb8b5e7ac623cf33b4ccf283fbf68a0c5a65bddfdb4d749a8abee"},
   {"config/nexus.json", "ef28a8177c7ad69df39ccad09885972271c6f1fbdf24cec06e1db04524c57f07"},
+  {"DriftersToolkitSaveCodec.exe", "3dfa067798141d3641ecb898c8737e59d0b209bc3980069cb995d34502db868e"},
 };
 inline constexpr const char* SavePreviewHelperSha256 = "";
-inline constexpr const char* SaveCodecHelperSha256 = "";
+inline constexpr const char* SaveCodecHelperSha256 = "3dfa067798141d3641ecb898c8737e59d0b209bc3980069cb995d34502db868e";

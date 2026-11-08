@@ -1,0 +1,634 @@
+From 97302d5d8a7571782f3d1d96c1d9aa4bd009c827 Mon Sep 17 00:00:00 2001
+From: Hubert Chao <hchao@chromium.org>
+Date: Wed, 7 Oct 2026 07:53:49 -0700
+Subject: [PATCH] [Backport] CVE-2026-121174: Missing authorization in
+ BackgroundFetch (1/2)
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8103044:
+Enforce CORS in Background Fetch
+
+Previously, the DownloadService previously defaulted all fetch requests
+to `kNavigate` (which bypasses CORS). This CL updates the Background
+Fetch delegate to pass the original fetch request mode down to the
+DownloadService, so that the network service can correctly enforce CORS
+checks on Background Fetch requests.
+
+This additionally updates the proto serialization to persist the request
+mode across browser restarts, and modify testing handlers to ensure the
+CORS enforcement properly blocks requests that lack required
+Access-Control headers. The browser tests have been updated to initiate
+these fetches from the Window context instead of the Service Worker to
+sidestep `kRestrictBackgroundFetchFromServiceWorker` restrictions.
+
+Additionally, to prevent old suspended downloads from resuming and
+bypassing CORS after the browser updates, EntryFromProto explicitly
+upgrades the request mode to kCors if the fetch_request_mode is missing
+and the client is BACKGROUND_FETCH.
+
+The CORS enforcement and legacy proto upgrade logic are gated behind a
+new `kBackgroundFetchCorsEnforcement` feature kill switch.
+
+TAG=agy
+CONV=96c12324-004c-4da1-bec2-9436ea828a56
+
+Bug: 515243254, 496008447, 495903812, 485855931, 40059500, 500171457, 498000798
+Change-Id: I1dc5266d08c20c23ee56340a3c20b7b988befb59
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8103044
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Hubert Chao <hchao@chromium.org>
+Reviewed-by: Camille Lamy <clamy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713422}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786790
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../background_fetch_delegate_base.cc         |  8 ++++++
+ .../background_fetch_delegate_base.h          |  1 +
+ .../content/internal/download_driver_impl.cc  |  2 ++
+ .../database/download_db_conversions.cc       |  8 ++++++
+ .../database/in_progress/in_progress_info.cc  |  1 +
+ .../database/in_progress/in_progress_info.h   |  4 +++
+ .../database/proto/download_entry.proto       |  1 +
+ .../background_service/proto/request.proto    |  1 +
+ .../background_service/proto_conversions.cc   | 28 ++++++++++++++++++-
+ .../internal/common/download_create_info.cc   |  1 +
+ .../internal/common/download_item_impl.cc     |  8 ++++++
+ .../common/download_response_handler.cc       |  5 +++-
+ .../internal/common/download_utils.cc         |  9 +++++-
+ .../internal/common/resource_downloader.cc    |  6 ++--
+ .../background_service/download_params.h      |  4 +++
+ .../public/background_service/features.cc     |  4 +++
+ .../public/background_service/features.h      |  4 +++
+ .../public/common/download_create_info.h      |  3 ++
+ .../download/public/common/download_item.h    |  3 ++
+ .../public/common/download_item_impl.h        |  6 ++++
+ .../public/common/download_response_handler.h |  4 ++-
+ .../public/common/download_url_parameters.cc  |  1 +
+ .../public/common/download_url_parameters.h   | 10 +++++++
+ .../public/common/mock_download_item.h        |  1 +
+ .../background_fetch_delegate_proxy.cc        |  7 +++--
+ .../browser/background_fetch_delegate.h       |  1 +
+ 26 files changed, 123 insertions(+), 8 deletions(-)
+
+diff --git a/chromium/components/background_fetch/background_fetch_delegate_base.cc b/chromium/components/background_fetch/background_fetch_delegate_base.cc
+index c7df45983040..840c1833deaf 100644
+--- a/chromium/components/background_fetch/background_fetch_delegate_base.cc
++++ b/chromium/components/background_fetch/background_fetch_delegate_base.cc
+@@ -8,6 +8,7 @@
+ 
+ #include "base/check_op.h"
+ #include "base/containers/contains.h"
++#include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/notreached.h"
+@@ -18,6 +19,7 @@
+ #include "components/download/public/background_service/background_download_service.h"
+ #include "components/download/public/background_service/blob_context_getter_factory.h"
+ #include "components/download/public/background_service/download_params.h"
++#include "components/download/public/background_service/features.h"
+ #include "content/public/browser/background_fetch_description.h"
+ #include "content/public/browser/background_fetch_response.h"
+ #include "content/public/browser/browser_context.h"
+@@ -83,6 +85,7 @@ void BackgroundFetchDelegateBase::DownloadUrl(
+     const std::string& method,
+     const GURL& url,
+     ::network::mojom::CredentialsMode credentials_mode,
++    ::network::mojom::RequestMode request_mode,
+     const net::NetworkTrafficAnnotationTag& traffic_annotation,
+     const net::HttpRequestHeaders& headers,
+     bool has_request_body) {
+@@ -98,6 +101,11 @@ void BackgroundFetchDelegateBase::DownloadUrl(
+   params.request_params.url = url;
+   params.request_params.request_headers = headers;
+   params.request_params.credentials_mode = credentials_mode;
++  if (base::FeatureList::IsEnabled(download::kBackgroundFetchCorsEnforcement)) {
++    CHECK(request_mode != network::mojom::RequestMode::kNoCors &&
++          request_mode != network::mojom::RequestMode::kNavigate);
++    params.request_params.fetch_request_mode = request_mode;
++  }
+   params.callback =
+       base::BindRepeating(&BackgroundFetchDelegateBase::OnDownloadReceived,
+                           weak_ptr_factory_.GetWeakPtr());
+diff --git a/chromium/components/background_fetch/background_fetch_delegate_base.h b/chromium/components/background_fetch/background_fetch_delegate_base.h
+index a53c090e200d..9c528dabb497 100644
+--- a/chromium/components/background_fetch/background_fetch_delegate_base.h
++++ b/chromium/components/background_fetch/background_fetch_delegate_base.h
+@@ -50,6 +50,7 @@ class BackgroundFetchDelegateBase : public content::BackgroundFetchDelegate {
+                    const std::string& method,
+                    const GURL& url,
+                    ::network::mojom::CredentialsMode credentials_mode,
++                   ::network::mojom::RequestMode request_mode,
+                    const net::NetworkTrafficAnnotationTag& traffic_annotation,
+                    const net::HttpRequestHeaders& headers,
+                    bool has_request_body) override;
+diff --git a/chromium/components/download/content/internal/download_driver_impl.cc b/chromium/components/download/content/internal/download_driver_impl.cc
+index 5e0f726d6f8b..aa91c8a248a8 100644
+--- a/chromium/components/download/content/internal/download_driver_impl.cc
++++ b/chromium/components/download/content/internal/download_driver_impl.cc
+@@ -210,6 +210,8 @@ void DownloadDriverImpl::Start(
+   download_url_params->set_transient(true);
+   download_url_params->set_method(request_params.method);
+   download_url_params->set_credentials_mode(request_params.credentials_mode);
++  download_url_params->set_fetch_request_mode(
++      request_params.fetch_request_mode);
+   download_url_params->set_file_path(file_path);
+   if (request_params.fetch_error_body)
+     download_url_params->set_fetch_error_body(true);
+diff --git a/chromium/components/download/database/download_db_conversions.cc b/chromium/components/download/database/download_db_conversions.cc
+index ff96282914a6..8e477bf2d921 100644
+--- a/chromium/components/download/database/download_db_conversions.cc
++++ b/chromium/components/download/database/download_db_conversions.cc
+@@ -220,6 +220,8 @@ download_pb::InProgressInfo DownloadDBConversions::InProgressInfoToProto(
+   proto.set_auto_resume_count(in_progress_info.auto_resume_count);
+   proto.set_credentials_mode(
+       static_cast<int32_t>(in_progress_info.credentials_mode));
++  proto.set_fetch_request_mode(
++      static_cast<int32_t>(in_progress_info.fetch_request_mode));
+   proto.set_range_request_from(in_progress_info.range_request_from);
+   proto.set_range_request_to(in_progress_info.range_request_to);
+   return proto;
+@@ -279,6 +281,12 @@ InProgressInfo DownloadDBConversions::InProgressInfoFromProto(
+     info.credentials_mode = static_cast<::network::mojom::CredentialsMode>(
+         proto.credentials_mode());
+   }
++  if (proto.has_fetch_request_mode() && proto.fetch_request_mode() >= 0 &&
++      proto.fetch_request_mode() <=
++          static_cast<int32_t>(::network::mojom::RequestMode::kMaxValue)) {
++    info.fetch_request_mode =
++        static_cast<::network::mojom::RequestMode>(proto.fetch_request_mode());
++  }
+   if (proto.has_range_request_from())
+     info.range_request_from = proto.range_request_from();
+   if (proto.has_range_request_to())
+diff --git a/chromium/components/download/database/in_progress/in_progress_info.cc b/chromium/components/download/database/in_progress/in_progress_info.cc
+index 5149013ecc6a..6bca3cd7450d 100644
+--- a/chromium/components/download/database/in_progress/in_progress_info.cc
++++ b/chromium/components/download/database/in_progress/in_progress_info.cc
+@@ -34,6 +34,7 @@ bool InProgressInfo::operator==(const InProgressInfo& other) const {
+          metered == other.metered && bytes_wasted == other.bytes_wasted &&
+          auto_resume_count == other.auto_resume_count &&
+          credentials_mode == other.credentials_mode &&
++         fetch_request_mode == other.fetch_request_mode &&
+          range_request_from == other.range_request_from &&
+          range_request_to == other.range_request_to;
+ }
+diff --git a/chromium/components/download/database/in_progress/in_progress_info.h b/chromium/components/download/database/in_progress/in_progress_info.h
+index bd4cb22d4e15..2a14408a1bc9 100644
+--- a/chromium/components/download/database/in_progress/in_progress_info.h
++++ b/chromium/components/download/database/in_progress/in_progress_info.h
+@@ -128,6 +128,10 @@ struct InProgressInfo {
+   ::network::mojom::CredentialsMode credentials_mode =
+       ::network::mojom::CredentialsMode::kInclude;
+ 
++  // The fetch request mode of the request.
++  ::network::mojom::RequestMode fetch_request_mode =
++      ::network::mojom::RequestMode::kNavigate;
++
+   int64_t range_request_from = kInvalidRange;
+   int64_t range_request_to = kInvalidRange;
+ };
+diff --git a/chromium/components/download/database/proto/download_entry.proto b/chromium/components/download/database/proto/download_entry.proto
+index 743a55961ed8..acd354a15794 100644
+--- a/chromium/components/download/database/proto/download_entry.proto
++++ b/chromium/components/download/database/proto/download_entry.proto
+@@ -88,6 +88,7 @@ message InProgressInfo {
+   optional int64 range_request_to = 32;
+   optional string serialized_embedder_download_data = 33;
+   reserved 34;
++  optional int32 fetch_request_mode = 35;  // network::mojom::RequestMod
+ }
+ 
+ // Stores various metadata related to a download.
+diff --git a/chromium/components/download/internal/background_service/proto/request.proto b/chromium/components/download/internal/background_service/proto/request.proto
+index 9d2bd0fb3bcd..f5c142969dc6 100644
+--- a/chromium/components/download/internal/background_service/proto/request.proto
++++ b/chromium/components/download/internal/background_service/proto/request.proto
+@@ -21,4 +21,5 @@ message RequestParams {
+   optional bool fetch_error_body = 4;
+   optional bool require_safety_checks = 5 [default = true];
+   optional int32 credentials_mode = 6;  // network::mojom::CredentialsMode.
++  optional int32 fetch_request_mode = 7;  // network::mojom::RequestMode.
+ }
+diff --git a/chromium/components/download/internal/background_service/proto_conversions.cc b/chromium/components/download/internal/background_service/proto_conversions.cc
+index d7076f9a09f0..5479193df8f1 100644
+--- a/chromium/components/download/internal/background_service/proto_conversions.cc
++++ b/chromium/components/download/internal/background_service/proto_conversions.cc
+@@ -2,11 +2,14 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "components/download/internal/background_service/proto_conversions.h"
++
+ #include <memory>
+ #include <utility>
+ 
++#include "base/feature_list.h"
+ #include "base/time/time.h"
+-#include "components/download/internal/background_service/proto_conversions.h"
++#include "components/download/public/background_service/features.h"
+ #include "net/http/http_request_headers.h"
+ #include "net/traffic_annotation/network_traffic_annotation.h"
+ #include "services/network/public/mojom/fetch_api.mojom-shared.h"
+@@ -254,6 +257,13 @@ RequestParams ProtoConversions::RequestParamsFromProto(
+         ::network::mojom::CredentialsMode::kInclude;
+   }
+ 
++  if (proto.has_fetch_request_mode() && proto.fetch_request_mode() >= 0 &&
++      proto.fetch_request_mode() <=
++          static_cast<int32_t>(::network::mojom::RequestMode::kMaxValue)) {
++    request_params.fetch_request_mode =
++        static_cast<::network::mojom::RequestMode>(proto.fetch_request_mode());
++  }
++
+   for (int i = 0; i < proto.headers_size(); i++) {
+     protodb::RequestHeader header = proto.headers(i);
+     request_params.request_headers.SetHeader(header.key(), header.value());
+@@ -270,6 +280,8 @@ void ProtoConversions::RequestParamsToProto(const RequestParams& request_params,
+   proto->set_require_safety_checks(request_params.require_safety_checks);
+   proto->set_credentials_mode(
+       static_cast<int32_t>(request_params.credentials_mode));
++  proto->set_fetch_request_mode(
++      static_cast<int32_t>(request_params.fetch_request_mode));
+ 
+   net::HttpRequestHeaders::Iterator iter(request_params.request_headers);
+   while (iter.GetNext()) {
+@@ -287,6 +299,20 @@ Entry ProtoConversions::EntryFromProto(const protodb::Entry& proto) {
+   entry.scheduling_params =
+       SchedulingParamsFromProto(proto.scheduling_params());
+   entry.request_params = RequestParamsFromProto(proto.request_params());
++
++  // Upgrade legacy Background Fetch entries to use kCors instead of the default
++  // kNavigate mode to enforce proper CORS restrictions upon resumption.
++  // Note: This intentionally breaks backwards compatibility for legacy
++  // `no-cors` fetches by unconditionally upgrading them to `kCors`,
++  // prioritizing security over resumption of existing insecure suspended
++  // downloads.
++  if (base::FeatureList::IsEnabled(kBackgroundFetchCorsEnforcement) &&
++      entry.client == DownloadClient::BACKGROUND_FETCH &&
++      !proto.request_params().has_fetch_request_mode()) {
++    entry.request_params.fetch_request_mode =
++        ::network::mojom::RequestMode::kCors;
++  }
++
+   entry.state = RequestStateFromProto(proto.state());
+   entry.target_file_path =
+       base::FilePath::FromUTF8Unsafe(proto.target_file_path());
+diff --git a/chromium/components/download/internal/common/download_create_info.cc b/chromium/components/download/internal/common/download_create_info.cc
+index 24b30ec89010..779c27d15884 100644
+--- a/chromium/components/download/internal/common/download_create_info.cc
++++ b/chromium/components/download/internal/common/download_create_info.cc
+@@ -35,6 +35,7 @@ DownloadCreateInfo::DownloadCreateInfo(
+       ukm_source_id(ukm::kInvalidSourceId),
+       is_content_initiated(false),
+       credentials_mode(::network::mojom::CredentialsMode::kInclude),
++      fetch_request_mode(::network::mojom::RequestMode::kNavigate),
+       isolation_info(std::nullopt) {}
+ 
+ DownloadCreateInfo::DownloadCreateInfo()
+diff --git a/chromium/components/download/internal/common/download_item_impl.cc b/chromium/components/download/internal/common/download_item_impl.cc
+index da8d173e214a..6376c6967364 100644
+--- a/chromium/components/download/internal/common/download_item_impl.cc
++++ b/chromium/components/download/internal/common/download_item_impl.cc
+@@ -290,6 +290,7 @@ DownloadItemImpl::RequestInfo::RequestInfo(
+     const std::string& remote_address,
+     base::Time start_time,
+     ::network::mojom::CredentialsMode credentials_mode,
++    ::network::mojom::RequestMode fetch_request_mode,
+     const std::optional<net::IsolationInfo>& isolation_info,
+     int64_t range_request_from,
+     int64_t range_request_to)
+@@ -306,6 +307,7 @@ DownloadItemImpl::RequestInfo::RequestInfo(
+       remote_address(remote_address),
+       start_time(start_time),
+       credentials_mode(credentials_mode),
++      fetch_request_mode(fetch_request_mode),
+       isolation_info(isolation_info),
+       range_request_from(range_request_from),
+       range_request_to(range_request_to) {}
+@@ -393,6 +395,7 @@ DownloadItemImpl::DownloadItemImpl(
+                     std::string(),
+                     start_time,
+                     ::network::mojom::CredentialsMode::kInclude,
++                    ::network::mojom::RequestMode::kNavigate,
+                     std::nullopt,
+                     range_request_from,
+                     range_request_to),
+@@ -457,6 +460,7 @@ DownloadItemImpl::DownloadItemImpl(DownloadItemImplDelegate* delegate,
+                     info.remote_address,
+                     info.start_time,
+                     info.credentials_mode,
++                    info.fetch_request_mode,
+                     info.isolation_info,
+                     info.save_info->range_request_from,
+                     info.save_info->range_request_to),
+@@ -1235,6 +1239,10 @@ ::network::mojom::CredentialsMode DownloadItemImpl::GetCredentialsMode() const {
+   return request_info_.credentials_mode;
+ }
+ 
++::network::mojom::RequestMode DownloadItemImpl::GetFetchRequestMode() const {
++  return request_info_.fetch_request_mode;
++}
++
+ const std::optional<net::IsolationInfo>& DownloadItemImpl::GetIsolationInfo()
+     const {
+   return request_info_.isolation_info;
+diff --git a/chromium/components/download/internal/common/download_response_handler.cc b/chromium/components/download/internal/common/download_response_handler.cc
+index 8586fc83e31d..a74e3a0d467c 100644
+--- a/chromium/components/download/internal/common/download_response_handler.cc
++++ b/chromium/components/download/internal/common/download_response_handler.cc
+@@ -64,7 +64,8 @@ DownloadResponseHandler::DownloadResponseHandler(
+     DownloadSource download_source,
+     bool require_safety_checks,
+     std::vector<GURL> url_chain,
+-    bool is_background_mode)
++    bool is_background_mode,
++    ::network::mojom::RequestMode fetch_request_mode)
+     : delegate_(delegate),
+       started_(false),
+       save_info_(std::move(save_info)),
+@@ -81,6 +82,7 @@ DownloadResponseHandler::DownloadResponseHandler(
+       download_source_(download_source),
+       has_strong_validators_(false),
+       credentials_mode_(resource_request->credentials_mode),
++      fetch_request_mode_(fetch_request_mode),
+       is_partial_request_(save_info_->offset > 0),
+       completed_(false),
+       require_safety_checks_(require_safety_checks),
+@@ -172,6 +174,7 @@ DownloadResponseHandler::CreateDownloadCreateInfo(
+   create_info->download_source = download_source_;
+   create_info->request_initiator = request_initiator_;
+   create_info->credentials_mode = credentials_mode_;
++  create_info->fetch_request_mode = fetch_request_mode_;
+   create_info->isolation_info = isolation_info_;
+   create_info->require_safety_checks = require_safety_checks_;
+ 
+diff --git a/chromium/components/download/internal/common/download_utils.cc b/chromium/components/download/internal/common/download_utils.cc
+index 6187ebe99a1b..564f876fb7e4 100644
+--- a/chromium/components/download/internal/common/download_utils.cc
++++ b/chromium/components/download/internal/common/download_utils.cc
+@@ -415,7 +415,13 @@ std::unique_ptr<network::ResourceRequest> CreateResourceRequest(
+   // See also:
+   // - https://crbug.com/952834
+   // - https://github.com/whatwg/fetch/issues/896#issuecomment-484423278
+-  request->mode = network::mojom::RequestMode::kNavigate;
++  //
++  // Note that while top-level navigations use kNavigate (which bypasses CORS
++  // restrictions in the network service), Background Fetch requests require
++  // strict adoption of the originating fetch request mode (kCors) to prevent
++  // cross-origin information leaks.
++  request->mode = params->fetch_request_mode();
++  request->credentials_mode = params->credentials_mode();
+ 
+   bool has_upload_data = false;
+   if (params->post_body()) {
+@@ -559,6 +565,7 @@ DownloadDBEntry CreateDownloadDBEntryFromItem(const DownloadItemImpl& item) {
+   in_progress_info.bytes_wasted = item.GetBytesWasted();
+   in_progress_info.auto_resume_count = item.GetAutoResumeCount();
+   in_progress_info.credentials_mode = item.GetCredentialsMode();
++  in_progress_info.fetch_request_mode = item.GetFetchRequestMode();
+   auto range_request_offset = item.GetRangeRequestOffset();
+   in_progress_info.range_request_from = range_request_offset.first;
+   in_progress_info.range_request_to = range_request_offset.second;
+diff --git a/chromium/components/download/internal/common/resource_downloader.cc b/chromium/components/download/internal/common/resource_downloader.cc
+index 4dda15e51f04..31f550a20753 100644
+--- a/chromium/components/download/internal/common/resource_downloader.cc
++++ b/chromium/components/download/internal/common/resource_downloader.cc
+@@ -183,7 +183,8 @@ void ResourceDownloader::Start(
+       download_url_parameters->request_origin(),
+       download_url_parameters->download_source(),
+       download_url_parameters->require_safety_checks(),
+-      std::vector<GURL>(1, resource_request_->url), is_background_mode);
++      std::vector<GURL>(1, resource_request_->url), is_background_mode,
++      download_url_parameters->fetch_request_mode());
+ 
+   mojo::PendingRemote<network::mojom::URLLoaderClient> url_loader_client_remote;
+   url_loader_client_receiver_ =
+@@ -227,7 +228,8 @@ void ResourceDownloader::InterceptResponse(
+       download::DownloadUrlParameters::RequestHeadersType(),
+       std::string(),                              /* request_origin */
+       download::DownloadSource::NAVIGATION, true, /* require_safety_checks */
+-      std::move(url_chain), false /* is_background_mode */);
++      std::move(url_chain), false /* is_background_mode */,
++      ::network::mojom::RequestMode::kNavigate);
+ 
+   // Simulate on the new URLLoaderClient calls that happened on the old client.
+   response_head->cert_status = cert_status;
+diff --git a/chromium/components/download/public/background_service/download_params.h b/chromium/components/download/public/background_service/download_params.h
+index 5277fcc56a23..dfd29e7e1fc3 100644
+--- a/chromium/components/download/public/background_service/download_params.h
++++ b/chromium/components/download/public/background_service/download_params.h
+@@ -126,6 +126,10 @@ struct COMPONENT_EXPORT(COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE)
+   // The credentials mode of the request. Not supported on iOS.
+   ::network::mojom::CredentialsMode credentials_mode;
+ 
++  // The fetch request mode of the request. Not supported on iOS.
++  ::network::mojom::RequestMode fetch_request_mode =
++      ::network::mojom::RequestMode::kNavigate;
++
+   // The isolation info of the request, this won't be persisted to db and will
+   // be invalidate during download resumption in new browser session. Not
+   // supported on iOS.
+diff --git a/chromium/components/download/public/background_service/features.cc b/chromium/components/download/public/background_service/features.cc
+index 79881a327c60..24650a847043 100644
+--- a/chromium/components/download/public/background_service/features.cc
++++ b/chromium/components/download/public/background_service/features.cc
+@@ -12,6 +12,10 @@ BASE_FEATURE(kDownloadServiceFeature,
+              "DownloadService",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++BASE_FEATURE(kBackgroundFetchCorsEnforcement,
++             "BackgroundFetchCorsEnforcement",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ #if BUILDFLAG(IS_IOS)
+ BASE_FEATURE(kDownloadServiceForegroundSessionIOSFeature,
+              "DownloadServiceForegroundSessionIOSFeature",
+diff --git a/chromium/components/download/public/background_service/features.h b/chromium/components/download/public/background_service/features.h
+index ad2ff54dfb0b..5fda2e013019 100644
+--- a/chromium/components/download/public/background_service/features.h
++++ b/chromium/components/download/public/background_service/features.h
+@@ -21,6 +21,10 @@ BASE_DECLARE_FEATURE(kDownloadServiceFeature);
+ COMPONENT_EXPORT(COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE)
+ BASE_DECLARE_FEATURE(kDownloadServiceForegroundSessionIOSFeature);
+ 
++// Used as a kill switch for CORS enforcement in Background Fetch jobs.
++COMPONENT_EXPORT(COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE)
++BASE_DECLARE_FEATURE(kBackgroundFetchCorsEnforcement);
++
+ }  // namespace download
+ 
+ #endif  // COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE_FEATURES_H_
+diff --git a/chromium/components/download/public/common/download_create_info.h b/chromium/components/download/public/common/download_create_info.h
+index 40fa3ef9ec4c..ef345cac176d 100644
+--- a/chromium/components/download/public/common/download_create_info.h
++++ b/chromium/components/download/public/common/download_create_info.h
+@@ -186,6 +186,9 @@ struct COMPONENTS_DOWNLOAD_EXPORT DownloadCreateInfo {
+   // javascript, see Access-Control-Allow-Credentials header.
+   ::network::mojom::CredentialsMode credentials_mode;
+ 
++  // The fetch request mode of the request.
++  ::network::mojom::RequestMode fetch_request_mode;
++
+   // Isolation info for the download request, mainly for same site cookies.
+   std::optional<net::IsolationInfo> isolation_info;
+ 
+diff --git a/chromium/components/download/public/common/download_item.h b/chromium/components/download/public/common/download_item.h
+index fd5cf02e3051..5f0553cbe73c 100644
+--- a/chromium/components/download/public/common/download_item.h
++++ b/chromium/components/download/public/common/download_item.h
+@@ -356,6 +356,9 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItem : public base::SupportsUserData {
+   // The credentials mode of the request.
+   virtual ::network::mojom::CredentialsMode GetCredentialsMode() const = 0;
+ 
++  // The fetch request mode of the request.
++  virtual ::network::mojom::RequestMode GetFetchRequestMode() const = 0;
++
+   // The isolation mode of the request.
+   virtual const std::optional<net::IsolationInfo>& GetIsolationInfo() const = 0;
+ 
+diff --git a/chromium/components/download/public/common/download_item_impl.h b/chromium/components/download/public/common/download_item_impl.h
+index b1a1116d24cd..64aae7960c98 100644
+--- a/chromium/components/download/public/common/download_item_impl.h
++++ b/chromium/components/download/public/common/download_item_impl.h
+@@ -64,6 +64,7 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItemImpl
+                 const std::string& remote_address,
+                 base::Time start_time,
+                 ::network::mojom::CredentialsMode credentials_mode,
++                ::network::mojom::RequestMode fetch_request_mode,
+                 const std::optional<net::IsolationInfo>& isolation_info,
+                 int64_t range_request_from,
+                 int64_t range_request_to);
+@@ -118,6 +119,10 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItemImpl
+     ::network::mojom::CredentialsMode credentials_mode =
+         ::network::mojom::CredentialsMode::kInclude;
+ 
++    // The fetch request mode of the request.
++    ::network::mojom::RequestMode fetch_request_mode =
++        ::network::mojom::RequestMode::kNavigate;
++
+     // Isolation info for the request.
+     std::optional<net::IsolationInfo> isolation_info;
+ 
+@@ -338,6 +343,7 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItemImpl
+   bool IsParallelDownload() const override;
+   DownloadCreationType GetDownloadCreationType() const override;
+   ::network::mojom::CredentialsMode GetCredentialsMode() const override;
++  ::network::mojom::RequestMode GetFetchRequestMode() const override;
+   const std::optional<net::IsolationInfo>& GetIsolationInfo() const override;
+   void OnContentCheckCompleted(DownloadDangerType danger_type,
+                                DownloadInterruptReason reason) override;
+diff --git a/chromium/components/download/public/common/download_response_handler.h b/chromium/components/download/public/common/download_response_handler.h
+index 54a645fa3576..0e3510513234 100644
+--- a/chromium/components/download/public/common/download_response_handler.h
++++ b/chromium/components/download/public/common/download_response_handler.h
+@@ -57,7 +57,8 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadResponseHandler
+       DownloadSource download_source,
+       bool require_safety_checks,
+       std::vector<GURL> url_chain,
+-      bool is_background_mode);
++      bool is_background_mode,
++      ::network::mojom::RequestMode fetch_request_mode);
+ 
+   DownloadResponseHandler(const DownloadResponseHandler&) = delete;
+   DownloadResponseHandler& operator=(const DownloadResponseHandler&) = delete;
+@@ -108,6 +109,7 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadResponseHandler
+   bool has_strong_validators_;
+   std::optional<url::Origin> request_initiator_;
+   ::network::mojom::CredentialsMode credentials_mode_;
++  ::network::mojom::RequestMode fetch_request_mode_;
+   std::optional<net::IsolationInfo> isolation_info_;
+   bool is_partial_request_;
+   bool completed_;
+diff --git a/chromium/components/download/public/common/download_url_parameters.cc b/chromium/components/download/public/common/download_url_parameters.cc
+index 6181c4c0162d..e5f85b39a90c 100644
+--- a/chromium/components/download/public/common/download_url_parameters.cc
++++ b/chromium/components/download/public/common/download_url_parameters.cc
+@@ -36,6 +36,7 @@ DownloadUrlParameters::DownloadUrlParameters(
+       use_if_range_(true),
+       method_("GET"),
+       credentials_mode_(::network::mojom::CredentialsMode::kInclude),
++      fetch_request_mode_(::network::mojom::RequestMode::kNavigate),
+       post_id_(-1),
+       prefer_cache_(false),
+       referrer_policy_(
+diff --git a/chromium/components/download/public/common/download_url_parameters.h b/chromium/components/download/public/common/download_url_parameters.h
+index 1e71a0bf950a..470358a352e0 100644
+--- a/chromium/components/download/public/common/download_url_parameters.h
++++ b/chromium/components/download/public/common/download_url_parameters.h
+@@ -149,6 +149,12 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
+     credentials_mode_ = credentials_mode;
+   }
+ 
++  // The requests' fetch request mode.
++  void set_fetch_request_mode(
++      ::network::mojom::RequestMode fetch_request_mode) {
++    fetch_request_mode_ = fetch_request_mode;
++  }
++
+   // Body of the HTTP POST request.
+   void set_post_body(scoped_refptr<network::ResourceRequestBody> post_body) {
+     post_body_ = post_body;
+@@ -309,6 +315,9 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
+   ::network::mojom::CredentialsMode credentials_mode() const {
+     return credentials_mode_;
+   }
++  ::network::mojom::RequestMode fetch_request_mode() const {
++    return fetch_request_mode_;
++  }
+   scoped_refptr<network::ResourceRequestBody> post_body() { return post_body_; }
+   int64_t post_id() const { return post_id_; }
+   bool prefer_cache() const { return prefer_cache_; }
+@@ -390,6 +399,7 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
+   bool use_if_range_;
+   std::string method_;
+   ::network::mojom::CredentialsMode credentials_mode_;
++  ::network::mojom::RequestMode fetch_request_mode_;
+   scoped_refptr<network::ResourceRequestBody> post_body_;
+   int64_t post_id_;
+   bool prefer_cache_;
+diff --git a/chromium/components/download/public/common/mock_download_item.h b/chromium/components/download/public/common/mock_download_item.h
+index 3f5d992d9cfb..73cbb277ea17 100644
+--- a/chromium/components/download/public/common/mock_download_item.h
++++ b/chromium/components/download/public/common/mock_download_item.h
+@@ -133,6 +133,7 @@ class MockDownloadItem : public DownloadItem {
+   MOCK_CONST_METHOD0(IsParallelDownload, bool());
+   MOCK_CONST_METHOD0(GetDownloadCreationType, DownloadCreationType());
+   MOCK_CONST_METHOD0(GetCredentialsMode, ::network::mojom::CredentialsMode());
++  MOCK_CONST_METHOD0(GetFetchRequestMode, ::network::mojom::RequestMode());
+   MOCK_METHOD((const std::optional<net::IsolationInfo>&),
+               GetIsolationInfo,
+               (),
+diff --git a/chromium/content/browser/background_fetch/background_fetch_delegate_proxy.cc b/chromium/content/browser/background_fetch/background_fetch_delegate_proxy.cc
+index f938ef967a36..a832987e9bd2 100644
+--- a/chromium/content/browser/background_fetch/background_fetch_delegate_proxy.cc
++++ b/chromium/content/browser/background_fetch/background_fetch_delegate_proxy.cc
+@@ -197,10 +197,13 @@ void BackgroundFetchDelegateProxy::StartRequest(
+     headers.SetHeader("Origin", origin.Serialize());
+   }
+ 
++  CHECK(fetch_request->mode != network::mojom::RequestMode::kNoCors &&
++        fetch_request->mode != network::mojom::RequestMode::kNavigate);
++
+   delegate->DownloadUrl(
+       job_unique_id, request->download_guid(), fetch_request->method,
+-      fetch_request->url, fetch_request->credentials_mode, traffic_annotation,
+-      headers,
++      fetch_request->url, fetch_request->credentials_mode, fetch_request->mode,
++      traffic_annotation, headers,
+       /* has_request_body= */ request->request_body_size() > 0u);
+ }
+ 
+diff --git a/chromium/content/public/browser/background_fetch_delegate.h b/chromium/content/public/browser/background_fetch_delegate.h
+index 29925d04dc71..116ccb8ccbbd 100644
+--- a/chromium/content/public/browser/background_fetch_delegate.h
++++ b/chromium/content/public/browser/background_fetch_delegate.h
+@@ -126,6 +126,7 @@ class CONTENT_EXPORT BackgroundFetchDelegate {
+       const std::string& method,
+       const GURL& url,
+       ::network::mojom::CredentialsMode credentials_mode,
++      ::network::mojom::RequestMode request_mode,
+       const net::NetworkTrafficAnnotationTag& traffic_annotation,
+       const net::HttpRequestHeaders& headers,
+       bool has_request_body) = 0;

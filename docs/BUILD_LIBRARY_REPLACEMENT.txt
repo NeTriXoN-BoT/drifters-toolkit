@@ -25,12 +25,20 @@ For the original maintained Linux engine, follow the source build notes
 in the application source: docs/QT_WEBENGINE_SECURITY_2026-10-26.md, then
 docs/QT_WEBENGINE_SECURITY_2026-10-28.md, then
 docs/QT_WEBENGINE_SECURITY_2026-10-30.md, then
-docs/QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md, and finally
-docs/QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md. Keep the recorded
+docs/QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md, then
+docs/QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md, and finally
+docs/QT_WEBENGINE_SECURITY_2026-11-08.md. Keep the recorded
 baseline source and every preceding provenance layer while applying each layer.
 The latest release staging gate is
-QTWEBENGINE-SECURITY-VENDOR-FOLLOWUP-PROVENANCE.json. A historical proof or source
+QTWEBENGINE-SECURITY-RELEASE-1-1-PROVENANCE.json. A historical proof or source
 patch alone does not identify the current runtime outputs.
+
+The other maintained Linux libraries and their pinned build/repair inputs are
+described in docs/LINUX_DEPENDENCIES.md. Build that prefix before fresh staging
+and pass --dependencies-prefix /path/to/library-prefix to the stage command.
+The runtime includes only its required libraries, with original and relocated
+identities recorded in DEPENDENCY-SOURCES.json. The explicit reindex/rebuild
+route below still supports your interface-compatible library modifications.
 
 1. Work in your own new folder. Extract the AppImage there with
    ./Drifters-Toolkit-Linux-x86_64.AppImage --appimage-extract
@@ -63,8 +71,7 @@ patch alone does not identify the current runtime outputs.
    An interrupted retained build can use resume_qt_webengine_security.py after
    verifying its exact source/configuration and adequate storage. Under WSL,
    explicitly approve the backing drive and provide a fresh local host-volume/
-   registry attestation; native Linux needs no Windows metadata. This workspace
-   uses D: for its own Linux build; another user may approve another drive.
+   registry attestation; native Linux needs no Windows metadata.
    The original configured recipe, 75-file vendor inventory, 81-file final
    inventory and continuation
    source are supplied separately; no extra source/SDK copy is created by resume.
@@ -105,7 +112,7 @@ patch alone does not identify the current runtime outputs.
 6. Check your own build with AppRun --verify-only and AppRun --cli --verify-only,
    then test X11/Wayland and the relevant library behavior in your environment.
    Do not disable Chromium's sandbox or run the loader as root. Host namespace,
-   seccomp, display/graphics-driver, keyring and glibc requirements still apply.
+   seccomp, display/graphics-driver and glibc requirements still apply.
    If desired, package your modified ordinary AppDir with your own matching
    source/licence materials. Retain the original release unchanged for comparison.
 

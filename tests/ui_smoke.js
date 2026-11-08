@@ -637,7 +637,7 @@ async function testChangelogHistory() {
     ];
     ui.showChangelog('1.0.2');
     assert(node('#modal-content').innerHTML.includes('&lt;script&gt;') && !node('#modal-content').innerHTML.includes('<script>'), 'History text is escaped');
-    assert.deepEqual(Array.from(ui.changelogReleases(), (item) => item.version), ['1.0.10', current.version, '1.0.2'], 'Semantic sorting and malformed/duplicate filtering are safe');
+    assert.deepEqual(Array.from(ui.changelogReleases(), (item) => item.version), ['1.0.10', current.version, '1.0.2'].sort((a, b) => b.localeCompare(a, 'en', { numeric: true })), 'Semantic sorting and malformed/duplicate filtering are safe');
     context.window.CHANGELOG_HISTORY = undefined;
     ui.showChangelog();
     assert(node('#modal-content').innerHTML.includes('Version ' + current.version), 'Missing archive falls back to this version’s highlights');
@@ -3682,7 +3682,7 @@ async function main() {
   ui.state.snapshot.edition = 'local';
   assert(ui.localEdition(), 'The native snapshot selects the local edition');
   assert(
-    ui.nexusAccountMarkup().includes('sidebar-nexus-local') &&
+    ui.nexusAccountMarkup().includes('sidebar-toolkit-source') &&
       !ui.nexusAccountMarkup().includes('sidebar-nexus-connect'),
     'The local edition shows no sign-in button'
   );
@@ -3704,7 +3704,7 @@ async function main() {
     'The local edition sends no Nexus requests'
   );
   assert(
-    node('#modal-content').innerHTML.includes('Nexus features are on the way'),
+    node('#modal-content').innerHTML.includes('Download in your browser'),
     'Nexus actions explain the local edition'
   );
   node('#modal').close();
@@ -4734,7 +4734,8 @@ async function main() {
   assert.equal(ui.showNextNotice(), false, 'Notices wait for busy file operations');
   ui.state.busy = false;
   const beforeSummary = nativeRequests.length;
-  assert(ui.showNextNotice(), 'Queued notice opens on the next safe idle opportunity');
+  assert.equal(ui.showNextNotice(), false, 'Scan findings wait on the notice button without interrupting navigation');
+  assert(ui.showNextNotice(true), 'The user can open queued findings when ready');
   const issueSummaryHtml = node('#modal-content').innerHTML;
   assert(
     issueSummaryHtml.includes('Run diagnostics') &&
@@ -5942,7 +5943,8 @@ async function currentPlanWorkflows() {
   ui.state.gameBuildChecked = 0;
   await ui.checkGameBuild();
   assert.equal(ui.state.noticeQueue.filter((notice) => notice.type === 'game-updated').length, 1, 'Same game build queues only one update notice');
-  assert(ui.showNextNotice(), 'Game update notice can be reviewed');
+  assert.equal(ui.showNextNotice(), false, 'Game update findings do not interrupt the current page');
+  assert(ui.showNextNotice(true), 'Game update notice can be reviewed on demand');
   assert(node('#modal-content').innerHTML.includes('&lt;after the game update&gt;'), 'Game update guidance is escaped');
   await Promise.resolve();
   assert(nativeRequests.slice(beforeBuild).some((request) => request.action === 'gameBuildDismiss' && request.id === 'native-build-event'), 'Build acknowledgement binds to the checked native build');
@@ -6123,20 +6125,24 @@ async function currentPlanWorkflows() {
   assert.equal(context.document.activeElement, focusInput, 'Read-only redraw restores the active input');
   assert.deepEqual([focusInput.selectionStart, focusInput.selectionEnd], [2, 4], 'Read-only redraw retains input selection');
   main.contains = oldContains;
-  const beforeToastTimers = new Set(timers.keys());
+  const beforeToastTimers = new Set(timers.keys()), originalToastDate = context.Date;
+  let toastTime = originalToastDate.now();
+  context.Date = class extends originalToastDate { static now() { return toastTime; } };
   ui.toast('A keyboard-reachable action', 'success', { label: 'Undo', run() {} });
   const toast = node('temporary');
   toast.removed = false;
+  Object.defineProperty(toast, 'isConnected', { configurable: true, get() { return !this.removed; } });
   context.document.activeElement = toast;
-  const expiry = [...timers].find(([id, timer]) => !beforeToastTimers.has(id) && timer.delay === 10000);
-  assert(expiry, 'Action toast has a bounded expiry timer');
-  expiry[1].callback();
+  const expiry = [...timers].find(([id, timer]) => !beforeToastTimers.has(id) && timer.delay === 500);
+  assert(expiry, 'Toast uses a bounded reading-time tick');
+  toastTime += 20000; expiry[1].callback();
   assert(!toast.removed, 'Toast stays visible while it contains keyboard focus');
-  const retry = [...timers].filter(([id, timer]) => !beforeToastTimers.has(id) && timer.delay === 1500).at(-1);
-  assert(retry, 'Focused toast postpones expiry');
   context.document.activeElement = node('body');
-  retry[1].callback();
-  assert(toast.removed, 'Toast can expire once keyboard focus has left it');
+  for (let tick = 0; tick < 19; ++tick) { toastTime += 500; expiry[1].callback(); }
+  assert(!toast.removed, 'Reading time starts after keyboard focus leaves');
+  toastTime += 500; expiry[1].callback();
+  assert(toast.removed, 'Toast expires after its remaining visible reading time');
+  context.Date = originalToastDate;
   const duplicateReview = { token: 'native-duplicates-token', count: 2,
     groups: [{ keep: { file: 'Keep_P.pak', location: 'Saved Paks', owned: true },
       remove: [{ file: 'Extra <one>.pak', location: 'Game Paks', owned: false }, { file: 'Extra-two.pak', location: 'Saved Paks', owned: true }] }],

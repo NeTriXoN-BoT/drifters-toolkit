@@ -1,0 +1,44 @@
+From 02331b017ee487908b1cb23c018075c2e96faa67 Mon Sep 17 00:00:00 2001
+From: Fernando Fiori <ffiori@microsoft.com>
+Date: Fri, 23 Oct 2026 16:12:54 -0700
+Subject: [PATCH] [Backport] CVE-2026-119268: Integer overflow in Editing
+
+Manual partial cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8640466:
+[highlights] Keep hit-test range pointers stable
+
+highlightsFromPoint() retains a reference to a Highlight range set entry
+while computing its bounds. Geometry computation can run script that
+adds ranges, reallocating the set's backing storage and leaving the
+reference dangling.
+
+Copy the AbstractRange pointer before computing geometry, rather than
+referencing the Member in the set. The set's iterators remain valid when
+adding ranges, so this preserves live iteration while keeping the
+current range safe to use.
+
+Bug: 576984708
+Change-Id: Idfe994d6b6eb7985aab356e47df32f0b19ce61e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8640466
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Fernando Fiori <ffiori@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1726331}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785294
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../blink/renderer/core/highlight/highlight_registry.cc         | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc b/chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc
+index 8754c2e4ca50..d116b2e25408 100644
+--- a/chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc
++++ b/chromium/third_party/blink/renderer/core/highlight/highlight_registry.cc
+@@ -362,7 +362,7 @@ HeapVector<Member<HighlightHitResult>> HighlightRegistry::highlightsFromPoint(
+     CHECK(highlights_iterator != highlights_.end());
+     Highlight* highlight = highlights_iterator->Get()->highlight;
+     HeapVector<Member<AbstractRange>> highlight_ranges_hit;
+-    for (auto& abstract_range : highlight->GetRanges()) {
++    for (AbstractRange* abstract_range : highlight->GetRanges()) {
+       // If the range starts and ends in a different tree scope than the hit
+       // node (i.e., the range encloses a shadow tree), do not return it when
+       // the hit is on a node inside that shadow tree. Only consider ranges

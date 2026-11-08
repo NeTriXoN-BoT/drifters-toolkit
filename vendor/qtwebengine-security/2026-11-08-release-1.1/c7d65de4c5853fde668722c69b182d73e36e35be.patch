@@ -1,0 +1,51 @@
+From c7d65de4c5853fde668722c69b182d73e36e35be Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Fri, 9 Oct 2026 18:47:20 -0700
+Subject: [PATCH] [Backport] CVE-2026-121203: Use after free in Geometry
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8545063:
+Ensure GatherObservations references remain safe to use
+
+In ResizeObserver::GatherObservations(), ObservationSizeOutOfSync() and
+TargetDepth() can trigger a synchronous update which adds to
+`observations_` and reallocates its backing buffer. Using `auto&` bound
+a `const WeakMember<ResizeObservation>&` directly into that buffer,
+which was unsafe to use if the buffer moved. Using `ResizeObservation*`
+instead copies the pointer and is valid even if `observations_`
+reallocates.
+
+Fixed: 571065824
+Change-Id: I30636968462d9659a3108c78da0e1a1ca13bcff6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8545063
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716232}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786141
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ .../blink/renderer/core/resize_observer/resize_observer.cc    | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/resize_observer/resize_observer.cc b/chromium/third_party/blink/renderer/core/resize_observer/resize_observer.cc
+index 6716e85ab710..fbd8de846bec 100644
+--- a/chromium/third_party/blink/renderer/core/resize_observer/resize_observer.cc
++++ b/chromium/third_party/blink/renderer/core/resize_observer/resize_observer.cc
+@@ -140,14 +140,14 @@ size_t ResizeObserver::GatherObservations(size_t deeper_than) {
+   DCHECK(active_observations_.empty());
+ 
+   size_t min_observed_depth = ResizeObserverController::kDepthBottom;
+-  for (auto& observation : observations_) {
++  for (ResizeObservation* observation : observations_) {
+     if (!observation->ObservationSizeOutOfSync() &&
+         (deeper_than != 0 || !observation->FireOnEveryPaint())) {
+       continue;
+     }
+     auto depth = observation->TargetDepth();
+     if (depth > deeper_than) {
+-      active_observations_.push_back(*observation);
++      active_observations_.push_back(observation);
+       min_observed_depth = std::min(min_observed_depth, depth);
+     } else {
+       skipped_observations_ = true;

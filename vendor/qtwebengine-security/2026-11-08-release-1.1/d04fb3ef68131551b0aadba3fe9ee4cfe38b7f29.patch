@@ -1,0 +1,148 @@
+From d04fb3ef68131551b0aadba3fe9ee4cfe38b7f29 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Thu, 22 Oct 2026 23:51:34 -0700
+Subject: [PATCH] [Backport] CVE-2026-119266: Use after free in Quota
+
+Cherryy-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8603890:
+Avoid CopyDirectory fallback in StorageDirectory::DoomPath
+
+Previously, StorageDirectory::DoomPath pre-created a temporary target
+directory with base::CreateTemporaryDirInDir and then called
+base::Move(path, doomed_dir). When `path` is a symbolic link, moving it
+onto an existing directory fails `rename(2)` with EISDIR and falls back
+to base::CopyDirectory, which follows the link.
+
+In addition:
+- base::PathExists follows symlinks, so a dangling symlink at `path`
+  returned early from DoomPath without being removed.
+- EnumerateDoomedDirectories and EnumerateDoomedBuckets used
+  base::FileEnumerator::DIRECTORIES, skipping doomed symlinks to files
+  or nonexistent targets.
+- QuotaDatabase::DeleteBucketData returned early on failure without
+  clearing doomed bucket directories.
+
+This CL:
+- Renames `path` onto a fresh `<name>-doomed-<uuid>` path without
+  pre-creating the destination directory, using base::ReplaceFile on
+  POSIX (so `rename(2)` does not fall back to CopyDirectory) and
+  base::Move (after unlinking reparse points) on non-POSIX platforms,
+  and checks base::IsLink so dangling symlinks are also doomed.
+- Uses base::FileEnumerator::NAMES_ONLY in EnumerateDoomedDirectories
+  and EnumerateDoomedBuckets so any doomed entry is passed to
+  base::DeletePathRecursively.
+- Calls ClearDoomedBuckets() on early-return error paths in
+  QuotaDatabase::DeleteBucketData.
+
+TAG=agy
+CONV=b03dcafb-e302-4850-a029-78a6d8b7c1b2
+
+Bug: 575202553
+Change-Id: I575202553a7f4070f631e29a8b0ab2041285d940
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8603890
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725545}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785288
+Reviewed-by: Anu Aliyas <anu.aliyas@qt.io>
+---
+ .../storage/browser/quota/quota_database.cc   |  4 ++
+ .../browser/quota/storage_directory.cc        | 41 +++++++++++++++----
+ 2 files changed, 37 insertions(+), 8 deletions(-)
+
+diff --git a/chromium/storage/browser/quota/quota_database.cc b/chromium/storage/browser/quota/quota_database.cc
+index 25440cf01f82..45f792577ee9 100644
+--- a/chromium/storage/browser/quota/quota_database.cc
++++ b/chromium/storage/browser/quota/quota_database.cc
+@@ -617,6 +617,7 @@ QuotaErrorOr<mojom::BucketTableEntryPtr> QuotaDatabase::DeleteBucketData(
+   // directory deletion fails. `storage_directory_` may be nullptr for
+   // in-memory only.
+   if (storage_directory_ && !storage_directory_->DoomBucket(bucket)) {
++    storage_directory_->ClearDoomedBuckets();
+     return base::unexpected(QuotaError::kFileOperationError);
+   }
+ 
+@@ -628,6 +629,9 @@ QuotaErrorOr<mojom::BucketTableEntryPtr> QuotaDatabase::DeleteBucketData(
+   statement.BindInt64(0, bucket.id.value());
+ 
+   if (!statement.Step()) {
++    if (storage_directory_) {
++      storage_directory_->ClearDoomedBuckets();
++    }
+     return base::unexpected(QuotaError::kDatabaseError);
+   }
+ 
+diff --git a/chromium/storage/browser/quota/storage_directory.cc b/chromium/storage/browser/quota/storage_directory.cc
+index 90f368632efb..a43d29761c71 100644
+--- a/chromium/storage/browser/quota/storage_directory.cc
++++ b/chromium/storage/browser/quota/storage_directory.cc
+@@ -8,6 +8,8 @@
+ #include "base/files/file_util.h"
+ #include "base/notreached.h"
+ #include "base/strings/strcat.h"
++#include "base/uuid.h"
++#include "build/build_config.h"
+ #include "components/services/storage/public/cpp/constants.h"
+ #include "storage/browser/quota/storage_directory_util.h"
+ 
+@@ -59,20 +61,43 @@ void StorageDirectory::ClearDoomedBuckets() {
+ }
+ 
+ bool StorageDirectory::DoomPath(const base::FilePath& path) {
+-  if (!base::PathExists(path))
++  if (!base::PathExists(path) && !base::IsLink(path)) {
+     return true;
+-
+-  base::FilePath doomed_dir;
+-  base::CreateTemporaryDirInDir(
+-      path.DirName(), base::StrCat({path.BaseName().value(), kDoomedPathName}),
+-      &doomed_dir);
++  }
++
++  // Atomically rename `path` onto a fresh name that does not exist yet.
++  //
++  // Do not pre-create the destination directory: when `rename(2)` fails (e.g.
++  // with `EISDIR` on POSIX because `path` has been swapped for a symlink and
++  // the destination already exists as a directory), `base::Move()` falls back
++  // to the symlink-following `base::CopyDirectory()` and copies the link target
++  // into the profile directory. On POSIX, `base::ReplaceFile()` performs a
++  // direct `rename(2)` without a copy fallback: a real directory moves as
++  // before, while a planted symlink is renamed without being followed and then
++  // unlinked by `ClearDoomed*()`. On Windows, `base::ReplaceFile()` creates a
++  // temporary backup file and calls Win32 `::ReplaceFile()` (which fails for
++  // directories and logs a failed `Windows.ReplaceFileResult` histogram sample
++  // before falling back to `::MoveFile()`), so remove reparse points directly
++  // and use `base::Move()` onto the non-existent `doomed_dir`.
++  base::FilePath doomed_dir = path.DirName().Append(base::StrCat(
++      {path.BaseName().value(), kDoomedPathName,
++       base::FilePath::FromASCII(
++           base::Uuid::GenerateRandomV4().AsLowercaseString())
++           .value()}));
++#if BUILDFLAG(IS_POSIX)
++  return base::ReplaceFile(path, doomed_dir, /*error=*/nullptr);
++#else
++  if (base::IsLink(path)) {
++    return base::DeletePathRecursively(path);
++  }
+   return base::Move(path, doomed_dir);
++#endif
+ }
+ 
+ std::set<base::FilePath> StorageDirectory::EnumerateDoomedDirectories() {
+   base::FileEnumerator enumerator(
+       web_storage_path_.DirName(),
+-      /*recursive=*/false, base::FileEnumerator::DIRECTORIES,
++      /*recursive=*/false, base::FileEnumerator::NAMES_ONLY,
+       base::StrCat(
+           {kWebStorageDirectory, kDoomedPathName, FILE_PATH_LITERAL("*")}));
+ 
+@@ -85,7 +110,7 @@ std::set<base::FilePath> StorageDirectory::EnumerateDoomedDirectories() {
+ 
+ std::set<base::FilePath> StorageDirectory::EnumerateDoomedBuckets() {
+   base::FileEnumerator enumerator(
+-      web_storage_path_, /*recursive=*/false, base::FileEnumerator::DIRECTORIES,
++      web_storage_path_, /*recursive=*/false, base::FileEnumerator::NAMES_ONLY,
+       base::StrCat(
+           {FILE_PATH_LITERAL("*"), kDoomedPathName, FILE_PATH_LITERAL("*")}));
+ 

@@ -1,0 +1,87 @@
+From bcd44c82a8de7a9a8ebf287341cc7ac672caf5a2 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Mon, 12 Oct 2026 18:47:06 -0700
+Subject: [PATCH] [Backport] CVE-2026-121181: Use after free in Editing
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8519883:
+Prevent Range::expand() from crossing shadow boundaries
+
+Range::expand() computes word, sentence, block, and document boundaries
+using editing position utilities that can traverse the flat tree across
+shadow boundaries and return positions in a different TreeScope. Passing
+those unadjusted positions to Range::setStart() and Range::setEnd()
+causes the Range to collapse into the target shadow tree, exposing nodes
+inside closed or user-agent shadow roots.
+
+Adjust the positions in Range::expand() so that they remain within the
+Range's initial TreeScope, clamping positions that cross into a child
+shadow tree to before or after the shadow host and clamping positions
+that cross out of a shadow tree to the start or end of the shadow root.
+
+Fixed: 567936269
+Change-Id: I1d873ef6ed07998eae08f8d4c2644b424a035830
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8519883
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717233}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786792
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../blink/renderer/core/dom/range.cc          | 28 +++++++++++++++----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/dom/range.cc b/chromium/third_party/blink/renderer/core/dom/range.cc
+index 08f463728e60..50d03c2b4ac1 100644
+--- a/chromium/third_party/blink/renderer/core/dom/range.cc
++++ b/chromium/third_party/blink/renderer/core/dom/range.cc
+@@ -41,6 +41,7 @@
+ #include "third_party/blink/renderer/core/editing/ephemeral_range.h"
+ #include "third_party/blink/renderer/core/editing/frame_selection.h"
+ #include "third_party/blink/renderer/core/editing/iterators/text_iterator.h"
++#include "third_party/blink/renderer/core/editing/selection_adjuster.h"
+ #include "third_party/blink/renderer/core/editing/selection_template.h"
+ #include "third_party/blink/renderer/core/editing/serializers/serialization.h"
+ #include "third_party/blink/renderer/core/editing/set_selection_options.h"
+@@ -1621,6 +1622,9 @@ void Range::expand(const String& unit, ExceptionState& exception_state) {
+   owner_document_->UpdateStyleAndLayout(DocumentUpdateReason::kJavaScript);
+   VisiblePosition start = CreateVisiblePosition(StartPosition());
+   VisiblePosition end = CreateVisiblePosition(EndPosition());
++  if (start.IsNull() || end.IsNull()) {
++    return;
++  }
+   if (unit == "word") {
+     start = CreateVisiblePosition(StartOfWordPosition(start.DeepEquivalent()));
+     end = CreateVisiblePosition(EndOfWordPosition(end.DeepEquivalent()));
+@@ -1637,11 +1641,25 @@ void Range::expand(const String& unit, ExceptionState& exception_state) {
+   } else {
+     return;
+   }
+-  setStart(start.DeepEquivalent().ComputeContainerNode(),
+-           start.DeepEquivalent().ComputeOffsetInContainerNode(),
+-           exception_state);
+-  setEnd(end.DeepEquivalent().ComputeContainerNode(),
+-         end.DeepEquivalent().ComputeOffsetInContainerNode(), exception_state);
++  if (start.IsNull() || end.IsNull()) {
++    return;
++  }
++  const Position result_start =
++      SelectionAdjuster::AdjustSelectionToAvoidCrossingShadowBoundaries(
++          SelectionInDOMTree::Builder()
++              .SetBaseAndExtent(StartPosition(), start.DeepEquivalent())
++              .Build())
++          .Focus();
++  const Position result_end =
++      SelectionAdjuster::AdjustSelectionToAvoidCrossingShadowBoundaries(
++          SelectionInDOMTree::Builder()
++              .SetBaseAndExtent(EndPosition(), end.DeepEquivalent())
++              .Build())
++          .Focus();
++  setStart(result_start.ComputeContainerNode(),
++           result_start.ComputeOffsetInContainerNode(), exception_state);
++  setEnd(result_end.ComputeContainerNode(),
++         result_end.ComputeOffsetInContainerNode(), exception_state);
+ }
+ 
+ DOMRectList* Range::getClientRects() const {

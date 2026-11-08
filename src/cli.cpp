@@ -206,7 +206,11 @@ std::string help() {
            "  profiles review <name>           Inspect a fresh launch plan\n"
            "  profiles restore --yes           Preflight and restore a prior session\n"
            "  profiles launch <name> --yes      Launch, monitor and restore the profile\n"
+#if defined(DRIFTER_LOCAL_EDITION)
+           "  nexus status                     Show the browser-download workflow\n"
+#else
            "  nexus status                     Check the saved account connection\n"
+#endif
            "  catalog status                   Show the signed catalog revision\n"
            "  catalog import <zip> --yes        Verify and apply a signed catalog pack\n"
            "  --help | --version               No game, account or GUI initialization\n\n"
@@ -1217,14 +1221,14 @@ struct Runner {
         if (first == "nexus") {
             count(2);
             if (words[1] != "status")
-                usage("Only nexus status is available here. Sign in through your normal browser from the desktop app.");
+                usage("Only nexus status is available here. Download mods on their original website, then import the completed files.");
             command = "nexus status";
             auto account = invoke({{"action", "nexusStatus"}});
             if (!account.is_object() || !account.contains("connected") || !account["connected"].is_boolean() ||
                 (account.contains("premium") && !account["premium"].is_boolean() && !account["premium"].is_null()))
                 throw Refusal(4, "The Nexus account status could not be verified.");
             return selected(account, {"connected", "premium", "tierVerified", "offline", "verificationPending",
-                                      "requiresReconnect", "pending", "name", "userId"});
+                                      "requiresReconnect", "pending", "name", "userId", "edition"});
         }
         usage();
     }
@@ -1420,7 +1424,9 @@ std::string human(const std::string& command, const json& data) {
             << '\n';
         if (!data.value("warning", "").empty()) out << "Warning: " << plain(data["warning"].get<std::string>()) << '\n';
     } else if (command == "nexus status") {
-        if (!data.value("connected", false))
+        if (data.value("edition", "") == "local")
+            out << "Nexus: browser downloads and local imports. No loader sign-in or API key is needed.\n";
+        else if (!data.value("connected", false))
             out << "Nexus: " << (data.value("requiresReconnect", false) ? "reconnection required" : "not connected")
                 << ". Sign in through the desktop app.\n";
         else

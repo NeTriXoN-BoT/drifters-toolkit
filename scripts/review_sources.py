@@ -1,10 +1,13 @@
-"""Clean technical review source list; excludes the private collaborator handoff."""
+"""Allowlisted project inputs for technical source packages."""
 from pathlib import Path
+import os
 from release_layout import PUBLIC_UI, WINDOWS_NOTICES, LINUX_NOTICES, canonical_name, read_plain
 
 ROOT=Path(__file__).resolve().parents[1]
-DOCS={*WINDOWS_NOTICES,*LINUX_NOTICES,'BUILD_LIBRARY_REPLACEMENT.txt','QT_WEBENGINE_SECURITY_2026-10-26.md','QT_WEBENGINE_SECURITY_2026-10-28.md','QT_WEBENGINE_SECURITY_2026-10-30.md','QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md','QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md'}
+DOCS={*WINDOWS_NOTICES,*LINUX_NOTICES,'BUILD_LIBRARY_REPLACEMENT.txt','QT_WEBENGINE_SECURITY_2026-10-26.md','QT_WEBENGINE_SECURITY_2026-10-28.md','QT_WEBENGINE_SECURITY_2026-10-30.md','QT_WEBENGINE_SECURITY_2026-10-30-RESIDUAL.md','QT_WEBENGINE_SECURITY_2026-11-01-VENDOR-FOLLOWUP.md','QT_WEBENGINE_SECURITY_2026-11-08.md'}
+DOCS.add('LINUX_DEPENDENCIES.md')
 BUILD_HELPERS={'build.ps1','package_portable_linux.py','generate_assets_manifest.py','build_seasonal_emoji.py','build_changelog.py',
+               'bootstrap_linux_dependencies.py','linux_dependencies_lock.json','linux_dependency_graph.py',
                'generate_portable_manifest.py','release_layout.py','bootstrap_local.py',
                'build_fetch.py','dependencies.lock.json','bootstrap_qt_sdk.py','qt_sdk_lock.json',
                'bootstrap_qt_sources.py','qt_sources_lock.json','bootstrap_openssl.py','portable_materials.py',
@@ -15,6 +18,7 @@ BUILD_HELPERS={'build.ps1','package_portable_linux.py','generate_assets_manifest
                'qt_webengine_incremental.py','qt_webengine_incremental_lock.json',
                'qt_webengine_residual.py','qt_webengine_residual_lock.json',
                'qt_webengine_vendor_followup.py','qt_webengine_vendor_followup_lock.json',
+               'qt_webengine_release_1_1.py','qt_webengine_release_1_1_lock.json',
                'seal_portable_linux.py','package_check.py','bootstrap_portable_tools.py','review_sources.py',
                'release_signing.py','release_key.json','bootstrap_archive.py','archive_sources_lock.json','archive_decoder_limits.h'}
 FIXED={'CMakeLists.txt','config/nexus.json','config/release-notes.json','config/changelog-history.json','catalog/catalog.json',
@@ -27,6 +31,8 @@ SOURCE_EXTENSIONS={'.cpp','.hpp','.h','.c','.rc','.manifest','.inc'}
 from bootstrap_archive import source_lock, verify_sources
 ARCHIVE_SOURCES={'vendor/archive-sources/'+row['name'] for row in source_lock()}
 FIXED.update(ARCHIVE_SOURCES)
+from bootstrap_linux_dependencies import load_lock as linux_dependency_lock
+FIXED.update(row['file'] for package in linux_dependency_lock()['packages'] for row in package.get('patches', []))
 from bootstrap_qt_webengine_security import load_lock as webengine_security_lock, verify_inputs as verify_webengine_inputs, all_patch_inputs
 _webengine=webengine_security_lock()
 WEBENGINE_PATCHES={_webengine['patchDirectory']+'/'+row['name'] for row in all_patch_inputs(_webengine)}
@@ -43,6 +49,9 @@ FIXED.update(_residual['patchDirectory']+'/'+row['name'] for row in residual_pat
 from qt_webengine_vendor_followup import verify_inputs as verify_vendor_followup_inputs, all_patch_inputs as vendor_followup_patch_inputs
 _vendor_followup=verify_vendor_followup_inputs()
 FIXED.update(_vendor_followup['patchDirectory']+'/'+row['name'] for row in vendor_followup_patch_inputs(_vendor_followup))
+from qt_webengine_release_1_1 import verify_inputs as verify_release_1_1_inputs, all_patch_inputs as release_1_1_patch_inputs
+_release_1_1=verify_release_1_1_inputs()
+FIXED.update(_release_1_1['patchDirectory']+'/'+row['name'] for row in release_1_1_patch_inputs(_release_1_1))
 from resume_qt_webengine_security import load_resume_inputs
 _resume,_,_=load_resume_inputs()
 FIXED.add(_resume['configuredRecipeFile'])
@@ -73,12 +82,16 @@ def collect(root=ROOT):
     verify_incremental_inputs(root)
     verify_residual_inputs(root)
     verify_vendor_followup_inputs(root)
+    verify_release_1_1_inputs(root)
     from build_seasonal_emoji import generate
     generate(root, verify=True)
     from build_changelog import generate as generate_changelog
     generate_changelog(root, verify=True)
     names=set(FIXED)
     for folder in ('src','vendor/miniz'):
-        for path in (root/folder).rglob('*'):
-            if path.is_file() and allowed(path.relative_to(root).as_posix()):names.add(path.relative_to(root).as_posix())
+        for current,folders,files in os.walk(root/folder,followlinks=False):
+            folders[:]=[name for name in folders if name not in {'save_preview_decoder','save_codec_decoder','target','__pycache__'} and not name.startswith('.')]
+            for name in files:
+                path=Path(current)/name
+                if path.is_file() and allowed(path.relative_to(root).as_posix()):names.add(path.relative_to(root).as_posix())
     return {name:read_plain(root/name) for name in sorted(names)}

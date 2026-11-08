@@ -24,7 +24,7 @@
 
 Drifter’s Toolkit grew out of helping people install my Days Gone mods: the wrong folder, an old version still enabled, or two apparently unrelated mods replacing the same asset. It brings those checks and the everyday file management into one place, including supported PAK mods from other authors.
 
-**Current release: 1.0.9 · Local Edition.** Download mods from their original pages and import them. Nexus API sign-in, version checks and downloads inside the toolkit remain disabled pending approval and live testing.
+**Current release: 1.1.0 · Local Edition.** Download mods from their original pages using **Manual download**, then import the completed files or let the toolkit spot them. No Nexus sign-in or API key is needed.
 
 The Windows and Linux ZIPs are ready to run. GitHub’s **Source code** archives are for building the project; you do not need them to use the toolkit.
 
@@ -32,7 +32,7 @@ The Windows and Linux ZIPs are ready to run. GitHub’s **Source code** archives
 
 <p align="center">
   <a href="assets/screenshots/overview.png"><img src="assets/screenshots/overview.png" alt="Drifter’s Toolkit Mod Loader Overview page in dark mode, showing the mod library and setup checklist" width="1060"></a><br>
-  <sub>Overview preview with the updated DTML branding, shown in Linux sandbox mode. Windows uses the same layout. Click the picture for a closer look.</sub>
+  <sub>Overview in Linux sandbox mode, showing the 1.1 interface. Windows uses the same layout. Click the picture for a closer look.</sub>
 </p>
 
 <img src="assets/readme/road-divider.svg" alt="" width="1060">
@@ -42,7 +42,7 @@ The Windows and Linux ZIPs are ready to run. GitHub’s **Source code** archives
 1. Choose the **Windows** or **Linux** download above, or use the [Nexus Files page](https://www.nexusmods.com/daysgone/mods/1022?tab=files).
 2. Extract the complete package to a local folder and keep its files together.
 3. Open the launcher for your system. Follow the Overview checklist to select the game and prepare mod loading.
-4. Close Days Gone, then drop a downloaded PAK or supported mod archive onto the window. Review the selected files and conflicts before enabling them.
+4. Close Days Gone, open **My mods**, then drop a downloaded PAK or supported mod archive onto the page. Review the selected files and conflicts before enabling them.
 
 | | Windows | Linux |
 | --- | --- | --- |
@@ -61,12 +61,20 @@ One selected PAK enables after import when the checks allow it. Several selected
 | --- | --- |
 | **My mods** | Import supported archives or loose PAKs, enable and disable packages, review replacements and manage hand-installed PAKs. Keep inactive packages in your local library. Third-party mods keep their original authorship and download pages. |
 | **Conflicts & Profiles** | Check actual package paths for shared assets, review conflict groups and launch saved PAK collections. A profile session restores the previous setup after the game closes, with recovery records if something changes unexpectedly. |
-| **Saves** | Browse current saves and supported pictures, keep dated backups, import or export an individual slot and review restores. Supported saves allow skill-point editing; protected and unknown records remain read-only. Optional advanced fields are marked separately and their in-game effects are unverified. |
-| **Workshop** | Inspect local PAKs, manage draft files, edit supported cooked properties and review supported combinations against matching original assets. Export a separate package or save the project to continue later. |
+| **Saves** | Browse current saves and supported pictures, keep dated backups, import shared `.sav` files as separate backups, import or export an individual slot and review restores. Supported saves allow skill-point editing; protected and unknown records remain read-only. Optional advanced fields are marked separately and their in-game effects are unverified. |
+| **Workshop** | Drop a PAK to open a draft, inspect its files, read property help and edit supported cooked properties and review supported combinations against matching original assets. Export a separate package or save the project to continue later. |
 | **Diagnostics & Field guide** | Diagnose folder and package problems, review crash summaries, narrow down a troublesome managed mod and export a report for review before sharing. |
 | **Settings** | Adjust themes, motion, interface size and text size to suit your screen. Move the toolkit’s data to another drive when you need the space. |
 
 <img src="assets/readme/road-divider.svg" alt="" width="1060">
+
+## What changed in 1.1
+
+The updated DTML icon reaches the app and taskbar, and **View source** opens this project from the sidebar. Closing waits for the current file operation and releases the app’s browser helpers. A profile session has an explicit close and recovery choice.
+
+Drag a PAK onto **Workshop** to work on it, or `.sav` files onto **Saves** to keep a shared backup for review. Advanced infusion entries have numbered labels and clearer explanations. Workshop adds help for property types and known uses, plus editing for supported tagged table rows, quaternions and transforms. Repeated notices are quieter and longer messages get more reading time.
+
+The final 1.1.0 build also refreshes the maintained Linux libraries and removes unused desktop and Nexus account dependencies. Matching sources, repairs and component notices accompany the release.
 
 ## Know what a check covers
 
@@ -107,7 +115,7 @@ Write commands require `--yes`. A profile launch keeps the terminal attached unt
 
 The project’s original code is available under the [MIT licence](LICENSE). Bundled and adapted third-party components retain their own licences and notices. The separate save decoder and Linux runtime libraries have their own source and licence requirements; matching source downloads accompany the [release](https://github.com/NeTriXoN-BoT/drifters-toolkit/releases/latest). GitHub’s automatic source ZIP does not replace the Linux corresponding-source bundle. Game files and other authors’ mods are not included.
 
-This is a vibe-coded hobby project. Reports, fixes and careful testing are welcome.
+This is a hobby project. Reports, fixes and careful testing are welcome.
 
 <p align="center">
   <img src="assets/readme/road-divider.svg" alt="" width="1060"><br>

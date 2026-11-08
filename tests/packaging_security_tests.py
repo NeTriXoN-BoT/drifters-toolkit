@@ -27,6 +27,21 @@ import release_signing
 
 
 class PackagingSecurity(unittest.TestCase):
+    @unittest.skipIf(os.name == 'nt', 'Unix file permissions apply to the Linux package.')
+    def test_save_codec_metadata_and_notices_are_readable_by_other_accounts(self):
+        helper = self.root / 'DriftersToolkitSaveCodec'
+        helper.write_bytes(b'synthetic worker')
+        appdir = self.root / 'AppDir'
+        previous = os.umask(0o077)
+        try:
+            linux_packager.install_codec(appdir, (helper, b'synthetic worker', {},
+                {'save-codec/COPYING': b'synthetic licence'}))
+        finally:
+            os.umask(previous)
+        for path in (appdir / 'usr/bin/SAVE-CODEC-SOURCE.json', appdir / 'licenses/save-codec/COPYING'):
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o644)
+        self.assertEqual(stat.S_IMODE((appdir / 'usr/bin/DriftersToolkitSaveCodec').stat().st_mode), 0o755)
+
     def setUp(self):
         self.temporary=tempfile.TemporaryDirectory(prefix='drifter-packaging-security-')
         self.root=Path(self.temporary.name)
@@ -613,6 +628,11 @@ class PackagingSecurity(unittest.TestCase):
         import qt_webengine_vendor_followup as vendor_followup
         security['vendorFollowup']={**vendor_followup.identity(vendor_followup.verify_inputs()),'outputs':security['outputs'],
                                    'priorOutputs':residual_outputs,'baselineProof':{'sha256':'1'*64,'size':44626}}
+        vendor_outputs=[{**row,'sha256':'2'*64} for row in security['outputs']]
+        security['vendorFollowup']['outputs']=vendor_outputs
+        import qt_webengine_release_1_1 as release_1_1
+        security['release11']={**release_1_1.identity(release_1_1.verify_inputs()),'outputs':security['outputs'],
+                               'priorOutputs':vendor_outputs,'baselineProof':{'sha256':'3'*64,'size':44626}}
         # Resource bytes are copied unchanged; only ELF RUNPATH relocation may
         # produce a different final runtime identity.
         for output in security['outputs']:
@@ -668,6 +688,9 @@ class PackagingSecurity(unittest.TestCase):
                        lambda value:value['qt']['webengineSecurity']['residualDelta']['lock'].update(sha256='0'*64),
                        lambda value:value['qt']['webengineSecurity']['residualDelta'].update(outputs=[]),
                        lambda value:value['qt']['webengineSecurity']['residualDelta'].update(priorOutputs=[]),
+                       lambda value:value['qt']['webengineSecurity'].pop('release11'),
+                       lambda value:value['qt']['webengineSecurity']['release11']['upstream'].pop(),
+                       lambda value:value['qt']['webengineSecurity']['release11']['priorOutputs'][0].update(sha256='0'*64),
                        lambda value:value['qt']['webengineSecurity'].pop('vendorFollowup'),
                        lambda value:value['qt']['webengineSecurity']['vendorFollowup']['upstream'].pop(),
                        lambda value:value['qt']['webengineSecurity']['vendorFollowup']['lock'].update(sha256='0'*64),

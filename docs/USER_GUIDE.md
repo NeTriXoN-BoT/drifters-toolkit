@@ -2,7 +2,7 @@
 
 [GitHub downloads](https://github.com/NeTriXoN-BoT/drifters-toolkit/releases/latest) · [Nexus Mods](https://www.nexusmods.com/daysgone/mods/1022?tab=files) · [CLI guide](CLI.md) · [Report a problem](https://github.com/NeTriXoN-BoT/drifters-toolkit/issues/new/choose)
 
-This guide covers **1.0.9 Local Edition**. Mods are downloaded from their original pages and imported locally. Nexus sign-in, online mod-version checks and downloads inside the toolkit remain disabled pending API approval and live testing.
+This guide covers the **1.1.0 Local Edition**. Download mods from their original pages using **Manual download**, then import the completed files locally. The public toolkit needs no Nexus sign-in or API key. It does not query Nexus for online mod-version checks.
 
 ## First run
 
@@ -14,11 +14,13 @@ Close Days Gone before changing active mods, editing saves or restoring progress
 
 ## Bring in your mods
 
-Download from each mod’s original page, then drag its PAK or supported archive onto the toolkit or use the import button. You can select several files, choose a folder or use **Review & import** when the toolkit notices a download. Detection offers a review; it does not silently activate a newly downloaded package.
+Download from each mod’s original page, then open **My mods** and drag its PAK or supported archive onto the page or use the import button. You can select several files, choose a folder or use **Review & import** when the toolkit notices a download. Detection offers a review; it does not silently activate a newly downloaded package.
 
 Supported archive readers include ZIP, 7z, RAR, TAR and several other formats. Support also depends on the compression method and contents. Encrypted archives, split volumes, links and executable installers are not mod-import targets. Read the mod’s requirements before choosing optional PAKs or tiers.
 
 If an archive contains several PAKs, tick the ones you want. In the desktop interface, one selected PAK enables after import when the checks allow it; several stay stored until you choose what to enable. The CLI stores imports without enabling them. Conflicts, changed files and a running game can still block activation.
+
+Drops follow the page you are using: **My mods** reviews packages for installation, **Workshop** opens PAKs as drafts, and **Saves** imports `.sav` files as a separate backup. Finish any pending review before dropping more files. Workshop asks before replacing a draft with unsaved changes.
 
 ## Read the library
 
@@ -68,7 +70,7 @@ Before restoring a backup, review its files. Current saves receive a safety copy
 
 Supported saves allow editing **unspent skill points**. Review the before/after values and choose **Back up and apply changes**. The complete current save set is backed up before only the chosen slot is replaced. Use a save where the Skills menu is already unlocked; changing points does not unlock that menu. Start the game and use **Load Game** to select the exact edited slot, since Continue may choose another one.
 
-The inspector offers Editable, Read-only and All values views with local search. Unknown, ambiguous and protected progress is not rewritten. **Advanced fields** is off by default. It exposes supported `UseEffectLevels` entries and controller booleans where present, with checked stored types and ranges; their in-game effects are unverified. The names do not promise current or maximum health, stamina or focus. Turning the option off preserves the draft but prevents applying advanced changes until you enable it again or revert them.
+The inspector offers Editable, Read-only and All values views with local search. Unknown, ambiguous and protected progress is not rewritten. **Advanced fields** is off by default. It exposes supported `UseEffectLevels` entries and controller booleans where present, with checked stored types and ranges; their in-game effects are unverified. Each infusion entry has a numbered label and its raw name. Brackets such as `[0]` and `[1]` identify separate positions in one list, rather than duplicate fields or stat levels. Their exact gameplay roles have not been mapped. The names do not promise current or maximum health, stamina or focus. Turning the option off preserves the draft but prevents applying advanced changes until you enable it again or revert them.
 
 ## Work on a local package
 
@@ -82,6 +84,8 @@ Choosing a complete family can discard another source’s changes. **Rename path
 
 Save the project to keep checked source copies, additions, removals, renames and unfinished choices for later. Export creates a separate PAK. Keep combinations private unless the original authors permit redistribution.
 
+Open **What does this do?** beside a supported property for a short explanation of its type and any known use. Exact weapon-property mappings are identified; other name clues are labelled as suggestions. A generic Bool or Float type alone does not establish its gameplay meaning. Supported tagged DataTable and CurveTable rows, quaternion components and transforms can also be edited. Unknown native data stays read-only; use a suitable external editor and **Replace file** when necessary.
+
 ## Diagnose a problem
 
 Run **Diagnostics** for installation paths, mod loading, package integrity, conflicts and incomplete file changes. Review offered fixes. It cannot repair an unknown mod or explain every game crash.
@@ -89,6 +93,8 @@ Run **Diagnostics** for installation paths, mod loading, package integrity, conf
 Crash summaries show the available crash type, location, time and active-mod evidence without opening the memory stored in a dump. **Find the bad mod** tests managed PAKs in rounds: you run the game after each round and report the result. Finish or stop the test through its review so the toolkit can restore the verified originals it still has. Native plugins remain outside this test.
 
 Logs and support reports have redacted previews. Review them before sharing and remove any remaining account details, personal paths or authorized download links. Reports are not uploaded automatically; saves and memory dumps are not automatically bundled. Include the toolkit version, operating system, relevant mod links and reproduction steps in a [bug report](https://github.com/NeTriXoN-BoT/drifters-toolkit/issues/new/choose). Use [private reporting](../SECURITY.md) for vulnerabilities.
+
+The sidebar’s **View source** button opens the toolkit’s public GitHub project.
 
 ## Settings and where your data lives
 
@@ -127,4 +133,4 @@ Track the [Nexus page](https://www.nexusmods.com/daysgone/mods/1022) for new rel
 
 Local source builds are development copies and do not carry the official release signature. Downloaded official release ZIPs remain the supported input for the signed updater.
 
-To remove the program, finish profile and recovery sessions, close it and delete the extracted application folder. This leaves installed mods, game saves and toolkit data in place. Disable or remove managed mods in the toolkit first if you want them uninstalled. Keep any backups you need before removing toolkit data separately from its configured location.
+To move or remove the program, finish profile and recovery sessions, close it and move or delete the extracted application folder. Closing waits for active file work and releases owned browser helpers. If you close during a profile session, read the recovery choice; the game itself keeps running. This leaves installed mods, game saves and toolkit data in place. Disable or remove managed mods in the toolkit first if you want them uninstalled. Keep any backups you need before removing toolkit data separately from its configured location.

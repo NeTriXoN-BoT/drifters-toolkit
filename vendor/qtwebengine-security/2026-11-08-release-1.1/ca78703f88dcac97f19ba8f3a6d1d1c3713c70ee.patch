@@ -1,0 +1,275 @@
+From ca78703f88dcac97f19ba8f3a6d1d1c3713c70ee Mon Sep 17 00:00:00 2001
+From: Brandon Wylie <wylieb@google.com>
+Date: Thu, 29 Oct 2026 13:39:39 -0700
+Subject: [PATCH] [Backport] CVE-2026-121133: Incorrect reference resolution in
+ Images
+
+Cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8592985:
+Do not follow symlinks in ImageDataStoreDisk
+
+ImageDataStoreDisk reads and writes cache entries with
+base::ReadFileToString and base::WriteFile, which follow symlinks. On
+Mac, the image cache lives in a directory a less privileged process can
+also write to, so a symlink planted there makes the browser process
+read or overwrite files outside the cache.
+
+Reject symlinked storage directories and open cache entries with
+File::FLAG_NO_FOLLOW, which turns a planted symlink into a cache miss
+or a failed write.
+
+Fixed: 574604188
+Change-Id: Ie2c494c8e1bab7502f7aee6c893004efc574fa78
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8592985
+Reviewed-by: Sky Malice <skym@chromium.org>
+Auto-Submit: Brandon Wylie <wylieb@google.com>
+Commit-Queue: Brandon Wylie <wylieb@google.com>
+Cr-Commit-Position: refs/heads/main@{#1730706}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786747
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../core/cache/image_data_store_disk.cc       |  54 ++++++++--
+ .../cache/image_data_store_disk_unittest.cc   | 101 ++++++++++++++++++
+ 2 files changed, 148 insertions(+), 7 deletions(-)
+
+diff --git a/chromium/components/image_fetcher/core/cache/image_data_store_disk.cc b/chromium/components/image_fetcher/core/cache/image_data_store_disk.cc
+index 5d0495357fc9..ccf6ff261788 100644
+--- a/chromium/components/image_fetcher/core/cache/image_data_store_disk.cc
++++ b/chromium/components/image_fetcher/core/cache/image_data_store_disk.cc
+@@ -7,9 +7,12 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "base/containers/span.h"
++#include "base/files/file.h"
+ #include "base/files/file_enumerator.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
++#include "base/files/scoped_file.h"
+ #include "base/functional/bind.h"
+ #include "base/logging.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -30,12 +33,18 @@ constexpr char kNeedsTranscodingPrefix[] = "ntr_";
+ const FilePath::CharType kPathPostfix[] =
+     FILE_PATH_LITERAL("image_data_storage");
+ 
++bool IsStoragePathLink(const FilePath& storage_path) {
++  return base::IsLink(storage_path) || base::IsLink(storage_path.DirName());
++}
++
+ InitializationStatus InitializeImpl(FilePath storage_path) {
+   // TODO(wylieb): Report errors if they occur.
+   File::Error error;
+-  // This will check if the directory exists first.
+-  if (base::CreateDirectoryAndGetError(storage_path, &error)) {
+-    return InitializationStatus::INITIALIZED;
++  // CreateDirectoryAndGetError() succeeds if `storage_path` is a symlink to an
++  // existing directory, so check for links after it runs.
++  if (base::CreateDirectoryAndGetError(storage_path, &error) &&
++      !IsStoragePathLink(storage_path)) {
++     return InitializationStatus::INITIALIZED;
+   }
+ 
+   DVLOG(1) << "Initialization failed.";
+@@ -54,10 +63,22 @@ void SaveImageImpl(FilePath storage_path,
+                    const std::string& key,
+                    std::string data,
+                    bool needs_transcoding) {
++  if (IsStoragePathLink(storage_path)) {
++    DVLOG(1) << "Storage path is a symbolic link.";
++    return;
++  }
++
+   FilePath file_path = BuildFilePath(storage_path, key, needs_transcoding);
+ 
+-  if (!base::WriteFile(file_path, data)) {
++  // FLAG_NO_FOLLOW maps to O_NOFOLLOW on POSIX (Android, ChromeOS, Linux,
++  // Mac, iOS) and is ignored on Windows.
++  File file(file_path,
++            File::FLAG_CREATE_ALWAYS | File::FLAG_WRITE | File::FLAG_NO_FOLLOW);
++  if (!file.IsValid() || !file.WriteAndCheck(0, base::as_byte_span(data))) {
+     DVLOG(1) << "WriteFile failed.";
++    file.Close();
++    base::DeleteFile(file_path);
++    return;
+   }
+ 
+   if (!needs_transcoding) {
+@@ -73,18 +94,33 @@ void SaveImageImpl(FilePath storage_path,
+ std::string LoadImageImpl(FilePath storage_path,
+                           const std::string& key,
+                           bool needs_transcoding) {
++  if (IsStoragePathLink(storage_path)) {
++    return std::string();
++  }
++
+   FilePath file_path = BuildFilePath(storage_path, key, needs_transcoding);
+ 
+-  if (!base::PathExists(file_path)) {
+-    return "";
++  // FLAG_NO_FOLLOW maps to O_NOFOLLOW on POSIX and is ignored on Windows.
++  File file(file_path,
++            File::FLAG_OPEN | File::FLAG_READ | File::FLAG_NO_FOLLOW);
++  if (!file.IsValid()) {
++    return std::string();
+   }
+ 
++  base::ScopedFILE stream(base::FileToFILE(std::move(file), "rb"));
+   std::string data;
+-  base::ReadFileToString(file_path, &data);
++  if (!stream || !base::ReadStreamToString(stream.get(), &data)) {
++    return std::string();
++  }
++
+   return data;
+ }
+ 
+ void DeleteImageImpl(FilePath storage_path, const std::string& key) {
++  if (IsStoragePathLink(storage_path)) {
++    return;
++  }
++
+   FilePath file_path =
+       BuildFilePath(storage_path, key, /* needs_transcoding */ false);
+   bool success = base::DeleteFile(file_path);
+@@ -102,6 +138,10 @@ void DeleteImageImpl(FilePath storage_path, const std::string& key) {
+ }
+ 
+ std::vector<std::string> GetAllKeysImpl(FilePath storage_path) {
++  if (IsStoragePathLink(storage_path)) {
++    return {};
++  }
++
+   std::vector<std::string> keys;
+   FileEnumerator file_enumerator(storage_path, false, FileEnumerator::FILES);
+   for (FilePath name = file_enumerator.Next(); !name.empty();
+diff --git a/chromium/components/image_fetcher/core/cache/image_data_store_disk_unittest.cc b/chromium/components/image_fetcher/core/cache/image_data_store_disk_unittest.cc
+index c30d06285bfa..262c31b8fc44 100644
+--- a/chromium/components/image_fetcher/core/cache/image_data_store_disk_unittest.cc
++++ b/chromium/components/image_fetcher/core/cache/image_data_store_disk_unittest.cc
+@@ -7,12 +7,15 @@
+ #include <memory>
+ #include <vector>
+ 
++#include "base/files/file_path.h"
++#include "base/files/file_util.h"
+ #include "base/files/scoped_file.h"
+ #include "base/files/scoped_temp_dir.h"
+ #include "base/functional/bind.h"
+ #include "base/run_loop.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/test/task_environment.h"
++#include "build/build_config.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+@@ -88,6 +91,7 @@ class CachedImageFetcherImageDataStoreDiskTest : public testing::Test {
+ 
+   void RunUntilIdle() { base::RunLoop().RunUntilIdle(); }
+   ImageDataStore* data_store() { return data_store_.get(); }
++  const base::FilePath& temp_dir_path() const { return temp_dir_.GetPath(); }
+ 
+   MOCK_METHOD(void, OnInitialized, (), ());
+   MOCK_METHOD(void, DataCallback, (bool, std::string), ());
+@@ -202,4 +206,101 @@ TEST_F(CachedImageFetcherImageDataStoreDiskTest,
+   RunUntilIdle();
+ }
+ 
++#if BUILDFLAG(IS_POSIX)
++TEST_F(CachedImageFetcherImageDataStoreDiskTest, SaveDoesNotFollowSymlink) {
++  CreateDataStore();
++  InitializeDataStore();
++
++  ScopedTempDir external_dir;
++  ASSERT_TRUE(external_dir.CreateUniqueTempDir());
++
++  base::FilePath storage_dir =
++      temp_dir_path().Append(FILE_PATH_LITERAL("image_data_storage"));
++
++  base::FilePath existing_target =
++      external_dir.GetPath().Append(FILE_PATH_LITERAL("existing_target"));
++  ASSERT_TRUE(base::WriteFile(existing_target, "original"));
++  ASSERT_TRUE(base::CreateSymbolicLink(existing_target,
++                                       storage_dir.AppendASCII(kImageKey)));
++
++  SaveData(kImageKey, /* needs_transcoding= */ false);
++
++  std::string target_contents;
++  ASSERT_TRUE(base::ReadFileToString(existing_target, &target_contents));
++  EXPECT_EQ("original", target_contents);
++
++  constexpr char kSecondKey[] = "key2";
++  base::FilePath non_existent_target =
++      external_dir.GetPath().Append(FILE_PATH_LITERAL("non_existent_target"));
++  ASSERT_TRUE(base::CreateSymbolicLink(non_existent_target,
++                                       storage_dir.AppendASCII(kSecondKey)));
++
++  SaveData(kSecondKey, /* needs_transcoding= */ false);
++  EXPECT_FALSE(base::PathExists(non_existent_target));
++}
++
++TEST_F(CachedImageFetcherImageDataStoreDiskTest, LoadDoesNotFollowSymlink) {
++  CreateDataStore();
++  InitializeDataStore();
++
++  ScopedTempDir external_dir;
++  ASSERT_TRUE(external_dir.CreateUniqueTempDir());
++  base::FilePath secret_file =
++      external_dir.GetPath().Append(FILE_PATH_LITERAL("secret_file"));
++  ASSERT_TRUE(base::WriteFile(secret_file, "secret"));
++
++  base::FilePath symlink_path =
++      temp_dir_path()
++          .Append(FILE_PATH_LITERAL("image_data_storage"))
++          .AppendASCII(kImageKey);
++  ASSERT_TRUE(base::CreateSymbolicLink(secret_file, symlink_path));
++
++  AssertDataPresent(kImageKey, "", /* needs_transcoding= */ false);
++}
++
++TEST_F(CachedImageFetcherImageDataStoreDiskTest,
++       RejectsSymlinkedStorageDirectory) {
++  ScopedTempDir external_dir;
++  ASSERT_TRUE(external_dir.CreateUniqueTempDir());
++  base::FilePath external_existing =
++      external_dir.GetPath().AppendASCII(kImageKey);
++  ASSERT_TRUE(base::WriteFile(external_existing, "secret"));
++
++  base::FilePath storage_dir =
++      temp_dir_path().Append(FILE_PATH_LITERAL("image_data_storage"));
++  ASSERT_TRUE(base::CreateSymbolicLink(external_dir.GetPath(), storage_dir));
++
++  CreateDataStore();
++  InitializeDataStore();
++  EXPECT_FALSE(data_store()->IsInitialized());
++
++  // Also verify SaveImage, LoadImage, GetAllKeys, and DeleteImage reject a
++  // storage directory that is replaced with a symlink after initialization.
++  ASSERT_TRUE(base::DeleteFile(storage_dir));
++  CreateDataStore();
++  InitializeDataStore();
++  ASSERT_TRUE(data_store()->IsInitialized());
++
++  ASSERT_TRUE(base::DeletePathRecursively(storage_dir));
++  ASSERT_TRUE(base::CreateSymbolicLink(external_dir.GetPath(), storage_dir));
++
++  constexpr char kNewKey[] = "new_key";
++  SaveData(kNewKey, /* needs_transcoding= */ false);
++  EXPECT_FALSE(base::PathExists(external_dir.GetPath().AppendASCII(kNewKey)));
++
++  AssertDataPresent(kImageKey, "", /* needs_transcoding= */ false);
++
++  base::RunLoop run_loop;
++  EXPECT_CALL(*this, KeysCallback(std::vector<std::string>()));
++  data_store()->GetAllKeys(
++      base::BindOnce(&CachedImageFetcherImageDataStoreDiskTest::KeysCallback,
++                     base::Unretained(this))
++          .Then(run_loop.QuitClosure()));
++  run_loop.Run();
++
++  DeleteData(kImageKey);
++  EXPECT_TRUE(base::PathExists(external_existing));
++}
++#endif  // BUILDFLAG(IS_POSIX)
++
+ }  // namespace image_fetcher

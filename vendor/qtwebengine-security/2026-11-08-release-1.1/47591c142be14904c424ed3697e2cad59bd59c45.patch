@@ -1,0 +1,130 @@
+From 47591c142be14904c424ed3697e2cad59bd59c45 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Thu, 22 Oct 2026 03:56:15 -0700
+Subject: [PATCH] [Backport] CVE-2026-76024: Memory corruption in MediaStream
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8626348:
+Fix UAF in MediaStream(Audio|Video)Track::StopAndNotify
+
+Stopping a track stops the corresponding source if the track was the
+last one connected to the source. Stopping the source synchronously
+dispatches the `ended` event on other MediaStreamTrackImpls sharing
+that source, which runs script and can trigger an Oilpan GC.
+If nothing else references the MediaStreamComponentImpl owning
+the platform track, the compoenent's pre-finalizer
+(MediaStreamComponentImpl::Dispose) deletes the platform track while
+StopAndNotify() is still on the stack.
+
+In that case, the platform track destructor has already called Stop()
+(ending sinks and invalidating weak pointers), so check a `WeakPtr`
+acquired before stopping the track and return early if the platform
+track has been deleted.
+
+Bug: 576215540
+Change-Id: I06e79a8afc1f5b23b2b903ca364b27c6c689ce0e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8626348
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1724620}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/785257
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../mediastream/media_stream_video_track.cc   | 21 +++++++++++++++--
+ .../mediastream/media_stream_video_track.h    |  4 ++++
+ .../mediastream/media_stream_audio_track.cc   | 23 +++++++++++++++++--
+ 3 files changed, 44 insertions(+), 4 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc b/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
+index 3c36e6fdbb92..9ddefb6797c7 100644
+--- a/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
++++ b/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
+@@ -1096,8 +1096,25 @@ void MediaStreamVideoTrack::SetContentHint(
+ void MediaStreamVideoTrack::StopAndNotify(base::OnceClosure callback) {
+   DCHECK_CALLED_ON_VALID_THREAD(main_render_thread_checker_);
+   if (source_) {
+-    source_->RemoveTrack(this, std::move(callback));
+-    source_ = nullptr;
++    // MediaStreamVideoSource::RemoveTrack() stops the source if this was its
++    // last track. That synchronously fires 'ended' on other
++    // MediaStreamTrackImpls sharing the source, which runs script, which can
++    // trigger a GC. If nothing else references the MediaStreamComponentImpl
++    // owning |this|, its pre-finalizer deletes |this| while this frame is still
++    // on the stack. See https://crbug.com/576215540.
++    //
++    // Clear |source_| before calling RemoveTrack() so that the re-entrant
++    // Stop() call from ~MediaStreamVideoTrack() does not try to remove |this|
++    // from the source a second time. The destructor's Stop() call takes care
++    // of ending the sinks and stopping |refresh_timer_|, and |callback| is
++    // owned by the source once RemoveTrack() has been called, so there is
++    // nothing left to do here if |this| is gone.
++    base::WeakPtr<MediaStreamVideoTrack> weak_this = weak_factory_.GetWeakPtr();
++    MediaStreamVideoSource* source = std::exchange(source_, nullptr).get();
++    source->RemoveTrack(this, std::move(callback));
++    if (!weak_this) {
++      return;
++    }
+   } else if (callback) {
+     std::move(callback).Run();
+   }
+diff --git a/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h b/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
+index 0a525a8e37e1..193e10efaddc 100644
+--- a/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
++++ b/chromium/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
+@@ -199,6 +199,10 @@ class MODULES_EXPORT MediaStreamVideoTrack : public MediaStreamTrackPlatform {
+     is_screencast_ = is_screencast;
+   }
+ 
++  base::WeakPtr<MediaStreamVideoTrack> GetWeakPtrForTesting() {
++    return weak_factory_.GetWeakPtr();
++  }
++
+   MediaStreamTrackPlatform::StreamType Type() const override {
+     return MediaStreamTrackPlatform::StreamType::kVideo;
+   }
+diff --git a/chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc b/chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
+index 04b9ba07fb1b..953e5c0cb057 100644
+--- a/chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
++++ b/chromium/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
+@@ -138,8 +138,26 @@ void MediaStreamAudioTrack::StopAndNotify(base::OnceClosure callback) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   WebRtcLog(kTag, this, "%s()", __func__);
+ 
+-  if (!stop_callback_.is_null())
++  // Running |stop_callback_| (MediaStreamAudioSource::StopAudioDeliveryTo)
++  // stops the source if this was its last track. That synchronously fires
++  // 'ended' on other MediaStreamTrackImpls sharing the source, which runs
++  // script, which can trigger a GC. If nothing else references the
++  // MediaStreamComponentImpl owning |this|, its pre-finalizer deletes |this|
++  // while this frame is still on the stack. In that case
++  // ~MediaStreamAudioTrack() has already run Stop() (ending the sinks and
++  // invalidating weak pointers), so the only thing left to do is run
++  // |callback|, which UserMediaClient's request queue relies on to make
++  // progress. See https://crbug.com/576215540.
++  base::WeakPtr<MediaStreamAudioTrack> weak_this = GetWeakPtr();
++  if (!stop_callback_.is_null()) {
+     std::move(stop_callback_).Run();
++  }
++  if (!weak_this) {
++    if (callback) {
++      std::move(callback).Run();
++    }
++    return;
++  }
+ 
+   Vector<WebMediaStreamAudioSink*> sinks_to_end;
+   deliverer_.GetConsumerList(&sinks_to_end);
+@@ -148,8 +166,9 @@ void MediaStreamAudioTrack::StopAndNotify(base::OnceClosure callback) {
+     sink->OnReadyStateChanged(WebMediaStreamSource::kReadyStateEnded);
+   }
+ 
+-  if (callback)
++  if (callback) {
+     std::move(callback).Run();
++  }
+   weak_factory_.InvalidateWeakPtrs();
+ }
+ 

@@ -35,10 +35,18 @@ jobs:
           PY
       - name: Check public-source boundaries
         run: python3 -B tests/public_source_privacy_tests.py
+      - name: Check pinned decoder and browser inputs
+        run: |
+          python3 -B tests/archive_bootstrap_tests.py
+          python3 -B tests/linux_dependency_tests.py
+          python3 -B tests/qt_webengine_release_1_1_tests.py
       - name: Check shared interface behavior
         run: |
-          node tests/ui_notice_deadline_tests.js
-          node tests/ui_changelog_stability_tests.js
-          node tests/ui_asi_guide_tests.js
-          node tests/ui_save_editor_inspector_tests.js
-
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          for test in sorted(Path("tests").glob("ui*_tests.js")):
+              if "browser" not in test.name:
+                  subprocess.run(["node", str(test)], check=True)
+          subprocess.run(["node", "tests/ui_smoke.js"], check=True)
+          PY

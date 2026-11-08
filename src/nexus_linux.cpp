@@ -7,7 +7,9 @@
 #include "nexus_traffic_storage.hpp"
 #include "nexus_linux_testing.hpp"
 #include "temp_workspace.hpp"
+#if !defined(DRIFTER_LOCAL_EDITION) || defined(DRIFTER_NEXUS_TESTING)
 #include <libsecret/secret.h>
+#endif
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QNetworkAccessManager>
@@ -16,7 +18,9 @@
 #include <QThread>
 #include <QTimer>
 #include <QUrl>
+#if !defined(DRIFTER_LOCAL_EDITION) || defined(DRIFTER_NEXUS_TESTING)
 #include <QWebSocket>
+#endif
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -356,6 +360,7 @@ json graph(const json& request) {
         failure("Nexus author discovery returned an unreadable response. Try refreshing later.");
     }
 }
+#if !defined(DRIFTER_LOCAL_EDITION) || defined(DRIFTER_NEXUS_TESTING)
 const SecretSchema schema = {"org.drifterstoolkit.Nexus",
                              SECRET_SCHEMA_NONE,
                              {{"application", SECRET_SCHEMA_ATTRIBUTE_STRING},
@@ -449,7 +454,12 @@ void eraseSecret(const std::string& id) {
                 "try Disconnect again.");
     }
 }
+#endif
 json loadAccount(const fs::path& state) {
+#if defined(DRIFTER_LOCAL_EDITION) && !defined(DRIFTER_NEXUS_TESTING)
+    (void)state;
+    return json::object();
+#else
     auto body = loadSecret(keyringId(state));
     Wipe cleanup{body};
     if (body.empty()) return json::object();
@@ -473,8 +483,13 @@ json loadAccount(const fs::path& state) {
         failure("The protected Nexus connection is invalid. Disconnect and reconnect.");
     clear.keep = true;
     return account;
+#endif
 }
 void storeAccount(const fs::path& state, const std::string& key, const json& user) {
+#if defined(DRIFTER_LOCAL_EDITION) && !defined(DRIFTER_NEXUS_TESTING)
+    (void)state; (void)key; (void)user;
+    failure(LocalEditionMessage);
+#else
     if (!nexus_detail::validKey(key)) failure("Paste your own Nexus API key, with no spaces or line breaks.");
     json value = {{"schemaVersion", 1}, {"apiKey", key}, {"name", nexus_detail::accountDisplayName(user)}};
     if (user.contains("user_id")) value["userId"] = nexus_detail::number(user, "user_id");
@@ -482,6 +497,7 @@ void storeAccount(const fs::path& state, const std::string& key, const json& use
     auto body = value.dump();
     Wipe cleanup{body};
     storeSecret(keyringId(state), body);
+#endif
 }
 std::string hashFd(int fd) {
     if (lseek(fd, 0, SEEK_SET) < 0) failure("The downloaded file could not be positioned for verification.");
@@ -644,7 +660,12 @@ std::string loadCredential(const fs::path& state) {
     return account["apiKey"].get<std::string>();
 }
 void forgetCredential(const fs::path& state) {
+#if defined(DRIFTER_LOCAL_EDITION) && !defined(DRIFTER_NEXUS_TESTING)
+    (void)state;
+    failure(LocalEditionMessage);
+#else
     eraseSecret(keyringId(state));
+#endif
 }
 fs::path createDownloadDirectory(const fs::path& state, std::int64_t modId, std::int64_t fileId) {
     auto root = state / "downloads";
@@ -720,6 +741,13 @@ struct PartialDownload {
     }
 };
 }
+#if defined(DRIFTER_LOCAL_EDITION) && !defined(DRIFTER_NEXUS_TESTING)
+struct Nexus::Login {
+    std::string url;
+    explicit Login(const std::string&) { failure(LocalEditionMessage); }
+    std::string poll() { failure(LocalEditionMessage); }
+};
+#else
 struct Nexus::Login {
     QWebSocket socket;
     QThread* thread = QThread::currentThread();
@@ -822,6 +850,7 @@ struct Nexus::Login {
         return result;
     }
 };
+#endif
 Nexus::Nexus(fs::path appDir, fs::path stateDir, nexus_detail::NativeCatalogRead catalog)
     : app_(std::move(appDir)), state_(std::move(stateDir)), traffic_(std::make_unique<nexus_detail::RequestState>()),
       catalog_(std::move(catalog)) {}

@@ -1,0 +1,34 @@
+From cb90e0a8773354e95e7f9333d118de5bd60799ff Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 28 Oct 2026 15:52:57 -0400
+Subject: [PATCH] [backport] CVE-2026-121032: Out of bounds read in Skia
+
+chrome/m156:[M156][graphite] Fix PaintParamsKey comparison operator
+
+* The PaintParamsKey operator== incorrectly memcmp on the element count of
+the data, not the size in bytes of the data.
+
+Bug: 573263908
+Fixed: 578797497
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405816
+Task-number: QTBUG-152028
+Change-Id: I96119d616fcd0d44aae5940b22317a76c6c6164e
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786527
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/third_party/skia/src/gpu/graphite/PaintParamsKey.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/chromium/third_party/skia/src/gpu/graphite/PaintParamsKey.h b/chromium/third_party/skia/src/gpu/graphite/PaintParamsKey.h
+index b72592d55397..5548ee70d66b 100644
+--- a/chromium/third_party/skia/src/gpu/graphite/PaintParamsKey.h
++++ b/chromium/third_party/skia/src/gpu/graphite/PaintParamsKey.h
+@@ -110,7 +110,7 @@ class PaintParamsKey {
+ 
+     bool operator==(const PaintParamsKey& that) const {
+         return fData.size() == that.fData.size() &&
+-               !memcmp(fData.data(), that.fData.data(), fData.size());
++               !memcmp(fData.data(), that.fData.data(), fData.size_bytes());
+     }
+     bool operator!=(const PaintParamsKey& that) const { return !(*this == that); }
+ 

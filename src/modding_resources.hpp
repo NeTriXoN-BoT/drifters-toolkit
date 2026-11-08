@@ -6,6 +6,7 @@ namespace drifter {
 // Only named, reviewed public tool resources may leave the privileged local UI.
 inline std::optional<std::string> moddingResource(const std::string& id) {
     static const std::pair<const char*, const char*> resources[] = {
+        {"toolkit-source", "https://github.com/NeTriXoN-BoT/drifters-toolkit"},
         {"fmodel", "https://github.com/4sval/FModel"},
         {"fmodel-start", "https://github.com/4sval/FModel/wiki/Getting-Started"},
         {"uassetgui", "https://github.com/atenfyr/UAssetGUI"},

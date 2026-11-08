@@ -1,0 +1,136 @@
+From 2e3c23794555bdc57f62b1307fde52811462167b Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Thu, 29 Oct 2026 17:18:01 -0700
+Subject: [PATCH] [Backport] CVE-2026-121036: Use after free in CSS
+
+Manual backport of patch originally reviewed on
+https://chromium-review.googlesource.com/c/chromium/src/+/8668175:
+Serialize CSSUnparsedValue directly in toString
+
+CSSUnparsedValue previously relied on the base CSSStyleValue::toString()
+implementation, which converted the object into a CSSValue via
+ToCSSValue() and validated declaration-value syntax. When invoked off the
+main thread, this entered CSS parser code paths that depend on
+main-thread-only data structures.
+
+This change overrides CSSUnparsedValue::toString() to serialize segments
+and tokens directly per specification, avoiding unnecessary CSS value
+conversion and parsing during stringification. In addition, explicit
+thread affinity checks are added to ToCSSValue() and
+ConsumeUnparsedDeclaration() to ensure declaration parsing remains on
+the main thread.
+
+Bug: 577378379
+Change-Id: I8d0dea7bd85a8153c4bac5598f12c1db5d05f477
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8668175
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730961}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786529
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ .../renderer/core/css/cssom/css_unparsed_value.cc      | 10 ++++++----
+ .../blink/renderer/core/css/cssom/css_unparsed_value.h |  3 ++-
+ .../renderer/core/css/parser/css_variable_parser.cc    |  5 +++++
+ .../renderer/core/css/parser/css_variable_parser.h     |  2 ++
+ 4 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+index b9a75d1f4900..e29db3ab4580 100644
+--- a/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
++++ b/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/renderer/core/css_value_keywords.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -137,9 +138,10 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
+ }
+ 
+ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+-  String unparsed_string = ToStringInternal();
++  CHECK(IsMainThread());
++  String unparsed_string = toString();
+ 
+-  if (unparsed_string.IsNull()) {
++  if (unparsed_string.empty()) {
+     return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
+         MakeGarbageCollected<CSSVariableData>());
+   }
+@@ -152,7 +154,7 @@ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+                               false /* needs_variable_resolution */));
+ }
+ 
+-String CSSUnparsedValue::ToStringInternal() const {
++String CSSUnparsedValue::toString() const {
+   String serialized = SerializeSegments();
+ 
+   // The serialization above defensively inserted /**/ between segments
+@@ -172,7 +174,7 @@ String CSSUnparsedValue::ToStringInternal() const {
+   StringBuilder builder;
+   CSSParserTokenStream stream(serialized);
+   if (stream.AtEnd()) {
+-    return g_null_atom;
++    return g_empty_atom;
+   }
+   CSSParserToken token = stream.ConsumeRaw();
+   token.Serialize(builder);
+diff --git a/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+index 663cd54da359..59dac8471f34 100644
+--- a/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
++++ b/chromium/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+@@ -62,13 +62,14 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+ 
+   wtf_size_t length() const { return tokens_.size(); }
+ 
++  String toString() const override;
++
+   void Trace(Visitor* visitor) const override {
+     visitor->Trace(tokens_);
+     CSSStyleValue::Trace(visitor);
+   }
+ 
+  private:
+-  String ToStringInternal() const;
+   String SerializeSegments() const;
+   // Return 'false' if there is a cycle in the serialization.
+   bool AppendUnparsedString(
+diff --git a/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.cc b/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+index f561ce1f08f0..ad83315e020e 100644
+--- a/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
++++ b/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+@@ -21,6 +21,7 @@
+ #include "third_party/blink/renderer/core/frame/web_feature.h"
+ #include "third_party/blink/renderer/core/html/parser/html_parser_idioms.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -618,6 +619,10 @@ CSSVariableData* CSSVariableParser::ConsumeUnparsedDeclaration(
+     bool comma_ends_declaration,
+     bool& important,
+     const CSSParserContext& context) {
++  // ConsumeUnparsedValue() may parse arbitrary CSS properties or selectors via
++  // if(supports(...)), which relies on main-thread-only state.
++  CHECK(IsMainThread());
++
+   // Consume leading whitespace and comments, as required by the spec.
+   stream.ConsumeWhitespace();
+   stream.EnsureLookAhead();
+diff --git a/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.h b/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.h
+index b06f0ad8c43f..968158eb998c 100644
+--- a/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.h
++++ b/chromium/third_party/blink/renderer/core/css/parser/css_variable_parser.h
+@@ -57,6 +57,8 @@ class CORE_EXPORT CSSVariableParser {
+   // will simply consume until AtEnd(), unless an error is encountered.
+   //
+   // [1] https://github.com/w3c/csswg-drafts/issues/9317
++  //
++  // Must only be called on the main thread.
+   static CSSVariableData* ConsumeUnparsedDeclaration(
+       CSSParserTokenStream& stream,
+       bool allow_important_annotation,

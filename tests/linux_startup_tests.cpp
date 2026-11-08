@@ -23,15 +23,24 @@ void check(bool value, const char* message) {
     ++checks;
     if (!value) throw std::runtime_error(message);
 }
-template<class Function> void rejects(Function action, const char* message) {
-    bool rejected = false;
-    try { action(); } catch (const std::runtime_error&) { rejected = true; }
-    check(rejected, message);
-}
 std::optional<std::string> env(const char* name) {
     const char* value = std::getenv(name);
     return value ? std::optional<std::string>(value) : std::nullopt;
 }
+class ScopedEnvironment {
+    std::vector<std::pair<std::string, std::optional<std::string>>> saved_;
+public:
+    explicit ScopedEnvironment(std::initializer_list<std::pair<std::string, std::optional<std::string>>> changes) {
+        for (const auto& [name, value] : changes) {
+            saved_.push_back({name, env(name.c_str())});
+            if (value) setenv(name.c_str(), value->c_str(), 1); else unsetenv(name.c_str());
+        }
+    }
+    ~ScopedEnvironment() {
+        for (auto it = saved_.rbegin(); it != saved_.rend(); ++it)
+            if (it->second) setenv(it->first.c_str(), it->second->c_str(), 1); else unsetenv(it->first.c_str());
+    }
+};
 void write(const fs::path& path, const std::string& value) {
     fs::create_directories(path.parent_path());
     std::ofstream(path) << value;
@@ -86,53 +95,6 @@ void sysfsPolicy(const fs::path& root) {
         check(!env("QT_QUICK_BACKEND"), "Automatic policy does not leak a graphics environment override into host children.");
     }
 }
-void restoration(const fs::path& root) {
-    ScopedEnvironment outer({{"GIO_MODULE_DIR", "original-module-path"}, {"GIO_EXTRA_MODULES", std::nullopt},
-                             {"GTK_MODULES", "xapp-gtk3-module"}, {"GTK3_MODULES", ""},
-                             {"GTK_EXE_PREFIX", "original-gtk"}, {"NO_AT_BRIDGE", "accessibility-sentinel"},
-                             {"DBUS_SESSION_BUS_ADDRESS", "bus-sentinel"}});
-    {
-        ScopedEnvironment scope({{"GIO_MODULE_DIR", "bundle-module-path"}, {"GIO_EXTRA_MODULES", "temporary"},
-                                 {"GTK_MODULES", std::nullopt}, {"GTK3_MODULES", std::nullopt}});
-        check(env("GIO_MODULE_DIR") == "bundle-module-path" && !env("GTK_MODULES"), "Overrides apply only during initialization.");
-        scope.restore(); scope.restore();
-    }
-    check(env("GIO_MODULE_DIR") == "original-module-path" && !env("GIO_EXTRA_MODULES"), "Present and unset values restore exactly.");
-    check(env("GTK_MODULES") == "xapp-gtk3-module" && env("GTK3_MODULES") == "", "Optional GTK values including empty strings restore exactly.");
-    try {
-        ScopedEnvironment scope({{"GTK_MODULES", std::nullopt}});
-        throw std::runtime_error("fixture exception");
-    } catch (const std::exception&) {}
-    check(env("GTK_MODULES") == "xapp-gtk3-module", "Exception unwinding restores the original host module setting.");
-    rejects([&] { PortableModules missing(root / "missing/usr/bin", true); }, "A missing required bundled GIO library must fail.");
-    check(env("GIO_MODULE_DIR") == "original-module-path" && env("GTK_EXE_PREFIX") == "original-gtk", "Partial module initialization restores all overrides.");
-    check(env("NO_AT_BRIDGE") == "accessibility-sentinel" && env("DBUS_SESSION_BUS_ADDRESS") == "bus-sentinel", "Accessibility and the desktop bus are never disabled or replaced.");
-    PortableModules systemBuild(root, false);
-    check(!systemBuild.active(), "System/development builds retain their matching host module setup.");
-    QProcess child;
-    child.start(QStringLiteral("/usr/bin/env"), QStringList{});
-    check(child.waitForFinished(5000) && child.exitCode() == 0, "A host-child environment can be inspected without a GUI.");
-    const auto inherited = child.readAllStandardOutput();
-    check(inherited.contains("GTK_MODULES=xapp-gtk3-module\n") && inherited.contains("GIO_MODULE_DIR=original-module-path\n") && !inherited.contains("GIO_EXTRA_MODULES="), "External browser/Steam-style children receive the original host environment.");
-}
-void moduleDirectoryPolicy(const fs::path& root) {
-    const auto app = root / "bundle/usr/bin";
-    const auto modules = root / "bundle/usr/lib/gio/modules";
-    check(emptyModuleDirectory(app) == modules, "An absent no-module directory does not require writable AppImage state.");
-    fs::create_directories(modules);
-    check(emptyModuleDirectory(app) == modules, "An existing empty module directory is accepted.");
-    write(modules / "planted.so", "not a reviewed GIO module");
-    rejects([&] { emptyModuleDirectory(app); }, "Planted modules must be refused.");
-    fs::remove(modules / "planted.so");
-    write(modules / "giomodule.cache", "planted cache");
-    rejects([&] { emptyModuleDirectory(app); }, "Unreviewed cache contents must be refused too.");
-    fs::remove(modules / "giomodule.cache");
-    fs::remove(modules);fs::create_directory_symlink(root / "outside", modules);
-    rejects([&] { emptyModuleDirectory(app); }, "A redirected module directory must be refused.");
-    fs::remove(modules);fs::remove(modules.parent_path());
-    fs::create_directory_symlink(root / "outside", modules.parent_path());
-    rejects([&] { emptyModuleDirectory(app); }, "A redirected missing-module parent must be refused.");
-}
 int rendererFixture(const fs::path& drm, char* program) {
     check(!env("QT_QUICK_BACKEND"), "The actual renderer proof must not use an environment software override.");
     check(configureGraphics(drm), "The actual renderer proof must select its native virtual-device policy.");
@@ -180,7 +142,7 @@ int main(int argc, char** argv) {
         QTemporaryDir temporary;
         check(temporary.isValid(), "OS temporary fixture is available.");
         const fs::path root = temporary.path().toStdString();
-        gpuPolicy(); sysfsPolicy(root); restoration(root); moduleDirectoryPolicy(root);
+        gpuPolicy(); sysfsPolicy(root);
         std::cout << "Linux startup policy passed " << checks << " checks.\n";
         return 0;
     } catch (const std::exception& issue) {

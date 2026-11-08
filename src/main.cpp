@@ -42,6 +42,8 @@
 #include "storage_location.hpp"
 #include "pak_workshop.hpp"
 #include "workshop_picker.hpp"
+#include "drop_import.hpp"
+#include "windows_child_processes.hpp"
 #include "game_restart.hpp"
 #include "preview_images.hpp"
 #include "save_backups.hpp"
@@ -161,6 +163,9 @@ std::mutex queueMutex;
 std::condition_variable wake;
 std::queue<NativeJob> jobs;
 bool stopping = false;
+std::atomic_bool nativeWorking{false};
+bool closeWhenIdle = false;
+drifter::WindowsChildProcesses browserProcesses;
 // Public metadata and images use an independent lazy worker. File operations
 // never wait for its network/codec work; the renderer cannot supply a URL.
 constexpr std::int64_t ToolkitNoticeJob = -1;
@@ -982,6 +987,10 @@ void worker() {
             q = std::move(jobs.front().request);
             jobs.pop();
         }
+        struct WorkingScope {
+            WorkingScope() { nativeWorking = true; }
+            ~WorkingScope() { nativeWorking = false; if (notifyEnabled) PostMessageW(window, WM_APP + 49, 0, 0); }
+        } working;
         RendererRequestScope rendererRequest(epoch);
         auto action = q.value("action", "");
         if (!rendererEpoch.current(epoch)) {
@@ -1325,14 +1334,12 @@ std::vector<fs::path> droppedPaths(ICoreWebView2WebMessageReceivedEventArgs* e) 
 void receiveDropped(json q, const std::vector<fs::path>& paths) {
     RendererRequestScope rendererRequest;
     if (!q.value("requestId", json()).is_string() || q["requestId"].get_ref<const std::string&>().size() > 100) return;
-    if (paths.empty() || paths.size() > 64) {
-        post({{"ok", false}, {"error", "Drop between 1 and 64 mod files."}}, q);
-        return;
-    }
-    q["action"] = "__batchInspectFiles";
-    q["paths"] = json::array();
-    for (const auto& path : paths) q["paths"].push_back(path.u8string());
-    enqueue(std::move(q));
+    const auto envelope = q;
+    try {
+        auto request = drifter::droppedImportRequest(q, paths);
+        if (request.value("action", "") == "__workshopOpen") workshopPickerEpoch.stamp(request, workshopPickerEpoch.capture());
+        enqueue(std::move(request));
+    } catch (const std::exception& error) { post({{"ok", false}, {"error", error.what()}}, envelope); }
 }
 
 void receive(json q) {
@@ -1597,6 +1604,8 @@ void setup(ICoreWebView2Environment* env) {
             interfaceStartupFailed();
             return S_OK;
         }
+        UINT32 browserPid = 0;
+        if (SUCCEEDED(web->get_BrowserProcessId(&browserPid))) browserProcesses.track(browserPid);
         updateWindowAppearance();
         resize();
 #ifdef DRIFTER_UI_TESTING
@@ -1909,15 +1918,24 @@ LRESULT CALLBACK windowProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         }
         return 0;
     }
+    case WM_APP + 49:
+        if (closeWhenIdle && !nativeWorking) {
+            closeWhenIdle = false;
+            SetWindowTextW(h, stateDir.filename() == L"sandbox-state" ? L"Drifter’s Toolkit [Sandbox]" : L"Drifter’s Toolkit");
+            PostMessageW(h, WM_CLOSE, 0, 0);
+        }
+        return 0;
     case WM_CLOSE:
+        if (nativeWorking) {
+            closeWhenIdle = true;
+            SetWindowTextW(h, L"Drifter’s Toolkit — finishing the current operation before closing");
+            return 0;
+        }
         if (profileRuntime && profileRuntime->active()) {
-            if (profileRuntime->busyLaunching() || profileRuntime->gameRunning()) {
-                ShowWindow(window, SW_MINIMIZE);
-                return 0;
-            }
             if (MessageBoxW(window,
-                            L"A profile session still needs restoration. Closing keeps its preserved packages and "
-                            L"recovery journal for the next startup. Close anyway?",
+                            L"This profile session still needs restoration. Closing stops the toolkit’s session monitor; "
+                            L"Days Gone will keep running if it is open. Preserved packages and the recovery record "
+                            L"are kept for the next startup. Close the toolkit?",
                             L"Profile recovery", MB_OKCANCEL | MB_ICONWARNING | MB_DEFBUTTON2) != IDOK)
                 return 0;
         }
@@ -1961,6 +1979,7 @@ LRESULT CALLBACK windowProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         rendererEpoch.advance();
         notifyEnabled = false;
         stopImageRequests();
+        browserProcesses.captureChildren();
         if (controller) controller->Close();
         PostQuitMessage(0);
         return 0;
@@ -2274,8 +2293,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show) {
     toolkitUpdateNotice.reset();
     previewImages.reset();
     folderWatcher.reset();
-    if (web) web->Release();
-    if (controller) controller->Release();
+    if (web) { web->Release(); web = nullptr; }
+    if (controller) { controller->Release(); controller = nullptr; }
+    browserProcesses.finish();
+    pinnedAssets.clear();
     nxmIntegration.reset();
     updater.reset();
     gameRestart.reset();
@@ -2285,7 +2306,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show) {
     profileRuntime.reset();
     profiles.reset();
     directories.reset();
+    saveEditor.reset();
+    workshop.reset();
+    downloadWatch.reset();
     manager.reset();
+    storageSession.reset();
     nexus.reset();
     nativeCrash.reset();
     CoUninitialize();

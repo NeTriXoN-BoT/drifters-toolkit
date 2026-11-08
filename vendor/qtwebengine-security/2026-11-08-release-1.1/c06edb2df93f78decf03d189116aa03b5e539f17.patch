@@ -1,0 +1,57 @@
+From c06edb2df93f78decf03d189116aa03b5e539f17 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 28 Jul 2026 12:58:59 +0200
+Subject: [PATCH] [Backport] CVE-2026-79197 (2/4) and CVE-2026-87489
+
+Manual cherry-pick of patch originally reviewed on
+https://chromium-review.googlesource.com/c/v8/v8/+/8159443:
+[debug] Deoptimize OSR frames on debugger break and restart
+
+When Deoptimizer::DeoptimizeFunction is called without explicitly
+passing the target frame's Code object, it defaults to
+unction->code(isolate), which points to the function's default
+entrypoint code (e.g. unoptimized bytecode, baseline code, or non-OSR
+optimized code) rather than the OSR machine code executing on the
+stack frame.
+
+TAG=agy
+CONV=978a8699-6f5a-469d-a61e-d8cbf7aa4c0d
+
+Fixed: 539453394, 531297707
+Change-Id: Ibb577dfd2169e4d76517bb661410ff5609fb2ad5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8159443
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108910}
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/786518
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+ chromium/v8/src/debug/debug.cc | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/chromium/v8/src/debug/debug.cc b/chromium/v8/src/debug/debug.cc
+index 9aa5a2026ae..f9fac9fd5a7 100644
+--- a/chromium/v8/src/debug/debug.cc
++++ b/chromium/v8/src/debug/debug.cc
+@@ -2868,8 +2868,8 @@ void Debug::HandleDebugBreak(IgnoreBreakMode ignore_break_mode,
+       // caller frames are at a call site, which acts as a memory serialization
+       // barrier, forcing them to reload all heap state upon return anyway.
+       if (frame->is_optimized()) {
+-        Deoptimizer::DeoptimizeFunction(*function,
+-                                        LazyDeoptimizeReason::kDebugger);
++        Deoptimizer::DeoptimizeFunction(
++            *function, LazyDeoptimizeReason::kDebugger, frame->LookupCode());
+       }
+ 
+       // kScheduled and kOOM breaks are triggered by the stack check. While we
+@@ -3385,7 +3385,8 @@ void Debug::PrepareRestartFrame(JavaScriptFrame* frame,
+                                 int inlined_frame_index) {
+   if (frame->is_optimized())
+     Deoptimizer::DeoptimizeFunction(frame->function(),
+-                                    LazyDeoptimizeReason::kDebugger);
++                                    LazyDeoptimizeReason::kDebugger,
++                                    frame->LookupCode());
+ 
+   thread_local_.restart_frame_id_ = frame->id();
+   thread_local_.restart_inline_frame_index_ = inlined_frame_index;

@@ -1,5 +1,18 @@
 window.CHANGELOG_HISTORY = [
   {
+    "version": "1.1.0",
+    "items": [
+      "The updated DTML icon is now used by the app, taskbar and sidebar. The sidebar also links to the open-source GitHub project.",
+      "Closing the toolkit now waits for the current file operation, then exits. Windows browser helpers are tracked by this app instance, given time to close normally and cleaned up if they hang. Closing during a profile session offers a clear recovery choice instead of silently minimizing.",
+      "Drop PAK files onto Workshop to open an editable draft. Drop .sav files onto Saves to import them as a separate backup. My mods keeps the normal package review before installation.",
+      "Shared saves can be imported as backups and reviewed before restoring. A selected current slot also has Import into this slot, with a complete safety backup before replacement.",
+      "Advanced infusion fields now have numbered labels, raw names and descriptions explaining that the entries are separate list positions. Their exact in-game effects remain unverified.",
+      "Workshop explains Bool, Float, whole-number, text and named-choice properties. Supported tagged DataTable and CurveTable rows and quaternion/transform components can now be edited. Unknown native data still needs a suitable external editor.",
+      "Repeated notifications are suppressed, at most three are shown together, and longer messages have more reading time. Timers pause while hidden, hovered or keyboard-focused. Successful save imports select the backup without another popup.",
+      "The public interface uses browser downloads and local file detection without Nexus sign-in or API keys. Download on a mod’s Nexus page, then import the completed file. The Field guide explains this workflow without promising future account features."
+    ]
+  },
+  {
     "version": "1.0.9",
     "items": [
       "Timed messages now update their displayed seconds while the loader is visible but unfocused. Hidden or minimised windows keep the expiry deadline, and the display catches up when restored. Deliberate reading pauses still apply while the loader is focused.",
